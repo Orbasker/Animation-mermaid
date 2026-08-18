@@ -1,0 +1,91 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  createGraphSnapshot,
+  entityId,
+  snapshotId,
+  validateGraphSnapshot,
+} from "@/domain/graph";
+import { currentArchitectureSnapshot } from "@/domain/fixtures";
+
+const source = {
+  diagramType: "flowchart",
+  text: "flowchart TD",
+  importer: {
+    importer: "test",
+    importerVersion: "0.0.0",
+    importedAt: "2026-08-18T00:00:00.000Z",
+  },
+} as const;
+
+describe("validateGraphSnapshot", () => {
+  it("accepts the representative snapshot", () => {
+    expect(validateGraphSnapshot(currentArchitectureSnapshot())).toEqual([]);
+  });
+
+  it("keeps layout separate from semantic identity", () => {
+    const snapshot = currentArchitectureSnapshot();
+    for (const entity of snapshot.entities) {
+      expect(entity).not.toHaveProperty("x");
+      expect(entity).not.toHaveProperty("y");
+    }
+    expect(snapshot.layout?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it("preserves original source and importer provenance", () => {
+    const snapshot = currentArchitectureSnapshot();
+    expect(snapshot.source.text).toContain("flowchart TD");
+    expect(snapshot.source.importer.importer).toBe("mermaid-flowchart");
+    expect(snapshot.source.importer.importedAt).toBe(
+      "2026-08-18T00:00:00.000Z",
+    );
+  });
+
+  it("reports duplicate entity ids", () => {
+    const snapshot = createGraphSnapshot({
+      id: snapshotId("s"),
+      source,
+      entities: [
+        { kind: "node", id: entityId("a"), label: "A" },
+        { kind: "node", id: entityId("a"), label: "A again" },
+      ],
+    });
+    const errors = validateGraphSnapshot(snapshot);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({
+      code: "duplicate-entity-id",
+      entityId: "a",
+    });
+    expect(errors[0].message).toContain("a");
+  });
+
+  it("reports edges, groups, and layout hints referencing unknown entities", () => {
+    const snapshot = createGraphSnapshot({
+      id: snapshotId("s"),
+      source,
+      entities: [
+        { kind: "node", id: entityId("a"), label: "A", groupId: entityId("ghost-group") },
+        {
+          kind: "edge",
+          id: entityId("e"),
+          source: entityId("a"),
+          target: entityId("ghost-node"),
+        },
+        {
+          kind: "group",
+          id: entityId("g"),
+          label: "G",
+          memberIds: [entityId("ghost-member")],
+        },
+      ],
+      layout: [{ entityId: entityId("ghost-layout"), x: 0, y: 0 }],
+    });
+    const codes = validateGraphSnapshot(snapshot).map((e) => e.code).sort();
+    expect(codes).toEqual([
+      "edge-missing-endpoint",
+      "group-missing-member",
+      "layout-missing-entity",
+      "node-orphan-group",
+    ]);
+  });
+});
