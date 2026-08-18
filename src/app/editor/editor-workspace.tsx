@@ -51,6 +51,7 @@ import {
   type TimelineOperation,
 } from "@/domain/timeline";
 import type { ProjectDocument } from "@/domain/project-document";
+import { buildExportHtml, buildExportPayload, ExportError } from "@/export";
 import { ProjectRepository } from "@/persistence";
 import type { StoryProposal } from "@/workflows/design-review-story";
 
@@ -128,6 +129,14 @@ function positionFor(
       height: 58,
     }
   );
+}
+
+function slugify(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "design-review";
 }
 
 function clampZoom(value: number): number {
@@ -454,6 +463,34 @@ export function EditorWorkspace({
       previewState.entities.map((entity) => [entity.id, entity]),
     );
   }, [previewState]);
+
+  const exportStoryHtml = useCallback(() => {
+    if (!project || !snapshot || !activeStory) return;
+    try {
+      const withCurrentSnapshot = replaceSnapshot(project, snapshot);
+      const payload = buildExportPayload(withCurrentSnapshot, activeStory.id);
+      const html = buildExportHtml(payload);
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${slugify(activeStory.title)}.html`;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setAnnouncement(
+        `Exported "${activeStory.title}" as a self-contained HTML file.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof ExportError
+          ? error.message
+          : "The story could not be exported.";
+      setAnnouncement(message);
+    }
+  }, [project, snapshot, activeStory]);
 
   useEffect(() => {
     if (!isPlaying || storyDuration <= 0) return;
@@ -1071,6 +1108,18 @@ export function EditorWorkspace({
               </button>
               <button onClick={loadStressFixture} type="button">
                 Load 200-node stress fixture
+              </button>
+              <button
+                disabled={!storyValid}
+                onClick={exportStoryHtml}
+                title={
+                  storyValid
+                    ? "Download a self-contained animated review"
+                    : "Fix the scene warnings to export this story"
+                }
+                type="button"
+              >
+                Export HTML
               </button>
             </div>
 
