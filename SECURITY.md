@@ -20,6 +20,14 @@ disclosure.
 This project is under active development. Security fixes target the `main`
 branch and the latest deployment.
 
+## Dependencies and supply chain
+
+Dependencies update through grouped weekly Dependabot pull requests, and every
+PR is gated by CI vulnerability, provenance, and license checks. Production
+builds emit a CycloneDX SBOM. For the emergency-patch, rollback, and
+documented-exception procedures, see
+[`docs/runbooks/dependency-security.md`](docs/runbooks/dependency-security.md).
+
 ## Handling secrets
 
 - Never commit real credentials. Copy `.env.example` to `.env.local`

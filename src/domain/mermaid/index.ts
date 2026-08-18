@@ -38,6 +38,9 @@ export {
   ACCEPTANCE_FLOWCHART,
   RICH_FLOWCHART,
   HOSTILE_FLOWCHART,
+  STRESS_FLOWCHART,
+  STRESS_FLOWCHART_NODE_COUNT,
+  buildStressFlowchart,
 } from "@/domain/mermaid/fixtures";
 
 export {
@@ -65,3 +68,26 @@ export {
 } from "@/domain/mermaid/capabilities";
 
 export { flowchartImporter } from "@/domain/mermaid/importer";
+
+export {
+  type MermaidJobLimits,
+  type JobPhase,
+  type JobProgress,
+  type JobStats,
+  type JobError,
+  type JobErrorCode,
+  type ImportLayoutRequest,
+  type ImportLayoutResult,
+  type RunJobOptions,
+  type MermaidImportRunnerOptions,
+  type RunHandle,
+  type WorkerFactory,
+  type InlineRunner,
+  DEFAULT_JOB_LIMITS,
+  resolveJobLimits,
+  isCancellation,
+  JobFailure,
+  runImportLayoutJob,
+  MermaidImportRunner,
+  defaultWorkerFactory,
+} from "@/domain/mermaid/worker";
