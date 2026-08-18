@@ -810,9 +810,264 @@ h1 {
 }
 
 .editorWorkspace button:focus-visible,
-.editorWorkspace textarea:focus-visible {
+.editorWorkspace textarea:focus-visible,
+.editorWorkspace input:focus-visible {
   outline: 3px solid #ff7a52;
   outline-offset: 2px;
+}
+
+.copilotPanel {
+  color: #182432;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.copilotForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.copilotForm label {
+  color: #46535c;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 8px;
+}
+
+.copilotForm input,
+.copilotForm textarea {
+  border: 1px solid #b6c1c6;
+  border-radius: 5px;
+  color: #182432;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 8px 10px;
+}
+
+.copilotForm textarea {
+  resize: vertical;
+}
+
+.copilotForm button,
+.copilotActions button,
+.copilotError button,
+.copilotTerminal button,
+.copilotProgress button {
+  align-self: flex-start;
+  background: #f0f2ef;
+  border: 1px solid #b6c1c6;
+  border-radius: 5px;
+  color: #182432;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 10px;
+  padding: 8px 14px;
+}
+
+.copilotForm button:disabled,
+.copilotActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.copilotPrimary {
+  background: #1f6f4f !important;
+  border-color: #1f6f4f !important;
+  color: #f4fbf6 !important;
+}
+
+.copilotEntities {
+  border: 1px solid #cdd4d7;
+  border-radius: 6px;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.copilotEntities legend {
+  color: #46535c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding-inline: 6px;
+  text-transform: uppercase;
+}
+
+.copilotEntities ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 0;
+}
+
+.copilotEntities label {
+  align-items: baseline;
+  cursor: pointer;
+  display: grid;
+  gap: 2px 8px;
+  grid-template-columns: auto 1fr;
+}
+
+.copilotEntities input {
+  grid-row: span 2;
+}
+
+.copilotEntities small {
+  color: #77848b;
+  font-size: 0.66rem;
+  grid-column: 2;
+}
+
+.copilotPreview,
+.copilotReview,
+.copilotProgress,
+.copilotTerminal,
+.copilotError {
+  border: 1px solid #cdd4d7;
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.copilotPreview dl {
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: auto 1fr;
+  margin: 8px 0;
+}
+
+.copilotPreview dt {
+  color: #6a7881;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.copilotPreview dd {
+  margin: 0;
+}
+
+.copilotFixture {
+  background: #152238;
+  border-radius: 4px;
+  color: #eaf1f4;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.66rem;
+  line-height: 1.5;
+  margin: 8px 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre;
+}
+
+.copilotActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.copilotProgress ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.copilotProgress li {
+  border-left: 3px solid #1f6f4f;
+  display: flex;
+  flex-direction: column;
+  padding-left: 10px;
+}
+
+.copilotProgress strong {
+  font-size: 0.74rem;
+  text-transform: capitalize;
+}
+
+.copilotProgress span {
+  color: #56636b;
+  font-size: 0.76rem;
+}
+
+.copilotThesis {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 6px 0 2px;
+}
+
+.copilotCritique {
+  background: #eef3ef;
+  border-radius: 6px;
+  margin: 12px 0;
+  padding: 10px 12px;
+}
+
+.copilotCritique[data-verdict="needs_rework"] {
+  background: #fbeeea;
+}
+
+.copilotCritique strong {
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.copilotDiff ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.copilotDiff li {
+  display: flex;
+  flex-direction: column;
+}
+
+.copilotDiff strong {
+  font-size: 0.82rem;
+}
+
+.copilotDiff span {
+  color: #56636b;
+  font-size: 0.72rem;
+}
+
+.copilotDiff small {
+  color: #77848b;
+  font-size: 0.66rem;
+}
+
+.copilotError {
+  background: #fbeeea;
+  border-color: #e2b3a6;
+}
+
+.copilotErrorReason {
+  color: #8a2f1c;
+  font-size: 0.78rem;
+  margin: 6px 0;
+}
+
+.copilotErrorAction {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 6px 0;
+}
+
+.copilotTerminal[data-tone="ok"] {
+  background: #eaf5ee;
+  border-color: #a9d4bb;
 }
 
 @keyframes editorPulse {

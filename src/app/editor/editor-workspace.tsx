@@ -30,6 +30,7 @@ import {
   type LayoutHint,
   type NodeEntity,
 } from "@/domain/graph";
+import { applyStoryProposal } from "@/domain/apply-proposal";
 import {
   actionChannel,
   storyDurationMs,
@@ -51,9 +52,23 @@ import {
 } from "@/domain/timeline";
 import type { ProjectDocument } from "@/domain/project-document";
 import { ProjectRepository } from "@/persistence";
+import type { StoryProposal } from "@/workflows/design-review-story";
 
-const SURFACES = ["Source", "Story", "Compare", "Layers", "Inspector"] as const;
+import { CopilotSurface } from "./ai-copilot/copilot-surface";
+import {
+  createHttpCopilotTransport,
+  type CopilotTransport,
+} from "./ai-copilot/copilot-transport";
+
+const SURFACES = ["Source", "Story", "Compare", "Layers", "Inspector", "Copilot"] as const;
 type Surface = (typeof SURFACES)[number];
+
+/** The before/after pair of applying one proposal, so the apply is a reversible transaction. */
+interface ApplyRecord {
+  readonly before: ProjectDocument;
+  readonly after: ProjectDocument;
+  readonly undone: boolean;
+}
 
 interface Point {
   readonly x: number;
@@ -72,6 +87,8 @@ export interface EditorWorkspaceProps {
   readonly repository?: ProjectRepository;
   readonly initialProject?: ProjectDocument;
   readonly autosaveDelayMs?: number;
+  /** The AI copilot transport; defaults to the HTTP transport against this app's API. */
+  readonly copilotTransport?: CopilotTransport;
 }
 
 function replaceSnapshot(
@@ -145,11 +162,18 @@ export function EditorWorkspace({
   repository: suppliedRepository,
   initialProject,
   autosaveDelayMs = 220,
+  copilotTransport,
 }: EditorWorkspaceProps) {
   const [repository, setRepository] = useState(suppliedRepository);
   const [project, setProject] = useState<ProjectDocument>();
   const [history, setHistory] = useState<EditorHistory>();
   const [surface, setSurface] = useState<Surface>("Layers");
+  const [initialRunId, setInitialRunId] = useState<string>();
+  const [applyRecord, setApplyRecord] = useState<ApplyRecord>();
+  const transport = useMemo(
+    () => copilotTransport ?? createHttpCopilotTransport(),
+    [copilotTransport],
+  );
   const [selectedIds, setSelectedIds] = useState<readonly EntityId[]>([]);
   const [annotationDraft, setAnnotationDraft] = useState("");
   const [loadError, setLoadError] = useState<string>();
@@ -206,6 +230,15 @@ export function EditorWorkspace({
         setActiveStoryId(document.stories[0]?.id);
         setSelectedSceneId(document.stories[0]?.scenes[0]?.id);
         setSaveState(activeRepository ? "Ready to save" : "Preview mode");
+
+        // Reconnect to the most recently linked run, if any — a reload rejoins an active run
+        // rather than starting a second one.
+        if (activeRepository) {
+          const runs = await activeRepository.aiRuns(document.id);
+          if (!cancelled && runs.length > 0) {
+            setInitialRunId(runs[runs.length - 1].runId);
+          }
+        }
       } catch (error) {
         if (!cancelled) {
           setLoadError(error instanceof Error ? error.message : "The project could not be opened.");
@@ -270,6 +303,65 @@ export function EditorWorkspace({
     },
     [markDirty],
   );
+
+  const handleRunStarted = useCallback(
+    (runId: string) => {
+      if (!repository || !project) return;
+      void (async () => {
+        try {
+          // Ensure the project row exists before linking the run to it, then record the run id
+          // in the separate store the repository keeps for hosted runs.
+          await repository.save(project);
+          await repository.linkAiRun(project.id, {
+            runId,
+            provider: "vercel-workflow",
+            createdAt: new Date().toISOString(),
+          });
+        } catch {
+          // Linking is best-effort local bookkeeping; a failure must not break the run.
+        }
+      })();
+    },
+    [repository, project],
+  );
+
+  const applyProposal = useCallback(
+    (proposal: StoryProposal) => {
+      if (!project) return;
+      let next: ProjectDocument;
+      try {
+        next = applyStoryProposal(project, proposal.story);
+      } catch (error) {
+        setAnnouncement(
+          error instanceof Error ? error.message : "The proposal could not be applied.",
+        );
+        return;
+      }
+      // Applying is one transaction: keep the before/after pair so it reverts byte-for-byte.
+      setApplyRecord({ before: project, after: next, undone: false });
+      if (next !== project) {
+        setProject(next);
+        setAnnouncement(`Applied "${proposal.story.title}" as a new story.`);
+      } else {
+        setAnnouncement(`"${proposal.story.title}" is already in this project.`);
+      }
+    },
+    [project],
+  );
+
+  const undoApply = useCallback(() => {
+    if (!applyRecord || applyRecord.undone) return;
+    setProject(applyRecord.before);
+    setApplyRecord({ ...applyRecord, undone: true });
+    setAnnouncement("Reverted the applied story.");
+  }, [applyRecord]);
+
+  const redoApply = useCallback(() => {
+    if (!applyRecord || !applyRecord.undone) return;
+    setProject(applyRecord.after);
+    setApplyRecord({ ...applyRecord, undone: false });
+    setAnnouncement("Reapplied the story.");
+  }, [applyRecord]);
 
   const stories = useMemo(() => project?.stories ?? [], [project]);
   const activeStory = useMemo(
@@ -690,65 +782,84 @@ export function EditorWorkspace({
       ) : (
         <div className="workspaceGrid">
           <aside className="workspacePanel" role="tabpanel">
-            <SurfacePanel
-              annotationDraft={annotationDraft}
-              hiddenIds={hiddenIds}
-              onAnnotationChange={setAnnotationDraft}
-              onSaveAnnotation={saveAnnotation}
-              onSelect={(id) => selectNode(id, false)}
-              onShow={(id) =>
-                transact(
-                  { type: "set-hidden", entityIds: [id], hidden: false },
-                  `Shown ${id}.`,
-                )
-              }
-              project={project}
-              selectedEntity={selectedEntity}
-              selectedIds={selectedIds}
-              snapshot={snapshot}
-              surface={surface}
-              timeline={{
-                stories,
-                story: activeStory,
-                selectedSceneId,
-                selectedIds,
-                warnings: storyWarnings,
-                playheadMs,
-                durationMs: storyDuration,
-                isPlaying,
-                previewMode,
-                storyValid,
-                activeSceneId: previewState?.activeScene?.id,
-                onSelectStory: setActiveStoryId,
-                onSelectScene: setSelectedSceneId,
-                onAddScene: addScene,
-                onDuplicateScene: duplicateScene,
-                onRemoveScene: removeScene,
-                onRenameScene: (id, title) =>
-                  dispatchTimeline({ type: "rename-scene", sceneId: id, title }, `Renamed ${id}.`),
-                onSetDuration: (id, durationMs) =>
-                  dispatchTimeline(
-                    { type: "set-duration", sceneId: id, durationMs },
-                    `Set ${id} duration to ${durationMs} ms.`,
-                  ),
-                onMoveScene: moveScene,
-                onSetAction: (id, action) =>
-                  dispatchTimeline(
-                    { type: "set-action", sceneId: id, action },
-                    `Updated ${action.type} in ${id}.`,
-                  ),
-                onRemoveAction: (id, channel, target) =>
-                  dispatchTimeline(
-                    { type: "remove-action", sceneId: id, channel, target },
-                    `Removed ${channel} from ${id}.`,
-                  ),
-                onRepair: repairScenes,
-                onTogglePreview: togglePreview,
-                onPlayToggle: () => setIsPlaying((playing) => !playing),
-                onScrub: scrub,
-                onTimelineKeyDown: handleTimelineKeyDown,
-              }}
-            />
+            {surface !== "Copilot" ? (
+              <SurfacePanel
+                annotationDraft={annotationDraft}
+                hiddenIds={hiddenIds}
+                onAnnotationChange={setAnnotationDraft}
+                onSaveAnnotation={saveAnnotation}
+                onSelect={(id) => selectNode(id, false)}
+                onShow={(id) =>
+                  transact(
+                    { type: "set-hidden", entityIds: [id], hidden: false },
+                    `Shown ${id}.`,
+                  )
+                }
+                project={project}
+                selectedEntity={selectedEntity}
+                selectedIds={selectedIds}
+                snapshot={snapshot}
+                surface={surface}
+                timeline={{
+                  stories,
+                  story: activeStory,
+                  selectedSceneId,
+                  selectedIds,
+                  warnings: storyWarnings,
+                  playheadMs,
+                  durationMs: storyDuration,
+                  isPlaying,
+                  previewMode,
+                  storyValid,
+                  activeSceneId: previewState?.activeScene?.id,
+                  onSelectStory: setActiveStoryId,
+                  onSelectScene: setSelectedSceneId,
+                  onAddScene: addScene,
+                  onDuplicateScene: duplicateScene,
+                  onRemoveScene: removeScene,
+                  onRenameScene: (id, title) =>
+                    dispatchTimeline({ type: "rename-scene", sceneId: id, title }, `Renamed ${id}.`),
+                  onSetDuration: (id, durationMs) =>
+                    dispatchTimeline(
+                      { type: "set-duration", sceneId: id, durationMs },
+                      `Set ${id} duration to ${durationMs} ms.`,
+                    ),
+                  onMoveScene: moveScene,
+                  onSetAction: (id, action) =>
+                    dispatchTimeline(
+                      { type: "set-action", sceneId: id, action },
+                      `Updated ${action.type} in ${id}.`,
+                    ),
+                  onRemoveAction: (id, channel, target) =>
+                    dispatchTimeline(
+                      { type: "remove-action", sceneId: id, channel, target },
+                      `Removed ${channel} from ${id}.`,
+                    ),
+                  onRepair: repairScenes,
+                  onTogglePreview: togglePreview,
+                  onPlayToggle: () => setIsPlaying((playing) => !playing),
+                  onScrub: scrub,
+                  onTimelineKeyDown: handleTimelineKeyDown,
+                }}
+              />
+            ) : null}
+            {/* Kept mounted across tab switches so a run in flight is never torn down. */}
+            <div className="copilotMount" hidden={surface !== "Copilot"}>
+              <CopilotSurface
+                applyControls={
+                  applyRecord && applyRecord.before !== applyRecord.after
+                    ? { undone: applyRecord.undone, onUndo: undoApply, onRedo: redoApply }
+                    : undefined
+                }
+                defaultTitle={`${project.name} review`}
+                initialRunId={initialRunId}
+                onApplied={applyProposal}
+                onRunStarted={handleRunStarted}
+                project={project}
+                snapshot={snapshot}
+                transport={transport}
+              />
+            </div>
           </aside>
 
           <section aria-label="Architecture graph editor" className="canvasColumn">

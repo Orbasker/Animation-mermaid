@@ -31,6 +31,14 @@ import { buildStoryProposal, InvalidStoryDraftError } from "./proposal";
 /** Progress notes go to their own namespace, kept out of the default result stream. */
 export const PROGRESS_NAMESPACE = "progress";
 
+/**
+ * The built proposal is published to its own namespace at the approval gate, so a reviewer can
+ * *see* the scenes before deciding. This is distinct from applying them: the terminal outcome
+ * still carries the proposal only when approved, and only that outcome is what a client applies.
+ * Publishing here lets the human review without weakening "nothing is applied without approval".
+ */
+export const PROPOSAL_NAMESPACE = "proposal";
+
 async function writeProgress(event: ProgressEvent): Promise<void> {
   const writer = getWritable<ProgressEvent>({
     namespace: PROGRESS_NAMESPACE,
@@ -68,10 +76,28 @@ async function noteAttempt(phase: ProgressEvent["phase"], attempt: number): Prom
   });
 }
 
-/** Closes both streams so a reconnecting client sees a terminated stream, not a hang. */
+/**
+ * Publishes the proposal to the {@link PROPOSAL_NAMESPACE} stream for the reviewer to read
+ * while the run is suspended at the approval gate. Written once, from a step, so a replay
+ * re-emits it exactly rather than re-deriving it.
+ */
+export async function emitProposal(proposal: StoryProposal): Promise<void> {
+  "use step";
+  const writer = getWritable<StoryProposal>({
+    namespace: PROPOSAL_NAMESPACE,
+  }).getWriter();
+  try {
+    await writer.write(proposal);
+  } finally {
+    writer.releaseLock();
+  }
+}
+
+/** Closes the streams so a reconnecting client sees a terminated stream, not a hang. */
 export async function closeStreams(): Promise<void> {
   "use step";
   await getWritable({ namespace: PROGRESS_NAMESPACE }).close();
+  await getWritable({ namespace: PROPOSAL_NAMESPACE }).close();
   await getWritable().close();
 }
 
