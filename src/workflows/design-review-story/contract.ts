@@ -3,7 +3,10 @@ import { z } from "zod";
 // Imported from the leaf modules rather than `@/domain`: the barrel also re-exports the
 // Mermaid layout engine, and this module is bundled into the workflow sandbox, which cannot
 // load it.
-import { SUPPORTED_SCHEMA_VERSIONS } from "@/domain/schema-version";
+import {
+  isSupportedSchemaVersion,
+  type SchemaVersion,
+} from "@/domain/schema-version";
 import type { Story } from "@/domain/story";
 
 /**
@@ -17,11 +20,9 @@ import type { Story } from "@/domain/story";
  * retrying.
  */
 
-const schemaVersionSchema = z.union(
-  SUPPORTED_SCHEMA_VERSIONS.map((version) => z.literal(version)) as [
-    z.ZodLiteral<1>,
-    ...z.ZodLiteral<1>[],
-  ],
+const schemaVersionSchema = z.custom<SchemaVersion>(
+  isSupportedSchemaVersion,
+  "unsupported schema version",
 );
 
 const entityIdSchema = z.string().min(1);

@@ -206,7 +206,7 @@ describe("ProjectRepository portable JSON", () => {
     });
 
     const repo = await openRepository(new IDBFactory());
-    await expect(repo.import(serializeProjectDocument(broken))).rejects.toMatchObject(
+    await expect(repo.import(JSON.stringify(broken))).rejects.toMatchObject(
       { code: "invalid-import" },
     );
     expect(await repo.list()).toHaveLength(0);

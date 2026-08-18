@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildAgentContextPackage } from "@/domain/agent-context";
+import { CURRENT_SCHEMA_VERSION } from "@/domain/schema-version";
 import { currentArchitectureSnapshot } from "@/domain/fixtures";
 import {
   createProjectDocument,
@@ -105,7 +106,7 @@ describe("buildStoryProposal", () => {
   it("emits a story at the current schema version, targeting the context snapshot", () => {
     const { story } = build();
 
-    expect(story.schemaVersion).toBe(1);
+    expect(story.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(story.snapshotId).toBe("snap-current");
   });
 

@@ -4,6 +4,7 @@ import { waitForHook } from "@workflow/vitest";
 
 import { buildAgentContextPackage } from "@/domain/agent-context";
 import { currentArchitectureSnapshot } from "@/domain/fixtures";
+import { CURRENT_SCHEMA_VERSION } from "@/domain/schema-version";
 
 import {
   progressEventSchema,
@@ -97,7 +98,7 @@ describe("generateDesignReviewStory", () => {
     expect(outcome.status).toBe("approved");
     if (outcome.status !== "approved") return;
     expect(outcome.reviewer).toBe("alice");
-    expect(outcome.proposal.story.schemaVersion).toBe(1);
+    expect(outcome.proposal.story.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(outcome.proposal.story.snapshotId).toBe("snap-current");
     expect(outcome.proposal.story.scenes).toHaveLength(3);
     expect(outcome.proposal.story.scenes.map((scene) => scene.id)).toEqual([
