@@ -5,7 +5,10 @@ import { renderStoryAt, type StoryRenderState } from "@/domain/story-engine";
 import { storyId } from "@/domain/story";
 import type { GraphSnapshot } from "@/domain/graph";
 import type { Story } from "@/domain/story";
-import { buildExportPayload, type ExportPayload } from "@/export/export-payload";
+import {
+  buildExportPayload,
+  type ExportPayload,
+} from "@/export/export-payload";
 import { RENDER_FUNCTION_SOURCE } from "@/export/player-runtime";
 
 type Mode = "full" | "reduced" | "static";
@@ -38,8 +41,12 @@ function preferencesFor(mode: Mode) {
   }
 }
 
-function visualSubset(state: StoryRenderState): Omit<StoryRenderState, "communication"> {
-  const clone: { communication?: unknown } & Record<string, unknown> = { ...state };
+function visualSubset(
+  state: StoryRenderState,
+): Omit<StoryRenderState, "communication"> {
+  const clone: { communication?: unknown } & Record<string, unknown> = {
+    ...state,
+  };
   delete clone.communication;
   return clone as unknown as Omit<StoryRenderState, "communication">;
 }

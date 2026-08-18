@@ -19,9 +19,9 @@ describe("buildExportPayload", () => {
     expect(payload.snapshot.id).toBe("snap-current");
     expect(payload.story.id).toBe(SAMPLE_STORY);
     expect(payload.story.scenes).toHaveLength(3);
-    expect(payload.snapshot.entities.some((entity) => entity.id === "client")).toBe(
-      true,
-    );
+    expect(
+      payload.snapshot.entities.some((entity) => entity.id === "client"),
+    ).toBe(true);
   });
 
   it("carries source attribution without private editor state", () => {

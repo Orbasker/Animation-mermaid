@@ -480,7 +480,9 @@ export function EditorWorkspace({
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setAnnouncement(`Exported "${activeStory.title}" as a self-contained HTML file.`);
+      setAnnouncement(
+        `Exported "${activeStory.title}" as a self-contained HTML file.`,
+      );
     } catch (error) {
       const message =
         error instanceof ExportError

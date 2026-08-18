@@ -30,7 +30,8 @@ async function seriousViolations(page: Page) {
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
   return results.violations.filter(
-    (violation) => violation.impact === "serious" || violation.impact === "critical",
+    (violation) =>
+      violation.impact === "serious" || violation.impact === "critical",
   );
 }
 
@@ -49,7 +50,9 @@ test("exports a self-contained review that plays offline with keyboard control",
   await page.goto(`file://${filePath}`);
 
   // The header and controls render from the embedded payload alone.
-  await expect(page.getByRole("heading", { name: "Request walkthrough" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Request walkthrough" }),
+  ).toBeVisible();
   const playButton = page.getByRole("button", { name: "Play" });
   await expect(playButton).toBeVisible();
 

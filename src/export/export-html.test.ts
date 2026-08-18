@@ -16,7 +16,7 @@ import {
   RENDER_FUNCTION_SOURCE,
 } from "@/export/player-runtime";
 
-const HOSTILE_LABEL = '<script>window.__xss=1</script>Login';
+const HOSTILE_LABEL = "<script>window.__xss=1</script>Login";
 const HOSTILE_ANNOTATION = '</script><img src=x onerror="window.__xss=1">';
 const HOSTILE_TITLE = 'Break "out" of <the> attribute';
 
@@ -89,14 +89,19 @@ describe("escapeHtml", () => {
 
 describe("serializeEmbeddedPayload", () => {
   it("escapes '<' so a label cannot terminate the script element", () => {
-    const payload = buildExportPayload(hostileProject(), storyId("story-hostile"));
+    const payload = buildExportPayload(
+      hostileProject(),
+      storyId("story-hostile"),
+    );
     const embedded = serializeEmbeddedPayload(payload);
     expect(embedded).not.toContain("</script>");
     expect(embedded).not.toContain("<script>");
     expect(embedded).toContain("\\u003cscript>");
     // The escaped payload is still valid JSON that restores the original text.
     const restored = JSON.parse(embedded) as typeof payload;
-    expect(restored.snapshot.entities[0]).toMatchObject({ label: HOSTILE_LABEL });
+    expect(restored.snapshot.entities[0]).toMatchObject({
+      label: HOSTILE_LABEL,
+    });
   });
 });
 
@@ -152,7 +157,7 @@ describe("buildExportHtml", () => {
     expect(html).toContain(
       `<title>${escapeHtml(`${HOSTILE_TITLE} — ${HOSTILE_TITLE}`)}</title>`,
     );
-    expect(html).not.toContain("<title>Break \"out\"");
+    expect(html).not.toContain('<title>Break "out"');
   });
 });
 
@@ -167,7 +172,10 @@ describe("player boot in a DOM", () => {
   });
 
   it("renders hostile content as inert text and executes no injected script", () => {
-    const payload = buildExportPayload(hostileProject(), storyId("story-hostile"));
+    const payload = buildExportPayload(
+      hostileProject(),
+      storyId("story-hostile"),
+    );
 
     const app = document.createElement("main");
     app.id = "app";

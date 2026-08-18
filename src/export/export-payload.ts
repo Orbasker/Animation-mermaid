@@ -176,7 +176,9 @@ function buildOutline(
     return {
       title: scene.title,
       durationMs: scene.durationMs,
-      descriptions: state.communication ? [...state.communication.descriptions] : [],
+      descriptions: state.communication
+        ? [...state.communication.descriptions]
+        : [],
     };
   });
 }
@@ -194,7 +196,9 @@ export function buildExportPayload(
   project: ProjectDocument,
   targetStoryId: StoryId,
 ): ExportPayload {
-  const story = project.stories.find((candidate) => candidate.id === targetStoryId);
+  const story = project.stories.find(
+    (candidate) => candidate.id === targetStoryId,
+  );
   if (!story) {
     throw new ExportError(`Project has no story with id "${targetStoryId}".`);
   }
