@@ -24,11 +24,13 @@ import {
 } from "@/domain/editor";
 import { sampleProjectDocument } from "@/domain/fixtures";
 import {
+  snapshotId as toSnapshotId,
   type EdgeEntity,
   type EntityId,
   type GraphSnapshot,
   type LayoutHint,
   type NodeEntity,
+  type SnapshotId,
 } from "@/domain/graph";
 import { applyStoryProposal } from "@/domain/apply-proposal";
 import type {
@@ -36,6 +38,14 @@ import type {
   JobProgress,
   MermaidImportRunner,
 } from "@/domain/mermaid/worker";
+import {
+  addProjectSnapshot,
+  createProjectFromSnapshot,
+  deriveProjectName,
+  reimportActiveSnapshot,
+  replaceProjectSnapshot,
+  uniqueSnapshotId,
+} from "@/domain/import-project";
 import {
   actionChannel,
   storyDurationMs,
@@ -55,7 +65,7 @@ import {
   type SceneReferenceWarning,
   type TimelineOperation,
 } from "@/domain/timeline";
-import type { ProjectDocument } from "@/domain/project-document";
+import { projectId, type ProjectDocument } from "@/domain/project-document";
 import { buildExportHtml, buildExportPayload, ExportError } from "@/export";
 import { ProjectRepository } from "@/persistence";
 import type { StoryProposal } from "@/workflows/design-review-story";
@@ -66,6 +76,8 @@ import {
   type CopilotTransport,
 } from "./ai-copilot/copilot-transport";
 import { e2eCopilotTransportFromWindow } from "./ai-copilot/e2e-transport";
+import { ImportDialog, type ImportDialogSubmit } from "./import/import-dialog";
+import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
 
 const SURFACES = [
   "Source",
@@ -103,21 +115,8 @@ export interface EditorWorkspaceProps {
   readonly autosaveDelayMs?: number;
   /** The AI copilot transport; defaults to the HTTP transport against this app's API. */
   readonly copilotTransport?: CopilotTransport;
-}
-
-function replaceSnapshot(
-  project: ProjectDocument,
-  snapshot: GraphSnapshot,
-): ProjectDocument {
-  return {
-    ...project,
-    snapshots: project.snapshots.map((item, index) =>
-      item.id === snapshot.id ||
-      (index === 0 && !project.snapshots.some((s) => s.id === snapshot.id))
-        ? snapshot
-        : item,
-    ),
-  };
+  /** Import runner seam; a synchronous stand-in lets tests skip ELK layout. */
+  readonly runImport?: RunMermaidImport;
 }
 
 function positionFor(
@@ -134,6 +133,10 @@ function positionFor(
       height: 58,
     }
   );
+}
+
+function snapshotLabel(snapshot: GraphSnapshot): string {
+  return deriveProjectName(snapshot.source.text, snapshot.id);
 }
 
 function slugify(value: string): string {
@@ -213,10 +216,15 @@ export function EditorWorkspace({
   initialProject,
   autosaveDelayMs = 220,
   copilotTransport,
+  runImport = runMermaidImport,
 }: EditorWorkspaceProps) {
   const [repository, setRepository] = useState(suppliedRepository);
   const [project, setProject] = useState<ProjectDocument>();
   const [history, setHistory] = useState<EditorHistory>();
+  const [activeSnapshotId, setActiveSnapshotId] = useState<SnapshotId>();
+  const [importOpen, setImportOpen] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string>();
   const [surface, setSurface] = useState<Surface>("Layers");
   const [initialRunId, setInitialRunId] = useState<string>();
   const [applyRecord, setApplyRecord] = useState<ApplyRecord>();
@@ -284,8 +292,12 @@ export function EditorWorkspace({
         }
         setProject(document);
         setHistory(createEditorHistory(document.snapshots[0]));
-        setActiveStoryId(document.stories[0]?.id);
-        setSelectedSceneId(document.stories[0]?.scenes[0]?.id);
+        setActiveSnapshotId(document.snapshots[0].id);
+        const firstStory = document.stories.find(
+          (story) => story.snapshotId === document.snapshots[0].id,
+        );
+        setActiveStoryId(firstStory?.id);
+        setSelectedSceneId(firstStory?.scenes[0]?.id);
         setSaveState(activeRepository ? "Ready to save" : "Preview mode");
 
         // Reconnect to the most recently linked run, if any — a reload rejoins an active run
@@ -324,7 +336,7 @@ export function EditorWorkspace({
 
   useEffect(() => {
     if (!history || !project || !repository || stressPreview) return;
-    const nextProject = replaceSnapshot(project, history.present);
+    const nextProject = replaceProjectSnapshot(project, history.present);
     const timer = window.setTimeout(() => {
       setSaveState("Saving…");
       void repository
@@ -450,7 +462,13 @@ export function EditorWorkspace({
     setAnnouncement("Reapplied the story.");
   }, [applyRecord]);
 
-  const stories = useMemo(() => project?.stories ?? [], [project]);
+  const stories = useMemo(
+    () =>
+      (project?.stories ?? []).filter(
+        (story) => story.snapshotId === activeSnapshotId,
+      ),
+    [project, activeSnapshotId],
+  );
   const activeStory = useMemo(
     () => stories.find((story) => story.id === activeStoryId) ?? stories[0],
     [stories, activeStoryId],
@@ -504,7 +522,7 @@ export function EditorWorkspace({
   const exportStoryHtml = useCallback(() => {
     if (!project || !snapshot || !activeStory) return;
     try {
-      const withCurrentSnapshot = replaceSnapshot(project, snapshot);
+      const withCurrentSnapshot = replaceProjectSnapshot(project, snapshot);
       const payload = buildExportPayload(withCurrentSnapshot, activeStory.id);
       const html = buildExportHtml(payload);
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -888,6 +906,106 @@ export function EditorWorkspace({
     }
   }
 
+  function switchSnapshot(nextId: SnapshotId) {
+    if (!project || !history || nextId === activeSnapshotId) return;
+    const target = project.snapshots.find((item) => item.id === nextId);
+    if (!target) return;
+    // Commit in-flight edits to the outgoing snapshot before switching away from it.
+    const committed = stressPreview
+      ? project
+      : replaceProjectSnapshot(project, history.present);
+    setProject(committed);
+    setActiveSnapshotId(nextId);
+    setHistory(createEditorHistory(target));
+    setStressPreview(false);
+    setSelectedIds([]);
+    setSelectedSceneId(undefined);
+    const story = committed.stories.find((item) => item.snapshotId === nextId);
+    setActiveStoryId(story?.id);
+    setPreviewMode(false);
+    setAnnouncement(`Switched to “${snapshotLabel(target)}”.`);
+  }
+
+  async function handleImport({ text, destination }: ImportDialogSubmit) {
+    setImportBusy(true);
+    setImportError(undefined);
+    try {
+      const desiredId =
+        destination === "replace-active" && activeSnapshotId
+          ? activeSnapshotId
+          : destination === "add-snapshot" && project
+            ? uniqueSnapshotId(
+                project.snapshots.map((item) => item.id),
+                "snapshot",
+              )
+            : toSnapshotId("snapshot-1");
+      const run = await runImport({
+        text,
+        snapshotId: desiredId,
+        importedAt: new Date().toISOString(),
+      });
+      if (!run.snapshot) {
+        const fatal = run.result.diagnostics.find(
+          (d) => d.severity === "error",
+        );
+        setImportError(
+          fatal
+            ? `Line ${fatal.line}: ${fatal.message}`
+            : "The diagram could not be imported.",
+        );
+        return;
+      }
+      const imported = run.snapshot;
+
+      if (destination === "new-project" || !project || !activeSnapshotId) {
+        const fresh = createProjectFromSnapshot({
+          id: projectId(crypto.randomUUID()),
+          name: deriveProjectName(text, "Imported diagram"),
+          snapshot: imported,
+        });
+        setProject(fresh);
+        setActiveSnapshotId(imported.id);
+        setHistory(createEditorHistory(imported));
+        setActiveStoryId(undefined);
+        setSelectedSceneId(undefined);
+      } else if (destination === "add-snapshot") {
+        setProject(addProjectSnapshot(project, imported));
+        setActiveSnapshotId(imported.id);
+        setHistory(createEditorHistory(imported));
+        setActiveStoryId(undefined);
+        setSelectedSceneId(undefined);
+      } else {
+        const { project: next, reconciled } = reimportActiveSnapshot(
+          project,
+          activeSnapshotId,
+          imported,
+        );
+        if (!reconciled) {
+          setImportError("The active snapshot could not be found.");
+          return;
+        }
+        setProject(next);
+        setHistory(createEditorHistory(reconciled));
+      }
+
+      setStressPreview(false);
+      setSelectedIds([]);
+      setPreviewMode(false);
+      setImportOpen(false);
+      setAnnouncement(
+        `Imported ${imported.entities.filter((e) => e.kind === "node").length} components from Mermaid.`,
+      );
+    } catch (error) {
+      setImportError(
+        error instanceof Error
+          ? `Import failed: ${error.message}`
+          : "Import failed.",
+      );
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
   async function getImportRunner(): Promise<MermaidImportRunner> {
     if (!importRunnerRef.current) {
       const { MermaidImportRunner } = await import("@/domain/mermaid/worker");
@@ -918,10 +1036,48 @@ export function EditorWorkspace({
     <div className="editorWorkspace">
       <div className="editorStatusRow">
         <span className="documentBadge">{nodeCount} components</span>
+        {project && project.snapshots.length > 1 ? (
+          <label className="snapshotSwitcher">
+            <span>Diagram</span>
+            <select
+              onChange={(event) =>
+                switchSnapshot(event.target.value as SnapshotId)
+              }
+              value={activeSnapshotId ?? ""}
+            >
+              {project.snapshots.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {snapshotLabel(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <button
+          className="importOpenButton"
+          onClick={() => {
+            setImportError(undefined);
+            setImportOpen(true);
+          }}
+          type="button"
+        >
+          Import Mermaid
+        </button>
         <span aria-live="polite" className="saveStatus">
           {saveState}
         </span>
       </div>
+
+      {importOpen ? (
+        <ImportDialog
+          activeSnapshotLabel={snapshot ? snapshotLabel(snapshot) : undefined}
+          busy={importBusy}
+          error={importError}
+          hasProject={Boolean(project) && Boolean(activeSnapshotId)}
+          onCancel={() => setImportOpen(false)}
+          onSubmit={(input) => void handleImport(input)}
+        />
+      ) : null}
 
       <nav
         aria-label="Workspace surfaces"
