@@ -14,6 +14,9 @@ importers:
       ai:
         specifier: ^7.0.66
         version: 7.0.66(zod@4.4.3)
+      elkjs:
+        specifier: ^0.12.0
+        version: 0.12.0
       eve:
         specifier: ^0.39.0
         version: 0.39.0(@opentelemetry/api@1.9.1)(ai@7.0.66(zod@4.4.3))(lru-cache@11.5.2)(vite@8.2.1(@types/node@24.13.3))
@@ -1291,6 +1294,9 @@ packages:
 
   electron-to-chromium@1.5.409:
     resolution: {integrity: sha512-ChI4N44d0B4A6C8prnNjMOaGgE59fUyEVYcRYm2XEXIjMbbvF5i9UL1cblDbpGqiU0uS8FE8UcKxqZqTXdmzbQ==}
+
+  elkjs@0.12.0:
+    resolution: {integrity: sha512-YZcKynxVxYoKIOEpywEPwCFdg+BTbxQRNf3pbwdDCvc8O3kQD8bmIwSxKU1eOTVc4Xo+VG9Te+575mlfvOrhEQ==}
 
   emoji-regex@9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
@@ -3902,6 +3908,8 @@ snapshots:
       gopd: 1.2.0
 
   electron-to-chromium@1.5.409: {}
+
+  elkjs@0.12.0: {}
 
   emoji-regex@9.2.2: {}
 
