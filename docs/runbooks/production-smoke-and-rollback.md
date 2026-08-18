@@ -3,15 +3,15 @@
 How to verify the design-review journey on a Vercel Preview Deployment before promoting it, run
 a production smoke after promotion, and roll back if the smoke fails.
 
-The automated suite (`pnpm test` and `pnpm test:e2e`) is the primary gate and runs in CI on every
-PR. This runbook covers the manual verification the automated suite cannot do: that the real
+The automated suite (`pnpm test`, `pnpm test:e2e`, and `pnpm test:performance`) is the primary gate
+and runs in CI on every PR. This runbook covers the manual verification the automated suite cannot do: that the real
 Web → API → Queue → Worker → Database path works end-to-end against a deployed environment with the
 live AI agent, not the deterministic fixture.
 
 ## 1. Verify a Preview Deployment
 
-Every PR gets a Vercel Preview URL. The required CI checks (`quality`, `e2e`) must be green before
-merge — they gate the PR.
+Every PR gets a Vercel Preview URL. The required CI checks (`quality`, `build`, `e2e`, and
+`performance`) must be green before merge — they gate the PR.
 
 On the Preview URL, walk the journey once by hand:
 
@@ -40,6 +40,10 @@ Preconditions for the live AI path on a deployment:
 
 ## 2. Promote to production
 
+Complete the [observability activation contract](../observability/activation.md). Promotion is
+blocked if any activation attestation, stable dashboard/alert link, monitor notification test,
+Firewall rule, or ingest secret is missing.
+
 Promote the verified Preview deployment to production (Vercel dashboard → the deployment →
 _Promote to Production_, or `vercel promote <deployment-url>`).
 
@@ -55,9 +59,15 @@ Immediately after promotion, on the production URL, run the shortened smoke:
 
 If all five pass, the promotion is good.
 
+Open `OBSERVABILITY_DASHBOARD_URL`, `OBSERVABILITY_ALERTS_URL`, and the
+[release health checklist](../observability/release-health.md), then observe the active
+release for 30 minutes. The smoke is complete only when its health, errors, Web Vitals,
+Workflow/Eve, and AI Gateway checks are green. Alert ownership and thresholds are defined in the
+[production alert policy](../observability/alert-policy.md).
+
 ## 4. Rollback
 
-If the smoke fails, roll back before investigating:
+If the smoke or any release-health no-go check fails, roll back before investigating:
 
 - **Vercel dashboard:** Deployments → the previous known-good production deployment →
   _Promote to Production_ (instant alias swap, no rebuild).
@@ -69,4 +79,6 @@ lose a user's work. In-flight AI runs are durable and addressed by id; a rolled-
 still reconnect to a run started against the previous one.
 
 After rollback, capture the failing smoke step and the Preview URL that reproduced it, then open a
-fix PR — the same required checks gate its merge.
+fix PR. Capture only the deployment/release identifier and safe error classification; do not paste
+diagram content, user text, query-bearing URLs, arbitrary error messages, or stack traces into the
+incident record. The same required checks gate the fix.
