@@ -93,8 +93,14 @@ The full end-to-end journey (`pnpm test:e2e`, Playwright) also runs in CI.
   [`.github/`](.github); see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full
   workflow and branch/PR conventions.
 - CI additionally runs secret scanning (gitleaks, with a self-test that proves
-  it rejects a planted credential), dependency review and audit, and a
-  dependency **license policy** check (`pnpm license:check`).
+  it rejects a planted credential), dependency review and audit, package
+  **provenance** verification (`npm audit signatures`), and a dependency
+  **license policy** check (`pnpm license:check`).
+- Dependencies update via grouped weekly Dependabot PRs (runtime and dev-tooling
+  separated, with a release cooldown); each production build emits a CycloneDX
+  **SBOM** artifact. Emergency-patch, rollback, exception, and monthly-review
+  procedures live in
+  [`docs/runbooks/dependency-security.md`](docs/runbooks/dependency-security.md).
 - Report vulnerabilities privately — see [`SECURITY.md`](SECURITY.md).
 
 ## AI agent foundation
