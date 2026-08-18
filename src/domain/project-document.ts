@@ -1,14 +1,14 @@
-import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Versioned,
+} from "@/domain/schema-version";
 import {
   validateGraphSnapshot,
   type GraphSnapshot,
   type SnapshotId,
 } from "@/domain/graph";
 import { validateStory, type Story } from "@/domain/story";
-import {
-  validateComparison,
-  type Comparison,
-} from "@/domain/comparison";
+import { validateComparison, type Comparison } from "@/domain/comparison";
 
 export type ProjectId = string & { readonly __brand: "ProjectId" };
 

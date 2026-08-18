@@ -77,7 +77,9 @@ export function isConfirmed(
   base: EntityId,
   target: EntityId,
 ): boolean {
-  return map.confirmed.some((pair) => pair.base === base && pair.target === target);
+  return map.confirmed.some(
+    (pair) => pair.base === base && pair.target === target,
+  );
 }
 
 /** True when the map has ruled out `base` → `target` as a pairing. */
@@ -86,5 +88,7 @@ export function isRejected(
   base: EntityId,
   target: EntityId,
 ): boolean {
-  return map.rejected.some((pair) => pair.base === base && pair.target === target);
+  return map.rejected.some(
+    (pair) => pair.base === base && pair.target === target,
+  );
 }

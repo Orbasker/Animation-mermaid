@@ -101,15 +101,24 @@ function decodeEntityId(value: unknown, path: string): EntityId {
   return entityId(decodeString(value, path));
 }
 
-function decodeEntityIdArray(value: unknown, path: string): readonly EntityId[] {
+function decodeEntityIdArray(
+  value: unknown,
+  path: string,
+): readonly EntityId[] {
   return decodeArray(value, path, decodeEntityId);
 }
 
-export function decodeGraphEntity(value: unknown, path = "entity"): GraphEntity {
+export function decodeGraphEntity(
+  value: unknown,
+  path = "entity",
+): GraphEntity {
   const record = decodeRecord(value, path);
   const kind = decodeString(record.kind, `${path}.kind`);
   const id = decodeEntityId(record.id, `${path}.id`);
-  const attributes = decodeStringRecord(record.attributes, `${path}.attributes`);
+  const attributes = decodeStringRecord(
+    record.attributes,
+    `${path}.attributes`,
+  );
 
   switch (kind) {
     case "node": {
@@ -147,7 +156,10 @@ export function decodeGraphEntity(value: unknown, path = "entity"): GraphEntity 
       return entity;
     }
     default:
-      throw new DomainDecodeError(`${path}.kind`, `unsupported entity kind "${kind}"`);
+      throw new DomainDecodeError(
+        `${path}.kind`,
+        `unsupported entity kind "${kind}"`,
+      );
   }
 }
 
@@ -178,7 +190,10 @@ function decodeMermaidSource(value: unknown, path: string): MermaidSource {
         importer.importerVersion,
         `${path}.importer.importerVersion`,
       ),
-      importedAt: decodeString(importer.importedAt, `${path}.importer.importedAt`),
+      importedAt: decodeString(
+        importer.importedAt,
+        `${path}.importer.importedAt`,
+      ),
     },
   };
 }
@@ -233,10 +248,18 @@ export function decodeGraphSnapshot(
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id: snapshotId(decodeString(record.id, `${path}.id`)),
     source: decodeMermaidSource(record.source, `${path}.source`),
-    entities: decodeArray(record.entities, `${path}.entities`, decodeGraphEntity),
+    entities: decodeArray(
+      record.entities,
+      `${path}.entities`,
+      decodeGraphEntity,
+    ),
     ...(record.layout !== undefined
       ? {
-          layout: decodeArray(record.layout, `${path}.layout`, decodeLayoutHint),
+          layout: decodeArray(
+            record.layout,
+            `${path}.layout`,
+            decodeLayoutHint,
+          ),
         }
       : {}),
     ...(record.view !== undefined
@@ -305,7 +328,10 @@ export function decodeAction(value: unknown, path = "action"): Action {
         focus: decodeEntityIdArray(record.focus, `${path}.focus`),
       };
     default:
-      throw new DomainDecodeError(`${path}.type`, `unsupported action type "${type}"`);
+      throw new DomainDecodeError(
+        `${path}.type`,
+        `unsupported action type "${type}"`,
+      );
   }
 }
 
@@ -326,7 +352,9 @@ export function decodeStory(value: unknown, path = "story"): Story {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id: storyId(decodeString(record.id, `${path}.id`)),
     title: decodeString(record.title, `${path}.title`),
-    snapshotId: snapshotId(decodeString(record.snapshotId, `${path}.snapshotId`)),
+    snapshotId: snapshotId(
+      decodeString(record.snapshotId, `${path}.snapshotId`),
+    ),
     scenes: decodeArray(record.scenes, `${path}.scenes`, decodeScene),
   };
 }
@@ -356,7 +384,10 @@ function decodeEntityChange(value: unknown, path: string): EntityChange {
         after: decodeGraphEntity(record.after, `${path}.after`),
       };
     default:
-      throw new DomainDecodeError(`${path}.op`, `unsupported change operation "${op}"`);
+      throw new DomainDecodeError(
+        `${path}.op`,
+        `unsupported change operation "${op}"`,
+      );
   }
 }
 
@@ -384,7 +415,10 @@ function decodeIdentityMap(value: unknown, path: string): IdentityMap {
   };
 }
 
-export function decodeComparison(value: unknown, path = "comparison"): Comparison {
+export function decodeComparison(
+  value: unknown,
+  path = "comparison",
+): Comparison {
   const record = decodeRecord(value, path);
   decodeCurrentVersion(record, path);
   return {

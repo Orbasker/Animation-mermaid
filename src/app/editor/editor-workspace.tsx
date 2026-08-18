@@ -62,7 +62,14 @@ import {
 } from "./ai-copilot/copilot-transport";
 import { e2eCopilotTransportFromWindow } from "./ai-copilot/e2e-transport";
 
-const SURFACES = ["Source", "Story", "Compare", "Layers", "Inspector", "Copilot"] as const;
+const SURFACES = [
+  "Source",
+  "Story",
+  "Compare",
+  "Layers",
+  "Inspector",
+  "Copilot",
+] as const;
 type Surface = (typeof SURFACES)[number];
 
 /** The before/after pair of applying one proposal, so the apply is a reversible transaction. */
@@ -100,14 +107,19 @@ function replaceSnapshot(
   return {
     ...project,
     snapshots: project.snapshots.map((item, index) =>
-      item.id === snapshot.id || (index === 0 && !project.snapshots.some((s) => s.id === snapshot.id))
+      item.id === snapshot.id ||
+      (index === 0 && !project.snapshots.some((s) => s.id === snapshot.id))
         ? snapshot
         : item,
     ),
   };
 }
 
-function positionFor(snapshot: GraphSnapshot, node: NodeEntity, index: number): LayoutHint {
+function positionFor(
+  snapshot: GraphSnapshot,
+  node: NodeEntity,
+  index: number,
+): LayoutHint {
   return (
     snapshot.layout?.find((hint) => hint.entityId === node.id) ?? {
       entityId: node.id,
@@ -181,7 +193,10 @@ export function EditorWorkspace({
   const [initialRunId, setInitialRunId] = useState<string>();
   const [applyRecord, setApplyRecord] = useState<ApplyRecord>();
   const transport = useMemo(
-    () => copilotTransport ?? e2eCopilotTransportFromWindow() ?? createHttpCopilotTransport(),
+    () =>
+      copilotTransport ??
+      e2eCopilotTransportFromWindow() ??
+      createHttpCopilotTransport(),
     [copilotTransport],
   );
   const [selectedIds, setSelectedIds] = useState<readonly EntityId[]>([]);
@@ -209,7 +224,9 @@ export function EditorWorkspace({
       try {
         const activeRepository =
           suppliedRepository ??
-          (typeof indexedDB === "undefined" ? undefined : await ProjectRepository.open());
+          (typeof indexedDB === "undefined"
+            ? undefined
+            : await ProjectRepository.open());
         if (!suppliedRepository && activeRepository) {
           openedRepository = activeRepository;
           ownsRepository.current = true;
@@ -223,7 +240,8 @@ export function EditorWorkspace({
         let document = initialProject;
         if (!document && activeRepository) {
           const [first] = await activeRepository.list();
-          if (first) document = (await activeRepository.get(first.id))?.document;
+          if (first)
+            document = (await activeRepository.get(first.id))?.document;
         }
         document ??= sampleProjectDocument();
         if (document.snapshots.length === 0) {
@@ -251,7 +269,11 @@ export function EditorWorkspace({
         }
       } catch (error) {
         if (!cancelled) {
-          setLoadError(error instanceof Error ? error.message : "The project could not be opened.");
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "The project could not be opened.",
+          );
         }
       }
     }
@@ -274,7 +296,11 @@ export function EditorWorkspace({
           setSaveState("Saved locally");
         })
         .catch((error: unknown) => {
-          setSaveState(error instanceof Error ? `Save failed: ${error.message}` : "Save failed");
+          setSaveState(
+            error instanceof Error
+              ? `Save failed: ${error.message}`
+              : "Save failed",
+          );
         });
     }, autosaveDelayMs);
     return () => window.clearTimeout(timer);
@@ -282,11 +308,17 @@ export function EditorWorkspace({
 
   const snapshot = history?.present;
   const nodes = useMemo(
-    () => snapshot?.entities.filter((entity): entity is NodeEntity => entity.kind === "node") ?? [],
+    () =>
+      snapshot?.entities.filter(
+        (entity): entity is NodeEntity => entity.kind === "node",
+      ) ?? [],
     [snapshot],
   );
   const edges = useMemo(
-    () => snapshot?.entities.filter((entity): entity is EdgeEntity => entity.kind === "edge") ?? [],
+    () =>
+      snapshot?.entities.filter(
+        (entity): entity is EdgeEntity => entity.kind === "edge",
+      ) ?? [],
     [snapshot],
   );
   const hiddenIds = useMemo(
@@ -297,7 +329,9 @@ export function EditorWorkspace({
   const selectedEntity = nodes.find((node) => node.id === selectedId);
   const positions = useMemo(() => {
     const map = new Map<EntityId, LayoutHint>();
-    nodes.forEach((node, index) => map.set(node.id, positionFor(snapshot!, node, index)));
+    nodes.forEach((node, index) =>
+      map.set(node.id, positionFor(snapshot!, node, index)),
+    );
     return map;
   }, [nodes, snapshot]);
 
@@ -308,7 +342,9 @@ export function EditorWorkspace({
   const transact = useCallback(
     (transaction: EditorTransaction, message: string) => {
       markDirty();
-      setHistory((current) => (current ? commitEditorTransaction(current, transaction) : current));
+      setHistory((current) =>
+        current ? commitEditorTransaction(current, transaction) : current,
+      );
       setAnnouncement(message);
     },
     [markDirty],
@@ -343,7 +379,9 @@ export function EditorWorkspace({
         next = applyStoryProposal(project, proposal.story);
       } catch (error) {
         setAnnouncement(
-          error instanceof Error ? error.message : "The proposal could not be applied.",
+          error instanceof Error
+            ? error.message
+            : "The proposal could not be applied.",
         );
         return;
       }
@@ -353,7 +391,9 @@ export function EditorWorkspace({
         setProject(next);
         setAnnouncement(`Applied "${proposal.story.title}" as a new story.`);
       } else {
-        setAnnouncement(`"${proposal.story.title}" is already in this project.`);
+        setAnnouncement(
+          `"${proposal.story.title}" is already in this project.`,
+        );
       }
     },
     [project],
@@ -407,7 +447,11 @@ export function EditorWorkspace({
   const previewState = useMemo(() => {
     if (!previewMode || !storyValid || !snapshot || !activeStory) return null;
     try {
-      return renderStoryAt({ snapshot, story: activeStory, timestampMs: playheadMs });
+      return renderStoryAt({
+        snapshot,
+        story: activeStory,
+        timestampMs: playheadMs,
+      });
     } catch {
       return null;
     }
@@ -479,7 +523,9 @@ export function EditorWorkspace({
           ? {
               ...current,
               stories: current.stories.map((story) =>
-                story.id === targetId ? applyTimelineOperation(story, operation) : story,
+                story.id === targetId
+                  ? applyTimelineOperation(story, operation)
+                  : story,
               ),
             }
           : current,
@@ -508,7 +554,10 @@ export function EditorWorkspace({
   function duplicateScene(id: SceneId) {
     if (!activeStory) return;
     const newId = allocateSceneId(activeStory);
-    dispatchTimeline({ type: "duplicate-scene", sceneId: id, id: newId }, `Duplicated ${id}.`);
+    dispatchTimeline(
+      { type: "duplicate-scene", sceneId: id, id: newId },
+      `Duplicated ${id}.`,
+    );
     setSelectedSceneId(newId);
   }
 
@@ -518,7 +567,10 @@ export function EditorWorkspace({
   }
 
   function moveScene(id: SceneId, toIndex: number) {
-    dispatchTimeline({ type: "move-scene", sceneId: id, toIndex }, `Reordered ${id}.`);
+    dispatchTimeline(
+      { type: "move-scene", sceneId: id, toIndex },
+      `Reordered ${id}.`,
+    );
   }
 
   function repairScenes() {
@@ -530,7 +582,9 @@ export function EditorWorkspace({
         ? {
             ...current,
             stories: current.stories.map((story) =>
-              story.id === targetId ? repairSceneReferences(story, snapshot) : story,
+              story.id === targetId
+                ? repairSceneReferences(story, snapshot)
+                : story,
             ),
           }
         : current,
@@ -543,7 +597,9 @@ export function EditorWorkspace({
       const next = !current;
       setIsPlaying(false);
       if (next) setPlayheadMs(0);
-      setAnnouncement(next ? "Entered timeline preview." : "Exited timeline preview.");
+      setAnnouncement(
+        next ? "Entered timeline preview." : "Exited timeline preview.",
+      );
       return next;
     });
   }
@@ -583,20 +639,30 @@ export function EditorWorkspace({
 
   function selectNode(id: EntityId, append: boolean) {
     if (!append) {
-      const annotation = snapshot?.view?.annotations.find((item) => item.entityId === id);
+      const annotation = snapshot?.view?.annotations.find(
+        (item) => item.entityId === id,
+      );
       setAnnotationDraft(annotation?.text ?? "");
     }
     setSelectedIds((current) => {
       if (!append) return [id];
-      return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+      return current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id];
     });
   }
 
   function moveNode(id: EntityId, x: number, y: number) {
-    transact({ type: "move", entityId: id, x, y }, `Moved ${id} to ${x}, ${y}.`);
+    transact(
+      { type: "move", entityId: id, x, y },
+      `Moved ${id} to ${x}, ${y}.`,
+    );
   }
 
-  function handleNodeKeyDown(event: KeyboardEvent<HTMLButtonElement>, node: NodeEntity) {
+  function handleNodeKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    node: NodeEntity,
+  ) {
     const position = positions.get(node.id);
     if (!position) return;
     const step = event.shiftKey ? 50 : 10;
@@ -608,7 +674,11 @@ export function EditorWorkspace({
     };
     if (delta[event.key]) {
       event.preventDefault();
-      moveNode(node.id, position.x + delta[event.key].x, position.y + delta[event.key].y);
+      moveNode(
+        node.id,
+        position.x + delta[event.key].x,
+        position.y + delta[event.key].y,
+      );
     } else if (event.key.toLowerCase() === "h") {
       event.preventDefault();
       transact(
@@ -740,10 +810,11 @@ export function EditorWorkspace({
     if (!snapshot) return;
     setSaveState("Reimporting…");
     try {
-      const [{ importMermaidFlowchart }, { layoutFlowchart }] = await Promise.all([
-        import("@/domain/mermaid/import"),
-        import("@/domain/mermaid/layout"),
-      ]);
+      const [{ importMermaidFlowchart }, { layoutFlowchart }] =
+        await Promise.all([
+          import("@/domain/mermaid/import"),
+          import("@/domain/mermaid/layout"),
+        ]);
       const result = importMermaidFlowchart({
         text: snapshot.source.text,
         snapshotId: snapshot.id,
@@ -760,13 +831,23 @@ export function EditorWorkspace({
       });
       setHistory((current) =>
         current
-          ? { past: [...current.past, current.present], present: reconciled, future: [] }
+          ? {
+              past: [...current.past, current.present],
+              present: reconciled,
+              future: [],
+            }
           : current,
       );
       setStressPreview(false);
-      setAnnouncement("Reimported Mermaid source and restored compatible visual edits.");
+      setAnnouncement(
+        "Reimported Mermaid source and restored compatible visual edits.",
+      );
     } catch (error) {
-      setSaveState(error instanceof Error ? `Reimport failed: ${error.message}` : "Reimport failed");
+      setSaveState(
+        error instanceof Error
+          ? `Reimport failed: ${error.message}`
+          : "Reimport failed",
+      );
     }
   }
 
@@ -776,9 +857,17 @@ export function EditorWorkspace({
   }
 
   const nodeCount = nodes.length;
-  const visibleNodeIds = new Set(nodes.filter((node) => !hiddenIds.has(node.id)).map((node) => node.id));
-  const graphWidth = Math.max(900, ...[...positions.values()].map((position) => position.x + 240));
-  const graphHeight = Math.max(620, ...[...positions.values()].map((position) => position.y + 160));
+  const visibleNodeIds = new Set(
+    nodes.filter((node) => !hiddenIds.has(node.id)).map((node) => node.id),
+  );
+  const graphWidth = Math.max(
+    900,
+    ...[...positions.values()].map((position) => position.x + 240),
+  );
+  const graphHeight = Math.max(
+    620,
+    ...[...positions.values()].map((position) => position.y + 160),
+  );
 
   return (
     <div className="editorWorkspace">
@@ -789,7 +878,11 @@ export function EditorWorkspace({
         </span>
       </div>
 
-      <nav aria-label="Workspace surfaces" className="surfaceTabs" role="tablist">
+      <nav
+        aria-label="Workspace surfaces"
+        className="surfaceTabs"
+        role="tablist"
+      >
         {SURFACES.map((label) => (
           <button
             aria-selected={surface === label}
@@ -810,7 +903,11 @@ export function EditorWorkspace({
           <span>{loadError}</span>
         </div>
       ) : !snapshot || !project ? (
-        <div aria-label="Loading architecture workspace" className="editorLoading" role="status">
+        <div
+          aria-label="Loading architecture workspace"
+          className="editorLoading"
+          role="status"
+        >
           <span />
           <span />
           <span />
@@ -854,7 +951,10 @@ export function EditorWorkspace({
                   onDuplicateScene: duplicateScene,
                   onRemoveScene: removeScene,
                   onRenameScene: (id, title) =>
-                    dispatchTimeline({ type: "rename-scene", sceneId: id, title }, `Renamed ${id}.`),
+                    dispatchTimeline(
+                      { type: "rename-scene", sceneId: id, title },
+                      `Renamed ${id}.`,
+                    ),
                   onSetDuration: (id, durationMs) =>
                     dispatchTimeline(
                       { type: "set-duration", sceneId: id, durationMs },
@@ -884,7 +984,11 @@ export function EditorWorkspace({
               <CopilotSurface
                 applyControls={
                   applyRecord && applyRecord.before !== applyRecord.after
-                    ? { undone: applyRecord.undone, onUndo: undoApply, onRedo: redoApply }
+                    ? {
+                        undone: applyRecord.undone,
+                        onUndo: undoApply,
+                        onRedo: redoApply,
+                      }
                     : undefined
                 }
                 defaultTitle={`${project.name} review`}
@@ -898,42 +1002,103 @@ export function EditorWorkspace({
             </div>
           </aside>
 
-          <section aria-label="Architecture graph editor" className="canvasColumn">
-            <div aria-label="Graph actions" className="editorToolbar" role="toolbar">
-              <button aria-label="Undo" disabled={history.past.length === 0} onClick={undo} type="button">
+          <section
+            aria-label="Architecture graph editor"
+            className="canvasColumn"
+          >
+            <div
+              aria-label="Graph actions"
+              className="editorToolbar"
+              role="toolbar"
+            >
+              <button
+                aria-label="Undo"
+                disabled={history.past.length === 0}
+                onClick={undo}
+                type="button"
+              >
                 ↶ <span>Undo</span>
               </button>
-              <button aria-label="Redo" disabled={history.future.length === 0} onClick={redo} type="button">
+              <button
+                aria-label="Redo"
+                disabled={history.future.length === 0}
+                onClick={redo}
+                type="button"
+              >
                 ↷ <span>Redo</span>
               </button>
               <span className="toolbarDivider" />
-              <button disabled={selectedIds.length < 2} onClick={groupSelection} type="button">
+              <button
+                disabled={selectedIds.length < 2}
+                onClick={groupSelection}
+                type="button"
+              >
                 Group selection
               </button>
-              <button disabled={selectedIds.length === 0} onClick={hideSelection} type="button">
+              <button
+                disabled={selectedIds.length === 0}
+                onClick={hideSelection}
+                type="button"
+              >
                 Hide selected
               </button>
-              <button disabled={!selectedId} onClick={() => focusSelection()} type="button">
+              <button
+                disabled={!selectedId}
+                onClick={() => focusSelection()}
+                type="button"
+              >
                 Focus selected
               </button>
               <span className="toolbarDivider" />
-              <button aria-label="Zoom out" onClick={() => setZoom((value) => clampZoom(value - 0.1))} type="button">
+              <button
+                aria-label="Zoom out"
+                onClick={() => setZoom((value) => clampZoom(value - 0.1))}
+                type="button"
+              >
                 −
               </button>
               <output aria-label="Zoom level">{Math.round(zoom * 100)}%</output>
-              <button aria-label="Zoom in" onClick={() => setZoom((value) => clampZoom(value + 0.1))} type="button">
+              <button
+                aria-label="Zoom in"
+                onClick={() => setZoom((value) => clampZoom(value + 0.1))}
+                type="button"
+              >
                 +
               </button>
-              <button aria-label="Pan left" onClick={() => setPan((value) => ({ ...value, x: value.x - 80 }))} type="button">
+              <button
+                aria-label="Pan left"
+                onClick={() =>
+                  setPan((value) => ({ ...value, x: value.x - 80 }))
+                }
+                type="button"
+              >
                 ←
               </button>
-              <button aria-label="Pan up" onClick={() => setPan((value) => ({ ...value, y: value.y - 80 }))} type="button">
+              <button
+                aria-label="Pan up"
+                onClick={() =>
+                  setPan((value) => ({ ...value, y: value.y - 80 }))
+                }
+                type="button"
+              >
                 ↑
               </button>
-              <button aria-label="Pan down" onClick={() => setPan((value) => ({ ...value, y: value.y + 80 }))} type="button">
+              <button
+                aria-label="Pan down"
+                onClick={() =>
+                  setPan((value) => ({ ...value, y: value.y + 80 }))
+                }
+                type="button"
+              >
                 ↓
               </button>
-              <button aria-label="Pan right" onClick={() => setPan((value) => ({ ...value, x: value.x + 80 }))} type="button">
+              <button
+                aria-label="Pan right"
+                onClick={() =>
+                  setPan((value) => ({ ...value, x: value.x + 80 }))
+                }
+                type="button"
+              >
                 →
               </button>
               <button onClick={() => void reimport()} type="button">
@@ -961,7 +1126,8 @@ export function EditorWorkspace({
                 {previewState?.activeScene ? (
                   <>
                     <strong>
-                      Scene {previewState.activeScene.index + 1}: {previewState.activeScene.title}
+                      Scene {previewState.activeScene.index + 1}:{" "}
+                      {previewState.activeScene.title}
                     </strong>
                     <span>
                       {Math.round(playheadMs)} / {storyDuration} ms
@@ -991,9 +1157,21 @@ export function EditorWorkspace({
                   width: graphWidth,
                 }}
               >
-                <svg aria-hidden="true" className="graphEdges" height={graphHeight} width={graphWidth}>
+                <svg
+                  aria-hidden="true"
+                  className="graphEdges"
+                  height={graphHeight}
+                  width={graphWidth}
+                >
                   <defs>
-                    <marker id="arrow" markerHeight="7" markerWidth="9" orient="auto" refX="8" refY="3.5">
+                    <marker
+                      id="arrow"
+                      markerHeight="7"
+                      markerWidth="9"
+                      orient="auto"
+                      refX="8"
+                      refY="3.5"
+                    >
                       <path d="M0,0 L9,3.5 L0,7 Z" />
                     </marker>
                   </defs>
@@ -1003,7 +1181,8 @@ export function EditorWorkspace({
                     const endpointsVisible = previewEntities
                       ? isPreviewVisible(previewEntities, edge.source) &&
                         isPreviewVisible(previewEntities, edge.target)
-                      : visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target);
+                      : visibleNodeIds.has(edge.source) &&
+                        visibleNodeIds.has(edge.target);
                     if (!start || !end || !endpointsVisible) {
                       return null;
                     }
@@ -1011,7 +1190,16 @@ export function EditorWorkspace({
                     const y1 = start.y + (start.height ?? 58) / 2;
                     const x2 = end.x + (end.width ?? 160) / 2;
                     const y2 = end.y + (end.height ?? 58) / 2;
-                    return <line key={edge.id} markerEnd="url(#arrow)" x1={x1} x2={x2} y1={y1} y2={y2} />;
+                    return (
+                      <line
+                        key={edge.id}
+                        markerEnd="url(#arrow)"
+                        x1={x1}
+                        x2={x2}
+                        y1={y1}
+                        y2={y2}
+                      />
+                    );
                   })}
                 </svg>
 
@@ -1032,15 +1220,21 @@ export function EditorWorkspace({
                   } else if (hiddenIds.has(node.id)) {
                     return null;
                   }
-                  const storedPosition = positions.get(node.id) ?? positionFor(snapshot, node, index);
-                  const position = drag?.entityId === node.id ? drag : storedPosition;
+                  const storedPosition =
+                    positions.get(node.id) ??
+                    positionFor(snapshot, node, index);
+                  const position =
+                    drag?.entityId === node.id ? drag : storedPosition;
                   const storedAnnotation = snapshot.view?.annotations.find(
                     (item) => item.entityId === node.id,
                   )?.text;
-                  const annotation = renderState?.annotation ?? storedAnnotation;
+                  const annotation =
+                    renderState?.annotation ?? storedAnnotation;
                   const nodeClassName = [
                     "graphNode",
-                    renderState && renderState.focusProgress > 0 ? "isFocused" : "",
+                    renderState && renderState.focusProgress > 0
+                      ? "isFocused"
+                      : "",
                     renderState?.highlightStyle ? "isHighlighted" : "",
                   ]
                     .filter(Boolean)
@@ -1071,7 +1265,9 @@ export function EditorWorkspace({
                         <span>{node.label}</span>
                         <small>{node.id}</small>
                       </button>
-                      {annotation ? <span className="graphAnnotation">{annotation}</span> : null}
+                      {annotation ? (
+                        <span className="graphAnnotation">{annotation}</span>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -1111,7 +1307,11 @@ interface TimelineViewModel {
   readonly onSetDuration: (id: SceneId, durationMs: number) => void;
   readonly onMoveScene: (id: SceneId, toIndex: number) => void;
   readonly onSetAction: (id: SceneId, action: Action) => void;
-  readonly onRemoveAction: (id: SceneId, channel: ActionChannel, target?: EntityId) => void;
+  readonly onRemoveAction: (
+    id: SceneId,
+    channel: ActionChannel,
+    target?: EntityId,
+  ) => void;
   readonly onRepair: () => void;
   readonly onTogglePreview: () => void;
   readonly onPlayToggle: () => void;
@@ -1148,7 +1348,9 @@ function SurfacePanel({
   onSelect,
   onShow,
 }: SurfacePanelProps) {
-  const nodes = snapshot.entities.filter((entity): entity is NodeEntity => entity.kind === "node");
+  const nodes = snapshot.entities.filter(
+    (entity): entity is NodeEntity => entity.kind === "node",
+  );
 
   if (surface === "Source") {
     return (
@@ -1167,7 +1369,10 @@ function SurfacePanel({
   if (surface === "Compare") {
     return (
       <div>
-        <PanelHeading eyebrow={`${project.comparisons.length} comparison`} title="Current vs proposed" />
+        <PanelHeading
+          eyebrow={`${project.comparisons.length} comparison`}
+          title="Current vs proposed"
+        />
         {project.comparisons.map((comparison) => (
           <article className="surfaceCard" key={comparison.id}>
             <strong>{comparison.changes.length} semantic changes</strong>
@@ -1181,7 +1386,10 @@ function SurfacePanel({
   if (surface === "Inspector") {
     return (
       <div>
-        <PanelHeading eyebrow={`${selectedIds.length} selected`} title="Inspector" />
+        <PanelHeading
+          eyebrow={`${selectedIds.length} selected`}
+          title="Inspector"
+        />
         {selectedEntity ? (
           <>
             <dl className="inspectorDetails">
@@ -1195,7 +1403,9 @@ function SurfacePanel({
               </div>
             </dl>
             <form className="annotationForm" onSubmit={onSaveAnnotation}>
-              <label htmlFor="annotation-text">Annotation for {selectedEntity.label}</label>
+              <label htmlFor="annotation-text">
+                Annotation for {selectedEntity.label}
+              </label>
               <textarea
                 id="annotation-text"
                 onChange={(event) => onAnnotationChange(event.target.value)}
@@ -1207,7 +1417,9 @@ function SurfacePanel({
             </form>
           </>
         ) : (
-          <p className="panelEmpty">Select a component to inspect and annotate it.</p>
+          <p className="panelEmpty">
+            Select a component to inspect and annotate it.
+          </p>
         )}
       </div>
     );
@@ -1218,7 +1430,9 @@ function SurfacePanel({
       <PanelHeading eyebrow={`${nodes.length} components`} title="Layers" />
       {snapshot.view?.groups.map((group) => (
         <div className="surfaceCard visualGroupCard" key={group.id}>
-          <strong>{group.label} · {group.memberIds.length} components</strong>
+          <strong>
+            {group.label} · {group.memberIds.length} components
+          </strong>
           <span>Visual group</span>
         </div>
       ))}
@@ -1234,7 +1448,11 @@ function SurfacePanel({
               <small>{node.id}</small>
             </button>
             {hiddenIds.has(node.id) ? (
-              <button aria-label={`Show ${node.label}`} onClick={() => onShow(node.id)} type="button">
+              <button
+                aria-label={`Show ${node.label}`}
+                onClick={() => onShow(node.id)}
+                type="button"
+              >
                 Show
               </button>
             ) : null}
@@ -1292,13 +1510,18 @@ function TimelineSurface({
     );
   }
 
-  const selectedScene = story.scenes.find((scene) => scene.id === selectedSceneId);
+  const selectedScene = story.scenes.find(
+    (scene) => scene.id === selectedSceneId,
+  );
   const target = selectedIds[0];
   const warningSceneIds = new Set(warnings.map((warning) => warning.sceneId));
 
   return (
     <div className="timelineSurface">
-      <PanelHeading eyebrow={`${story.scenes.length} scenes`} title="Scene timeline" />
+      <PanelHeading
+        eyebrow={`${story.scenes.length} scenes`}
+        title="Scene timeline"
+      />
 
       {stories.length > 1 ? (
         <label className="timelineStoryPicker">
@@ -1329,7 +1552,9 @@ function TimelineSurface({
 
       {warnings.length > 0 ? (
         <div className="timelineWarnings" role="alert">
-          <strong>{warnings.length} scene warning{warnings.length === 1 ? "" : "s"}</strong>
+          <strong>
+            {warnings.length} scene warning{warnings.length === 1 ? "" : "s"}
+          </strong>
           <ul>
             {warnings.map((warning) => (
               <li key={warning.sceneId}>{warning.message}</li>
@@ -1399,11 +1624,15 @@ function TimelineSurface({
               </label>
               <input
                 id={`scene-title-${scene.id}`}
-                onChange={(event) => onRenameScene(scene.id, event.target.value)}
+                onChange={(event) =>
+                  onRenameScene(scene.id, event.target.value)
+                }
                 value={scene.title}
               />
               <div className="sceneMeta">
-                <label htmlFor={`scene-duration-${scene.id}`}>Duration (ms)</label>
+                <label htmlFor={`scene-duration-${scene.id}`}>
+                  Duration (ms)
+                </label>
                 <input
                   id={`scene-duration-${scene.id}`}
                   min={1}
@@ -1433,7 +1662,10 @@ function TimelineSurface({
                 >
                   ↓
                 </button>
-                <button onClick={() => onDuplicateScene(scene.id)} type="button">
+                <button
+                  onClick={() => onDuplicateScene(scene.id)}
+                  type="button"
+                >
                   Duplicate
                 </button>
                 <button onClick={() => onRemoveScene(scene.id)} type="button">
@@ -1443,12 +1675,18 @@ function TimelineSurface({
               {scene.actions.length > 0 ? (
                 <ul className="sceneActionList">
                   {scene.actions.map((action) => (
-                    <li key={`${action.type}:${actionTarget(action) ?? "camera"}`}>
+                    <li
+                      key={`${action.type}:${actionTarget(action) ?? "camera"}`}
+                    >
                       <span>{summarizeAction(action)}</span>
                       <button
                         aria-label={`Remove ${action.type} from scene ${index + 1}`}
                         onClick={() =>
-                          onRemoveAction(scene.id, actionChannel(action), actionTarget(action))
+                          onRemoveAction(
+                            scene.id,
+                            actionChannel(action),
+                            actionTarget(action),
+                          )
                         }
                         type="button"
                       >
@@ -1492,13 +1730,20 @@ function TimelineSurface({
             ))}
             <button
               disabled={selectedIds.length === 0}
-              onClick={() => onSetAction(selectedScene.id, { type: "camera", focus: [...selectedIds] })}
+              onClick={() =>
+                onSetAction(selectedScene.id, {
+                  type: "camera",
+                  focus: [...selectedIds],
+                })
+              }
               type="button"
             >
               Frame selection
             </button>
             <button
-              onClick={() => onSetAction(selectedScene.id, { type: "camera", focus: [] })}
+              onClick={() =>
+                onSetAction(selectedScene.id, { type: "camera", focus: [] })
+              }
               type="button"
             >
               Fit whole diagram
@@ -1530,13 +1775,21 @@ function TimelineSurface({
           </div>
         </div>
       ) : (
-        <p className="panelEmpty">Select a scene to add camera, visibility, and focus actions.</p>
+        <p className="panelEmpty">
+          Select a scene to add camera, visibility, and focus actions.
+        </p>
       )}
     </div>
   );
 }
 
-function PanelHeading({ eyebrow, title }: { readonly eyebrow: string; readonly title: string }) {
+function PanelHeading({
+  eyebrow,
+  title,
+}: {
+  readonly eyebrow: string;
+  readonly title: string;
+}) {
   return (
     <header className="panelHeading">
       <span>{eyebrow}</span>

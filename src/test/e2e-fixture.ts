@@ -51,7 +51,11 @@ const BASELINE_DRAFTS: readonly SceneDraft[] = [
       { type: "reveal", target: "service" },
       { type: "reveal", target: "api->service" },
       { type: "highlight", target: "service", style: "active" },
-      { type: "annotate", target: "service", text: "Validates and processes the order" },
+      {
+        type: "annotate",
+        target: "service",
+        text: "Validates and processes the order",
+      },
     ],
   },
   {
@@ -76,15 +80,22 @@ const BASELINE_ANALYSIS: NarrativeAnalysis = {
     "A single request travels from the client through the gateway and service before it is persisted.",
   audience: "Engineers new to the orders backend.",
   beats: [
-    { summary: "The client calls the API gateway.", entityIds: ["client", "api"] },
-    { summary: "The gateway hands off to the orders service.", entityIds: ["service"] },
+    {
+      summary: "The client calls the API gateway.",
+      entityIds: ["client", "api"],
+    },
+    {
+      summary: "The gateway hands off to the orders service.",
+      entityIds: ["service"],
+    },
     { summary: "The service persists to the database.", entityIds: ["db"] },
   ],
 };
 
 const BASELINE_CRITIQUE: Critique = {
   verdict: "ready_with_notes",
-  summary: "The scenes track the request path cleanly; the final overview is brief.",
+  summary:
+    "The scenes track the request path cleanly; the final overview is brief.",
   notes: [
     {
       sceneTitle: "The whole path at a glance",

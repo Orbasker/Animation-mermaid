@@ -26,6 +26,7 @@ export const PROPOSAL_TITLE = baseline.proposal.story.title;
  */
 export async function installCopilotFixture(page: Page): Promise<void> {
   await page.addInitScript((fixture) => {
-    (window as unknown as { __E2E_COPILOT__: unknown }).__E2E_COPILOT__ = fixture;
+    (window as unknown as { __E2E_COPILOT__: unknown }).__E2E_COPILOT__ =
+      fixture;
   }, COPILOT_FIXTURE);
 }

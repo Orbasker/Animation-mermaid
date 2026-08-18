@@ -18,7 +18,10 @@ interface RouteContext {
  * across a deploy or days of inactivity. Resuming it by token is what turns "the reviewer
  * clicked approve" into the run continuing exactly where it left off.
  */
-export async function POST(request: Request, context: RouteContext): Promise<Response> {
+export async function POST(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const { runId } = await context.params;
 
   let body: unknown;
@@ -43,14 +46,20 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
   }
 
   if (!(await getRun(runId).exists)) {
-    return Response.json({ error: `No run with id "${runId}".` }, { status: 404 });
+    return Response.json(
+      { error: `No run with id "${runId}".` },
+      { status: 404 },
+    );
   }
 
   // A run that already settled — or that has not reached the gate yet — has no live hook for
   // this token. That is a conflict with the run's state, not a bad request or a missing run,
   // and it is what makes the decision endpoint safe to retry: a second approval cannot land.
   try {
-    const resumed = await storyDecisionHook.resume(decisionToken(runId), parsed.data);
+    const resumed = await storyDecisionHook.resume(
+      decisionToken(runId),
+      parsed.data,
+    );
     if (!resumed) {
       return Response.json(
         { error: `Run "${runId}" is not waiting for a decision.` },

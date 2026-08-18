@@ -18,7 +18,11 @@ import type {
   StoryRequest,
 } from "@/workflows/design-review-story";
 
-import type { CopilotError, CopilotTransport, RunSnapshot } from "./copilot-transport";
+import type {
+  CopilotError,
+  CopilotTransport,
+  RunSnapshot,
+} from "./copilot-transport";
 
 /**
  * The phase the copilot UI is in. Distinct from the workflow's own {@link StoryPhase}: this is
@@ -128,7 +132,12 @@ function reducer(state: CopilotState, action: CopilotAction): CopilotState {
     case "settled": {
       const outcome = action.snapshot.outcome;
       if (outcome?.status === "approved") {
-        return { ...state, phase: "applied", outcome, proposal: outcome.proposal };
+        return {
+          ...state,
+          phase: "applied",
+          outcome,
+          proposal: outcome.proposal,
+        };
       }
       return { ...state, phase: "rejected", outcome };
     }
@@ -191,13 +200,12 @@ function classifyTerminal(snapshot: RunSnapshot): CopilotAction {
   if (snapshot.status === "failed") {
     return {
       type: "failed",
-      error:
-        snapshot.error ??
-        {
-          kind: "unknown",
-          message: "The run failed.",
-          nextAction: "Your local project is unchanged — start a new run to try again.",
-        },
+      error: snapshot.error ?? {
+        kind: "unknown",
+        message: "The run failed.",
+        nextAction:
+          "Your local project is unchanged — start a new run to try again.",
+      },
     };
   }
   if (snapshot.status === "cancelled") return { type: "cancelled" };
@@ -242,12 +250,16 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
   });
 
   const context = useMemo(
-    () => buildAgentContextPackage({ intent: state.intent, snapshot, comparison }),
+    () =>
+      buildAgentContextPackage({ intent: state.intent, snapshot, comparison }),
     [state.intent, snapshot, comparison],
   );
 
   const includedIds = useMemo(
-    () => context.graph.entities.map((entity) => entity.id).filter((id) => !state.excludedIds.has(id)),
+    () =>
+      context.graph.entities
+        .map((entity) => entity.id)
+        .filter((id) => !state.excludedIds.has(id)),
     [context, state.excludedIds],
   );
 
@@ -264,60 +276,71 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
    * concurrent readers.
    */
   const watchRef = useRef<AbortController | undefined>(undefined);
-  const watch = useCallback(
-    async (runId: string, fromIndex: number) => {
-      watchRef.current?.abort();
-      const controller = new AbortController();
-      watchRef.current = controller;
-      const { signal } = controller;
-      const t = latest.current.transport;
+  const watch = useCallback(async (runId: string, fromIndex: number) => {
+    watchRef.current?.abort();
+    const controller = new AbortController();
+    watchRef.current = controller;
+    const { signal } = controller;
+    const t = latest.current.transport;
 
-      try {
-        const initial = await t.status(runId, signal);
-        if (signal.aborted) return;
-        if (initial.status === "completed" || initial.status === "failed" || initial.status === "cancelled") {
-          const terminal = classifyTerminal(initial);
-          dispatch(terminal);
-          if (terminal.type === "settled" && initial.outcome?.status === "approved") {
-            latest.current.onApplied?.(initial.outcome.proposal);
-          }
-          latest.current.onRunSettled?.(runId);
-          return;
-        }
-
-        for await (const event of t.streamProgress(runId, { startIndex: fromIndex, signal })) {
-          if (signal.aborted) return;
-          dispatch({ type: "progress", event });
-          if (event.phase === "awaiting-approval") {
-            const proposal = await t.proposal(runId, signal);
-            if (signal.aborted) return;
-            if (proposal) dispatch({ type: "reviewing", proposal });
-          }
-        }
-        if (signal.aborted) return;
-
-        const terminal = await t.status(runId, signal);
-        if (signal.aborted) return;
-        const action = classifyTerminal(terminal);
-        dispatch(action);
-        if (action.type === "settled" && terminal.outcome?.status === "approved") {
-          latest.current.onApplied?.(terminal.outcome.proposal);
+    try {
+      const initial = await t.status(runId, signal);
+      if (signal.aborted) return;
+      if (
+        initial.status === "completed" ||
+        initial.status === "failed" ||
+        initial.status === "cancelled"
+      ) {
+        const terminal = classifyTerminal(initial);
+        dispatch(terminal);
+        if (
+          terminal.type === "settled" &&
+          initial.outcome?.status === "approved"
+        ) {
+          latest.current.onApplied?.(initial.outcome.proposal);
         }
         latest.current.onRunSettled?.(runId);
-      } catch (error) {
-        if (signal.aborted) return;
-        dispatch({
-          type: "failed",
-          error: {
-            kind: "network",
-            message: error instanceof Error ? error.message : String(error),
-            nextAction: "Could not reach the workflow service. Check your connection, then try again.",
-          },
-        });
+        return;
       }
-    },
-    [],
-  );
+
+      for await (const event of t.streamProgress(runId, {
+        startIndex: fromIndex,
+        signal,
+      })) {
+        if (signal.aborted) return;
+        dispatch({ type: "progress", event });
+        if (event.phase === "awaiting-approval") {
+          const proposal = await t.proposal(runId, signal);
+          if (signal.aborted) return;
+          if (proposal) dispatch({ type: "reviewing", proposal });
+        }
+      }
+      if (signal.aborted) return;
+
+      const terminal = await t.status(runId, signal);
+      if (signal.aborted) return;
+      const action = classifyTerminal(terminal);
+      dispatch(action);
+      if (
+        action.type === "settled" &&
+        terminal.outcome?.status === "approved"
+      ) {
+        latest.current.onApplied?.(terminal.outcome.proposal);
+      }
+      latest.current.onRunSettled?.(runId);
+    } catch (error) {
+      if (signal.aborted) return;
+      dispatch({
+        type: "failed",
+        error: {
+          kind: "network",
+          message: error instanceof Error ? error.message : String(error),
+          nextAction:
+            "Could not reach the workflow service. Check your connection, then try again.",
+        },
+      });
+    }
+  }, []);
 
   // Reconnect to an active run on mount.
   useEffect(() => {
@@ -355,11 +378,21 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
       } catch (error) {
         dispatch({
           type: "start-failed",
-          message: error instanceof Error ? error.message : "Could not start the run.",
+          message:
+            error instanceof Error ? error.message : "Could not start the run.",
         });
       }
     })();
-  }, [state.phase, state.intent, state.title, state.sceneCount, includedIds.length, redactedContext, defaultTitle, watch]);
+  }, [
+    state.phase,
+    state.intent,
+    state.title,
+    state.sceneCount,
+    includedIds.length,
+    redactedContext,
+    defaultTitle,
+    watch,
+  ]);
 
   const decide = useCallback(
     (decision: "approve" | "reject") => {
@@ -372,7 +405,10 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
         } catch (error) {
           dispatch({
             type: "decide-failed",
-            message: error instanceof Error ? error.message : "Could not submit the decision.",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Could not submit the decision.",
           });
         }
       })();
@@ -401,10 +437,22 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
     includedEntities,
     canPreview,
     canStart,
-    setIntent: useCallback((value: string) => dispatch({ type: "set-intent", value }), []),
-    setTitle: useCallback((value: string) => dispatch({ type: "set-title", value }), []),
-    setSceneCount: useCallback((value: number) => dispatch({ type: "set-scene-count", value }), []),
-    toggleEntity: useCallback((id: EntityId) => dispatch({ type: "toggle-entity", id }), []),
+    setIntent: useCallback(
+      (value: string) => dispatch({ type: "set-intent", value }),
+      [],
+    ),
+    setTitle: useCallback(
+      (value: string) => dispatch({ type: "set-title", value }),
+      [],
+    ),
+    setSceneCount: useCallback(
+      (value: number) => dispatch({ type: "set-scene-count", value }),
+      [],
+    ),
+    toggleEntity: useCallback(
+      (id: EntityId) => dispatch({ type: "toggle-entity", id }),
+      [],
+    ),
     preview: useCallback(() => dispatch({ type: "preview" }), []),
     backToCompose: useCallback(() => dispatch({ type: "back-to-compose" }), []),
     confirmAndStart,

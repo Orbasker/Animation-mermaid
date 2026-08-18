@@ -52,10 +52,14 @@ describe("EditorWorkspace", () => {
     ).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Hide selected" }));
-    expect(screen.queryByRole("button", { name: /Client\. Position/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Client\. Position/i }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(screen.getByRole("button", { name: /Client\. Position 10, 0/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Client\. Position 10, 0/i }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Reimport source" }));
     expect(
@@ -65,7 +69,9 @@ describe("EditorWorkspace", () => {
 
   it("groups a multi-selection and annotates the focused component", async () => {
     render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
-    const client = await screen.findByRole("button", { name: /Client\. Position/i });
+    const client = await screen.findByRole("button", {
+      name: /Client\. Position/i,
+    });
     const api = screen.getByRole("button", { name: /API Gateway\. Position/i });
 
     fireEvent.click(client);
@@ -75,9 +81,12 @@ describe("EditorWorkspace", () => {
 
     fireEvent.click(client);
     fireEvent.click(screen.getByRole("tab", { name: "Inspector" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Annotation for Client" }), {
-      target: { value: "Public entry point" },
-    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Annotation for Client" }),
+      {
+        target: { value: "Public entry point" },
+      },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Save annotation" }));
 
     expect(screen.getAllByText("Public entry point")).toHaveLength(2);
@@ -92,7 +101,9 @@ describe("EditorWorkspace", () => {
         repository={repository}
       />,
     );
-    const client = await screen.findByRole("button", { name: /Client\. Position 0, 0/i });
+    const client = await screen.findByRole("button", {
+      name: /Client\. Position 0, 0/i,
+    });
 
     fireEvent.click(client);
     fireEvent.keyDown(client, { key: "ArrowDown" });
@@ -116,8 +127,12 @@ describe("EditorWorkspace", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Compare" }));
     expect(screen.getByText(/current vs proposed/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Load 200-node stress fixture" }));
-    await waitFor(() => expect(screen.getByText("200 components")).toBeInTheDocument());
+    fireEvent.click(
+      screen.getByRole("button", { name: "Load 200-node stress fixture" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText("200 components")).toBeInTheDocument(),
+    );
   });
 
   it("authors a four-scene review and persists it through reload", async () => {
@@ -171,17 +186,23 @@ describe("EditorWorkspace", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Story" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Enter preview" }));
-    expect(screen.getByText(/Scene 1: Client sends a request/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Scene 1: Client sends a request/),
+    ).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("slider", { name: "Scrubber" }), {
       target: { value: "9999" },
     });
-    expect(screen.getByText(/Scene 3: Persist to the database/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Scene 3: Persist to the database/),
+    ).toBeInTheDocument();
   });
 
   it("adds an entity action to the selected scene from the canvas selection", async () => {
     render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
-    const client = await screen.findByRole("button", { name: /Client\. Position/i });
+    const client = await screen.findByRole("button", {
+      name: /Client\. Position/i,
+    });
 
     fireEvent.click(screen.getByRole("tab", { name: "Story" }));
     fireEvent.click(screen.getByRole("button", { name: "Scene 3" }));

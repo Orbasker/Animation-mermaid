@@ -87,8 +87,16 @@ export type ChangeCategory = (typeof CHANGE_CATEGORIES)[number];
  * paired categories carry both sides plus a category-specific description of what changed.
  */
 export type ChangeRecord =
-  | { readonly category: "added"; readonly entityId: EntityId; readonly after: GraphEntity }
-  | { readonly category: "removed"; readonly entityId: EntityId; readonly before: GraphEntity }
+  | {
+      readonly category: "added";
+      readonly entityId: EntityId;
+      readonly after: GraphEntity;
+    }
+  | {
+      readonly category: "removed";
+      readonly entityId: EntityId;
+      readonly before: GraphEntity;
+    }
   | {
       readonly category: "renamed";
       readonly baseId: EntityId;
@@ -319,7 +327,9 @@ export function matchEntities(
 }
 
 /** Maps every matched base id to its canonical (target) id; unmatched ids map to themselves. */
-function canonicalMap(matches: readonly EntityMatch[]): Map<EntityId, EntityId> {
+function canonicalMap(
+  matches: readonly EntityMatch[],
+): Map<EntityId, EntityId> {
   const map = new Map<EntityId, EntityId>();
   for (const match of matches) map.set(match.base, match.target);
   return map;
@@ -350,8 +360,10 @@ function sharedEndpointCount(
   canonicalBase: Map<EntityId, EntityId>,
 ): number {
   let shared = 0;
-  if (resolveBase(baseEdge.source, canonicalBase) === targetEdge.source) shared += 1;
-  if (resolveBase(baseEdge.target, canonicalBase) === targetEdge.target) shared += 1;
+  if (resolveBase(baseEdge.source, canonicalBase) === targetEdge.source)
+    shared += 1;
+  if (resolveBase(baseEdge.target, canonicalBase) === targetEdge.target)
+    shared += 1;
   return shared;
 }
 
@@ -381,9 +393,16 @@ function suggestMatches(
       if (isRejected(identityMap, baseEntity.id, targetEntity.id)) continue;
 
       if (baseEntity.kind === "edge" && targetEntity.kind === "edge") {
-        const shared = sharedEndpointCount(baseEntity, targetEntity, canonicalBase);
+        const shared = sharedEndpointCount(
+          baseEntity,
+          targetEntity,
+          canonicalBase,
+        );
         if (shared < 1) continue;
-        const label = labelSimilarity(entityLabel(baseEntity), entityLabel(targetEntity));
+        const label = labelSimilarity(
+          entityLabel(baseEntity),
+          entityLabel(targetEntity),
+        );
         const score = 0.6 * (shared / 2) + 0.4 * label;
         if (score >= threshold) {
           candidates.push({
@@ -394,7 +413,10 @@ function suggestMatches(
           });
         }
       } else {
-        const label = labelSimilarity(entityLabel(baseEntity), entityLabel(targetEntity));
+        const label = labelSimilarity(
+          entityLabel(baseEntity),
+          entityLabel(targetEntity),
+        );
         const attrs = attributesEqual(
           attributesOf(baseEntity),
           attributesOf(targetEntity),
@@ -557,9 +579,7 @@ function pairRecords(
         changed: ["memberIds"],
       });
     }
-  } else if (
-    !attributesEqual(attributesOf(before), attributesOf(after))
-  ) {
+  } else if (!attributesEqual(attributesOf(before), attributesOf(after))) {
     out.push({
       category: "metadata-changed",
       baseId,
@@ -746,14 +766,24 @@ export function buildOverlayView(
   for (const id of added) {
     const targetEntity = targetById.get(id);
     if (targetEntity) {
-      entities.push({ id, status: "added", target: targetEntity, categories: [] });
+      entities.push({
+        id,
+        status: "added",
+        target: targetEntity,
+        categories: [],
+      });
     }
   }
 
   for (const id of removed) {
     const baseEntity = baseById.get(id);
     if (baseEntity) {
-      entities.push({ id, status: "removed", base: baseEntity, categories: [] });
+      entities.push({
+        id,
+        status: "removed",
+        base: baseEntity,
+        categories: [],
+      });
     }
   }
 

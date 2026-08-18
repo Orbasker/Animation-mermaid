@@ -1,4 +1,7 @@
-import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Versioned,
+} from "@/domain/schema-version";
 import type { EntityId, GraphSnapshot } from "@/domain/graph";
 
 /** Identifiers for storyboard elements. */

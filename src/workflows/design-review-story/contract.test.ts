@@ -121,14 +121,23 @@ describe("storyRequestSchema", () => {
 
 describe("storyDecisionSchema", () => {
   it("accepts approve and reject", () => {
-    expect(storyDecisionSchema.safeParse({ decision: "approve" }).success).toBe(true);
+    expect(storyDecisionSchema.safeParse({ decision: "approve" }).success).toBe(
+      true,
+    );
     expect(
-      storyDecisionSchema.safeParse({ decision: "reject", note: "Beat 3 is wrong." }).success,
+      storyDecisionSchema.safeParse({
+        decision: "reject",
+        note: "Beat 3 is wrong.",
+      }).success,
     ).toBe(true);
   });
 
   it("rejects any other decision, so an unknown verb cannot resume a run", () => {
-    expect(storyDecisionSchema.safeParse({ decision: "maybe" }).success).toBe(false);
-    expect(storyDecisionSchema.safeParse({ decision: "approve!" }).success).toBe(false);
+    expect(storyDecisionSchema.safeParse({ decision: "maybe" }).success).toBe(
+      false,
+    );
+    expect(
+      storyDecisionSchema.safeParse({ decision: "approve!" }).success,
+    ).toBe(false);
   });
 });

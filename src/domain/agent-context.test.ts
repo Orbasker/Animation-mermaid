@@ -76,7 +76,9 @@ describe("redactAgentContext", () => {
     const redacted = redactAgentContext(pkg, kept);
     const serialized = JSON.stringify(redacted);
 
-    expect(redacted.graph.entities.some((entity) => entity.id === entityId("db"))).toBe(false);
+    expect(
+      redacted.graph.entities.some((entity) => entity.id === entityId("db")),
+    ).toBe(false);
     expect(serialized).not.toContain('"db"');
     // The edge into the dropped node is pruned rather than left dangling.
     expect(serialized).not.toContain("service->db");
@@ -100,10 +102,14 @@ describe("redactAgentContext", () => {
     const kept = [entityId("backend"), entityId("api")];
 
     const redacted = redactAgentContext(pkg, kept);
-    const group = redacted.graph.entities.find((entity) => entity.kind === "group");
+    const group = redacted.graph.entities.find(
+      (entity) => entity.kind === "group",
+    );
 
     expect(group).toBeDefined();
-    expect(group?.kind === "group" && group.memberIds).toEqual([entityId("api")]);
+    expect(group?.kind === "group" && group.memberIds).toEqual([
+      entityId("api"),
+    ]);
   });
 
   it("prunes comparison changes for entities not in the kept set", () => {
@@ -116,7 +122,9 @@ describe("redactAgentContext", () => {
     // The comparison references `cache`, which the proposed snapshot adds and the current
     // graph never contained — keeping every current entity must still drop that change.
     expect(
-      pkg.comparison?.changes.some((change) => change.entityId === entityId("cache")),
+      pkg.comparison?.changes.some(
+        (change) => change.entityId === entityId("cache"),
+      ),
     ).toBe(true);
 
     const redacted = redactAgentContext(
@@ -125,7 +133,9 @@ describe("redactAgentContext", () => {
     );
 
     expect(
-      redacted.comparison?.changes.some((change) => change.entityId === entityId("cache")),
+      redacted.comparison?.changes.some(
+        (change) => change.entityId === entityId("cache"),
+      ),
     ).toBe(false);
   });
 });

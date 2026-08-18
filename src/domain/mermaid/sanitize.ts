@@ -29,7 +29,9 @@ export function sanitizeLabel(raw: string): SanitizedLabel {
   }
 
   const dangerous =
-    SCRIPTLIKE_BLOCK.test(text) || HTML_TAG.test(text) || DANGEROUS_SCHEME.test(text);
+    SCRIPTLIKE_BLOCK.test(text) ||
+    HTML_TAG.test(text) ||
+    DANGEROUS_SCHEME.test(text);
   SCRIPTLIKE_BLOCK.lastIndex = 0;
   HTML_TAG.lastIndex = 0;
   DANGEROUS_SCHEME.lastIndex = 0;

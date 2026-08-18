@@ -16,16 +16,25 @@ interface RouteContext {
  * soon as it exists rather than waiting for the run to settle. A run that has not reached the
  * gate yet has nothing to return, which is a `425 Too Early`, not an error.
  */
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(
+  _request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const { runId } = await context.params;
   const run = getRun(runId);
 
   if (!(await run.exists)) {
-    return Response.json({ error: `No run with id "${runId}".` }, { status: 404 });
+    return Response.json(
+      { error: `No run with id "${runId}".` },
+      { status: 404 },
+    );
   }
 
   const reader = run
-    .getReadable<StoryProposal>({ namespace: PROPOSAL_NAMESPACE, startIndex: 0 })
+    .getReadable<StoryProposal>({
+      namespace: PROPOSAL_NAMESPACE,
+      startIndex: 0,
+    })
     .getReader();
   try {
     const { value, done } = await reader.read();

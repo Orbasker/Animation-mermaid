@@ -29,11 +29,15 @@ describe("classifyAgentError", () => {
   });
 
   it("retries a network fault, which carries no status", () => {
-    expect(classify(new TypeError("fetch failed"))).toBeInstanceOf(RetryableError);
+    expect(classify(new TypeError("fetch failed"))).toBeInstanceOf(
+      RetryableError,
+    );
   });
 
   it("does not retry a rejected request", () => {
-    expect(classify({ status: 400, body: "bad schema" })).toBeInstanceOf(FatalError);
+    expect(classify({ status: 400, body: "bad schema" })).toBeInstanceOf(
+      FatalError,
+    );
     expect(classify({ status: 401 })).toBeInstanceOf(FatalError);
     expect(classify({ status: 404 })).toBeInstanceOf(FatalError);
   });

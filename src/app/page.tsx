@@ -26,8 +26,8 @@ export default function HomePage() {
           <p className="eyebrow">Diagram storytelling, frame by frame</p>
           <h1>Turn Mermaid diagrams into motion</h1>
           <p className="lede">
-            Build focused animations that make systems, processes, and ideas easier to
-            follow—without redrawing your diagrams.
+            Build focused animations that make systems, processes, and ideas
+            easier to follow—without redrawing your diagrams.
           </p>
           <div className="heroActions">
             <Link className="primaryAction" href="/editor">
@@ -53,7 +53,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="workflow" id="workflow" aria-labelledby="workflow-title">
+      <section
+        className="workflow"
+        id="workflow"
+        aria-labelledby="workflow-title"
+      >
         <div className="sectionHeading">
           <p className="eyebrow">A simple workflow</p>
           <h2 id="workflow-title">From syntax to story</h2>

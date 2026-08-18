@@ -8,7 +8,10 @@ import {
   storyId,
   validateStory,
 } from "@/domain/story";
-import { currentArchitectureSnapshot, sampleProjectDocument } from "@/domain/fixtures";
+import {
+  currentArchitectureSnapshot,
+  sampleProjectDocument,
+} from "@/domain/fixtures";
 
 describe("validateStory", () => {
   const snapshot = currentArchitectureSnapshot();
@@ -57,9 +60,9 @@ describe("validateStory", () => {
       "duplicate-scene-id",
       "negative-duration",
     ]);
-    expect(errors.find((e) => e.code === "action-missing-entity")?.message).toContain(
-      "ghost",
-    );
+    expect(
+      errors.find((e) => e.code === "action-missing-entity")?.message,
+    ).toContain("ghost");
   });
 
   it("rejects non-finite transforms before they reach persistence", () => {

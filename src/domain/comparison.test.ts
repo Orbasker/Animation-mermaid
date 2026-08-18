@@ -7,11 +7,7 @@ import {
   type Comparison,
   withIdentityMap,
 } from "@/domain/comparison";
-import {
-  createGraphSnapshot,
-  entityId,
-  snapshotId,
-} from "@/domain/graph";
+import { createGraphSnapshot, entityId, snapshotId } from "@/domain/graph";
 import {
   confirmIdentity,
   EMPTY_IDENTITY_MAP,
@@ -69,8 +65,16 @@ describe("compareSnapshots", () => {
   });
 
   it("validates canonical added, removed, and modified changes", () => {
-    const forward = compareSnapshots(comparisonId("forward"), current, proposed);
-    const reverse = compareSnapshots(comparisonId("reverse"), proposed, current);
+    const forward = compareSnapshots(
+      comparisonId("forward"),
+      current,
+      proposed,
+    );
+    const reverse = compareSnapshots(
+      comparisonId("reverse"),
+      proposed,
+      current,
+    );
 
     expect(forward.changes.map((change) => change.op)).toEqual([
       "added",
@@ -112,9 +116,9 @@ describe("compareSnapshots", () => {
       ],
     });
 
-    expect(compareSnapshots(comparisonId("attributes"), base, target).changes).toEqual(
-      [],
-    );
+    expect(
+      compareSnapshots(comparisonId("attributes"), base, target).changes,
+    ).toEqual([]);
   });
 
   it.each([
@@ -167,17 +171,28 @@ describe("compareSnapshots", () => {
           {
             op: "modified",
             entityId: entityId("client"),
-            before: current.entities.find((entity) => entity.id === entityId("client"))!,
-            after: proposed.entities.find((entity) => entity.id === entityId("client"))!,
+            before: current.entities.find(
+              (entity) => entity.id === entityId("client"),
+            )!,
+            after: proposed.entities.find(
+              (entity) => entity.id === entityId("client"),
+            )!,
           },
         ],
       }),
       "unexpected-change",
     ],
   ] as const)("rejects a %s comparison", (_, forge, expectedCode) => {
-    const canonical = compareSnapshots(comparisonId("forged"), current, proposed);
-    expect(validateComparison(forge(canonical), current, proposed).map((error) => error.code))
-      .toContain(expectedCode);
+    const canonical = compareSnapshots(
+      comparisonId("forged"),
+      current,
+      proposed,
+    );
+    expect(
+      validateComparison(forge(canonical), current, proposed).map(
+        (error) => error.code,
+      ),
+    ).toContain(expectedCode);
   });
 
   it("persists a confirmed identity map through serialization", () => {
@@ -202,7 +217,8 @@ describe("compareSnapshots", () => {
     const restoredMap = restored.comparisons[0]?.identityMap;
     expect(restoredMap).toBeDefined();
     expect(
-      restoredMap && isConfirmed(restoredMap, entityId("service"), entityId("orders")),
+      restoredMap &&
+        isConfirmed(restoredMap, entityId("service"), entityId("orders")),
     ).toBe(true);
   });
 });

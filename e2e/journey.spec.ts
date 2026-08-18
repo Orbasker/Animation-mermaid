@@ -8,18 +8,26 @@ import { expect, test } from "@playwright/test";
 
 test("home links into the editor", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Turn Mermaid diagrams into motion/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Turn Mermaid diagrams into motion/i }),
+  ).toBeVisible();
   await page.getByRole("link", { name: /Open the editor/i }).click();
-  await expect(page.getByRole("heading", { name: "Architecture workspace" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Architecture workspace" }),
+  ).toBeVisible();
 });
 
-test("imported Mermaid source is shown and stays read-only", async ({ page }) => {
+test("imported Mermaid source is shown and stays read-only", async ({
+  page,
+}) => {
   await page.goto("/editor");
   await page.getByRole("tab", { name: "Source" }).click();
   const source = page.locator("pre.sourceCode");
   await expect(source).toContainText("flowchart TD");
   await expect(source).toContainText("client[Client]");
-  await expect(page.getByText("Visual changes never rewrite this source.")).toBeVisible();
+  await expect(
+    page.getByText("Visual changes never rewrite this source."),
+  ).toBeVisible();
 });
 
 test("a keyboard move autosaves and survives a reload", async ({ page }) => {
@@ -45,14 +53,21 @@ test("a keyboard move autosaves and survives a reload", async ({ page }) => {
   await expect(page.getByRole("button", { name: movedName })).toBeVisible();
 });
 
-test("the timeline previews and seeks to an arbitrary position", async ({ page }) => {
+test("the timeline previews and seeks to an arbitrary position", async ({
+  page,
+}) => {
   await page.goto("/editor");
   await page.getByRole("tab", { name: "Story" }).click();
 
-  await expect(page.getByRole("heading", { name: "Scene timeline" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Scene timeline" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Enter preview" }).click();
 
-  const playhead = page.getByRole("status").getByText(/\/ 3700 ms$/).first();
+  const playhead = page
+    .getByRole("status")
+    .getByText(/\/ 3700 ms$/)
+    .first();
   await expect(playhead).toBeVisible();
 
   await page.getByLabel("Scrubber").fill("2000");
@@ -63,6 +78,8 @@ test("the comparison surface reports the semantic diff", async ({ page }) => {
   await page.goto("/editor");
   await page.getByRole("tab", { name: "Compare" }).click();
 
-  await expect(page.getByRole("heading", { name: "Current vs proposed" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Current vs proposed" }),
+  ).toBeVisible();
   await expect(page.getByText(/\d+ semantic changes/)).toBeVisible();
 });
