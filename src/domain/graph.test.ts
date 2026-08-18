@@ -41,6 +41,36 @@ describe("validateGraphSnapshot", () => {
     );
   });
 
+  it("persists renderer-neutral visual edits beside semantic entities", () => {
+    const view = {
+      hiddenEntityIds: [entityId("a")],
+      groups: [
+        {
+          id: "visual-group-1",
+          label: "Critical path",
+          memberIds: [entityId("a")],
+        },
+      ],
+      annotations: [
+        {
+          id: "annotation-1",
+          entityId: entityId("a"),
+          text: "Entry point",
+        },
+      ],
+    };
+    const snapshot = createGraphSnapshot({
+      id: snapshotId("s"),
+      source,
+      entities: [{ kind: "node", id: entityId("a"), label: "A" }],
+      view,
+    });
+
+    expect(snapshot).toHaveProperty("view", view);
+    expect(snapshot.source.text).toBe("flowchart TD");
+    expect(snapshot.entities[0]).not.toHaveProperty("hidden");
+  });
+
   it("reports duplicate entity ids", () => {
     const snapshot = createGraphSnapshot({
       id: snapshotId("s"),
@@ -86,6 +116,37 @@ describe("validateGraphSnapshot", () => {
       "group-missing-member",
       "layout-missing-entity",
       "node-orphan-group",
+    ]);
+  });
+
+  it("reports visual edits that reference unknown semantic entities", () => {
+    const snapshot = createGraphSnapshot({
+      id: snapshotId("s"),
+      source,
+      entities: [{ kind: "node", id: entityId("a"), label: "A" }],
+      view: {
+        hiddenEntityIds: [entityId("hidden-ghost")],
+        groups: [
+          {
+            id: "visual-group",
+            label: "Selection",
+            memberIds: [entityId("group-ghost")],
+          },
+        ],
+        annotations: [
+          {
+            id: "annotation",
+            entityId: entityId("annotation-ghost"),
+            text: "Missing target",
+          },
+        ],
+      },
+    });
+
+    expect(validateGraphSnapshot(snapshot).map((error) => error.code).sort()).toEqual([
+      "annotation-missing-entity",
+      "visibility-missing-entity",
+      "visual-group-missing-member",
     ]);
   });
 });
