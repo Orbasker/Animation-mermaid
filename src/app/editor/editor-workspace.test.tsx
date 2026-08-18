@@ -211,4 +211,73 @@ describe("EditorWorkspace", () => {
 
     expect(screen.getByText("Highlight client")).toBeInTheDocument();
   });
+
+  const CATALOG = [
+    "%% catalog-postgres — TO-BE",
+    "flowchart LR",
+    "  gw[Payments Gateway] --> db[(Ledger)]",
+  ].join("\n");
+
+  it("imports a pasted diagram as a new snapshot and switches to it", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("button", { name: "Import Mermaid" }));
+    fireEvent.change(screen.getByLabelText("Mermaid source"), {
+      target: { value: CATALOG },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: /Add to this project/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Import diagram" }));
+
+    expect(
+      await screen.findByRole("button", {
+        name: /Payments Gateway\. Position/i,
+      }),
+    ).toBeInTheDocument();
+    // A second snapshot means the diagram switcher appears with the new label.
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "catalog-postgres" }),
+    ).toBeInTheDocument();
+  });
+
+  it("starts a fresh project from a pasted diagram", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("button", { name: "Import Mermaid" }));
+    fireEvent.change(screen.getByLabelText("Mermaid source"), {
+      target: { value: CATALOG },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: /Start a new project/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Import diagram" }));
+
+    expect(
+      await screen.findByRole("button", {
+        name: /Payments Gateway\. Position/i,
+      }),
+    ).toBeInTheDocument();
+    // A brand-new single-snapshot project has no switcher and no Client node.
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Client\. Position/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("rejects a fatal paste without committing", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("button", { name: "Import Mermaid" }));
+    fireEvent.change(screen.getByLabelText("Mermaid source"), {
+      target: { value: "sequenceDiagram\n A->>B: hi" },
+    });
+
+    expect(
+      screen.getByText(/not a valid Mermaid flowchart/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Import diagram" }),
+    ).toBeDisabled();
+  });
 });
