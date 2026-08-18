@@ -135,7 +135,9 @@ export type GraphValidationCode =
   | "edge-missing-endpoint"
   | "group-missing-member"
   | "node-orphan-group"
-  | "layout-missing-entity";
+  | "node-group-kind-mismatch"
+  | "layout-missing-entity"
+  | "non-finite-layout";
 
 export interface GraphValidationError {
   readonly code: GraphValidationCode;
@@ -147,9 +149,8 @@ export interface GraphValidationError {
 /**
  * Checks the referential integrity of a snapshot: unique entity ids, edges pointing at
  * existing entities, group membership pointing at existing entities, nodes referencing
- * existing groups, and layout hints referencing existing entities. Returns every problem
- * found rather than throwing, so callers can surface them together with actionable
- * messages.
+ * existing groups, and layout hints referencing existing entities with finite coordinates.
+ * Returns every problem found rather than throwing.
  */
 export function validateGraphSnapshot(
   snapshot: GraphSnapshot,
@@ -157,6 +158,7 @@ export function validateGraphSnapshot(
   const errors: GraphValidationError[] = [];
 
   const ids = new Set<EntityId>();
+  const entitiesById = new Map<EntityId, GraphEntity>();
   for (const entity of snapshot.entities) {
     if (ids.has(entity.id)) {
       errors.push({
@@ -166,6 +168,7 @@ export function validateGraphSnapshot(
       });
     }
     ids.add(entity.id);
+    entitiesById.set(entity.id, entity);
   }
 
   for (const entity of snapshot.entities) {
@@ -198,12 +201,21 @@ export function validateGraphSnapshot(
         break;
       }
       case "node": {
-        if (entity.groupId !== undefined && !ids.has(entity.groupId)) {
-          errors.push({
-            code: "node-orphan-group",
-            entityId: entity.id,
-            message: `Node "${entity.id}" references unknown group "${entity.groupId}".`,
-          });
+        if (entity.groupId !== undefined) {
+          const group = entitiesById.get(entity.groupId);
+          if (!group) {
+            errors.push({
+              code: "node-orphan-group",
+              entityId: entity.id,
+              message: `Node "${entity.id}" references unknown group "${entity.groupId}".`,
+            });
+          } else if (group.kind !== "group") {
+            errors.push({
+              code: "node-group-kind-mismatch",
+              entityId: entity.id,
+              message: `Node "${entity.id}" groupId "${entity.groupId}" resolves to ${group.kind}, not a group.`,
+            });
+          }
         }
         break;
       }
@@ -217,6 +229,16 @@ export function validateGraphSnapshot(
         entityId: hint.entityId,
         message: `Layout hint references unknown entity "${hint.entityId}".`,
       });
+    }
+    for (const field of ["x", "y", "width", "height"] as const) {
+      const value = hint[field];
+      if (value !== undefined && !Number.isFinite(value)) {
+        errors.push({
+          code: "non-finite-layout",
+          entityId: hint.entityId,
+          message: `Layout hint "${hint.entityId}" ${field} must be finite.`,
+        });
+      }
     }
   }
 

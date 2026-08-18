@@ -88,4 +88,65 @@ describe("validateGraphSnapshot", () => {
       "node-orphan-group",
     ]);
   });
+
+  it.each([
+    ["x", Number.NaN],
+    ["y", Number.POSITIVE_INFINITY],
+    ["width", Number.NEGATIVE_INFINITY],
+    ["height", null],
+  ] as const)("rejects an invalid layout %s value", (field, value) => {
+    const snapshot = createGraphSnapshot({
+      id: snapshotId("layout"),
+      source,
+      entities: [{ kind: "node", id: entityId("a"), label: "A" }],
+      layout: [
+        {
+          entityId: entityId("a"),
+          x: 0,
+          y: 0,
+          [field]: value,
+        } as unknown as {
+          entityId: ReturnType<typeof entityId>;
+          x: number;
+          y: number;
+        },
+      ],
+    });
+
+    expect(validateGraphSnapshot(snapshot)).toEqual([
+      expect.objectContaining({ code: "non-finite-layout" }),
+    ]);
+  });
+
+  it.each(["node", "edge"] as const)(
+    "rejects a node groupId that resolves to a %s",
+    (targetKind) => {
+      const target =
+        targetKind === "node"
+          ? { kind: "node" as const, id: entityId("not-group"), label: "Node" }
+          : {
+              kind: "edge" as const,
+              id: entityId("not-group"),
+              source: entityId("member"),
+              target: entityId("member"),
+            };
+      const snapshot = createGraphSnapshot({
+        id: snapshotId("wrong-group-kind"),
+        source,
+        entities: [
+          {
+            kind: "node",
+            id: entityId("member"),
+            label: "Member",
+            groupId: entityId("not-group"),
+          },
+          target,
+        ],
+      });
+
+      expect(validateGraphSnapshot(snapshot)).toEqual([
+        expect.objectContaining({ code: "node-group-kind-mismatch" }),
+      ]);
+    },
+  );
 });

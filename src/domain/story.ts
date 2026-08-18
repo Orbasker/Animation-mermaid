@@ -13,6 +13,16 @@ export function sceneId(value: string): SceneId {
   return value as SceneId;
 }
 
+/** Renderer-neutral transform values used by story effects. */
+export interface StoryTransform {
+  readonly translateX: number;
+  readonly translateY: number;
+  readonly scale: number;
+  readonly rotateDeg: number;
+}
+
+export type ComparisonChange = "added" | "removed" | "modified";
+
 /**
  * A single animation instruction inside a scene. Actions are a discriminated union keyed
  * by `type` and refer to graph entities *only by id* — they carry no React Flow node,
@@ -23,6 +33,18 @@ export function sceneId(value: string): SceneId {
 export type Action =
   | { readonly type: "reveal"; readonly target: EntityId }
   | { readonly type: "hide"; readonly target: EntityId }
+  | { readonly type: "focus"; readonly target: EntityId }
+  | { readonly type: "trace"; readonly target: EntityId }
+  | {
+      readonly type: "transform";
+      readonly target: EntityId;
+      readonly to: StoryTransform;
+    }
+  | {
+      readonly type: "compare";
+      readonly target: EntityId;
+      readonly change: ComparisonChange;
+    }
   | {
       readonly type: "highlight";
       readonly target: EntityId;
@@ -44,6 +66,10 @@ export type Action =
 export const ACTION_TYPES = [
   "reveal",
   "hide",
+  "focus",
+  "trace",
+  "transform",
+  "compare",
   "highlight",
   "annotate",
   "camera",
@@ -96,7 +122,14 @@ export function createStory(input: CreateStoryInput): Story {
 
 export type StoryValidationCode =
   | "duplicate-scene-id"
+  | "non-finite-duration"
   | "negative-duration"
+  | "zero-duration"
+  | "unsafe-duration"
+  | "non-finite-story-duration"
+  | "unsafe-story-duration"
+  | "non-finite-transform"
+  | "conflicting-scene-action"
   | "action-missing-entity"
   | "story-snapshot-mismatch";
 
@@ -110,6 +143,10 @@ function actionTargets(action: Action): readonly EntityId[] {
   switch (action.type) {
     case "reveal":
     case "hide":
+    case "focus":
+    case "trace":
+    case "transform":
+    case "compare":
     case "highlight":
     case "annotate":
       return [action.target];
@@ -118,11 +155,62 @@ function actionTargets(action: Action): readonly EntityId[] {
   }
 }
 
+function isFiniteStoryTransform(value: unknown): value is StoryTransform {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const transform = value as Partial<Record<keyof StoryTransform, unknown>>;
+  return (
+    Number.isFinite(transform.translateX) &&
+    Number.isFinite(transform.translateY) &&
+    Number.isFinite(transform.scale) &&
+    Number.isFinite(transform.rotateDeg)
+  );
+}
+
+type ActionChannel =
+  | "visibility"
+  | "focus"
+  | "trace"
+  | "transform"
+  | "compare"
+  | "highlight"
+  | "annotation"
+  | "camera";
+
+function actionChannel(action: Action): ActionChannel {
+  switch (action.type) {
+    case "reveal":
+    case "hide":
+      return "visibility";
+    case "focus":
+      return "focus";
+    case "trace":
+      return "trace";
+    case "transform":
+      return "transform";
+    case "compare":
+      return "compare";
+    case "highlight":
+      return "highlight";
+    case "annotate":
+      return "annotation";
+    case "camera":
+      return "camera";
+  }
+}
+
+function actionConflictKey(action: Action): string {
+  const channel = actionChannel(action);
+  return action.type === "camera" ? channel : `${channel}:${action.target}`;
+}
+
 /**
  * Validates a story against the snapshot it animates: the story must target that snapshot,
- * scene ids must be unique, durations non-negative, and every entity an action references
- * must exist in the snapshot. Returns all problems found rather than throwing, each with an
- * actionable message.
+ * scene ids must be unique, durations and their aggregate must be finite and positive,
+ * transforms must be finite, action channels cannot conflict, and every referenced entity
+ * must exist in the snapshot. Returns all problems found rather than throwing.
  */
 export function validateStory(
   story: Story,
@@ -141,6 +229,9 @@ export function validateStory(
     snapshot.entities.map((entity) => entity.id),
   );
   const sceneIds = new Set<SceneId>();
+  let totalDurationMs = 0;
+  let aggregateDurationIsFinite = true;
+  let sceneDurationsAreSafe = true;
 
   for (const scene of story.scenes) {
     if (sceneIds.has(scene.id)) {
@@ -152,15 +243,58 @@ export function validateStory(
     }
     sceneIds.add(scene.id);
 
-    if (scene.durationMs < 0) {
+    if (!Number.isFinite(scene.durationMs)) {
+      errors.push({
+        code: "non-finite-duration",
+        sceneId: scene.id,
+        message: `Scene "${scene.id}" has a non-finite duration.`,
+      });
+    } else if (scene.durationMs < 0) {
       errors.push({
         code: "negative-duration",
         sceneId: scene.id,
         message: `Scene "${scene.id}" has negative duration ${scene.durationMs}.`,
       });
+    } else if (scene.durationMs === 0) {
+      errors.push({
+        code: "zero-duration",
+        sceneId: scene.id,
+        message: `Scene "${scene.id}" has zero duration; scene durations must be positive.`,
+      });
+    } else if (!Number.isSafeInteger(scene.durationMs)) {
+      sceneDurationsAreSafe = false;
+      errors.push({
+        code: "unsafe-duration",
+        sceneId: scene.id,
+        message: `Scene "${scene.id}" duration must be a positive safe integer.`,
+      });
+    }
+    if (Number.isFinite(scene.durationMs) && scene.durationMs > 0) {
+      totalDurationMs += scene.durationMs;
+      aggregateDurationIsFinite &&= Number.isFinite(totalDurationMs);
     }
 
+    const seenActionChannels = new Set<string>();
     for (const action of scene.actions) {
+      if (action.type === "transform" && !isFiniteStoryTransform(action.to)) {
+        errors.push({
+          code: "non-finite-transform",
+          sceneId: scene.id,
+          message: `Scene "${scene.id}" transform for "${action.target}" has a non-finite transform value.`,
+        });
+      }
+
+      const conflictKey = actionConflictKey(action);
+      if (seenActionChannels.has(conflictKey)) {
+        const target = action.type === "camera" ? "camera" : action.target;
+        errors.push({
+          code: "conflicting-scene-action",
+          sceneId: scene.id,
+          message: `Scene "${scene.id}" has conflicting ${actionChannel(action)} actions for "${target}".`,
+        });
+      }
+      seenActionChannels.add(conflictKey);
+
       for (const target of actionTargets(action)) {
         if (!entityIds.has(target)) {
           errors.push({
@@ -173,10 +307,31 @@ export function validateStory(
     }
   }
 
+  if (!aggregateDurationIsFinite) {
+    errors.push({
+      code: "non-finite-story-duration",
+      message: `Story "${story.id}" aggregate duration must be finite.`,
+    });
+  } else if (sceneDurationsAreSafe && !Number.isSafeInteger(totalDurationMs)) {
+    errors.push({
+      code: "unsafe-story-duration",
+      message: `Story "${story.id}" aggregate duration exceeds the safe-integer timeline.`,
+    });
+  }
+
   return errors;
 }
 
 /** Total playback duration of a story, in milliseconds — the sum of its scenes. */
 export function storyDurationMs(story: Story): number {
-  return story.scenes.reduce((total, scene) => total + scene.durationMs, 0);
+  const durationMs = story.scenes.reduce(
+    (total, scene) => total + scene.durationMs,
+    0,
+  );
+  if (!Number.isSafeInteger(durationMs)) {
+    throw new RangeError(
+      `Story "${story.id}" aggregate duration must fit the safe-integer timeline.`,
+    );
+  }
+  return durationMs;
 }

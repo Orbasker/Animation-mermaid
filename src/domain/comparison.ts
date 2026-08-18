@@ -41,13 +41,18 @@ export interface Comparison extends Versioned {
  * as a change.
  */
 function entityFingerprint(entity: GraphEntity): string {
+  const attributes = (value: Readonly<Record<string, string>> | undefined) =>
+    Object.fromEntries(Object.entries(value ?? {}).sort(([left], [right]) =>
+      left.localeCompare(right),
+    ));
+
   switch (entity.kind) {
     case "node":
       return JSON.stringify({
         kind: entity.kind,
         label: entity.label,
         groupId: entity.groupId ?? null,
-        attributes: entity.attributes ?? {},
+        attributes: attributes(entity.attributes),
       });
     case "edge":
       return JSON.stringify({
@@ -55,7 +60,7 @@ function entityFingerprint(entity: GraphEntity): string {
         source: entity.source,
         target: entity.target,
         label: entity.label ?? null,
-        attributes: entity.attributes ?? {},
+        attributes: attributes(entity.attributes),
       });
     case "group":
       return JSON.stringify({
@@ -113,7 +118,12 @@ export function compareSnapshots(
 export type ComparisonValidationCode =
   | "comparison-base-mismatch"
   | "comparison-target-mismatch"
-  | "change-entity-mismatch";
+  | "change-entity-mismatch"
+  | "change-entity-id-mismatch"
+  | "change-payload-mismatch"
+  | "duplicate-change-entity"
+  | "missing-change"
+  | "unexpected-change";
 
 export interface ComparisonValidationError {
   readonly code: ComparisonValidationCode;
@@ -146,24 +156,80 @@ export function validateComparison(
     });
   }
 
-  const inBase = new Set<EntityId>(base.entities.map((entity) => entity.id));
-  const inTarget = new Set<EntityId>(target.entities.map((entity) => entity.id));
+  const canonical = compareSnapshots(comparison.id, base, target);
+  const expectedById = new Map(
+    canonical.changes.map((change) => [change.entityId, change]),
+  );
+  const actualById = new Map<EntityId, EntityChange>();
 
   for (const change of comparison.changes) {
-    const consistent =
-      change.op === "added"
-        ? !inBase.has(change.entityId) && inTarget.has(change.entityId)
-        : change.op === "removed"
-          ? inBase.has(change.entityId) && !inTarget.has(change.entityId)
-          : inBase.has(change.entityId) && inTarget.has(change.entityId);
-    if (!consistent) {
+    if (actualById.has(change.entityId)) {
       errors.push({
-        code: "change-entity-mismatch",
+        code: "duplicate-change-entity",
         entityId: change.entityId,
-        message: `Change "${change.op}" for entity "${change.entityId}" is inconsistent with the snapshots.`,
+        message: `Comparison contains duplicate changes for entity "${change.entityId}".`,
+      });
+      continue;
+    }
+    actualById.set(change.entityId, change);
+
+    const embeddedIds =
+      change.op === "added"
+        ? [change.after.id]
+        : change.op === "removed"
+          ? [change.before.id]
+          : [change.before.id, change.after.id];
+    if (embeddedIds.some((id) => id !== change.entityId)) {
+      errors.push({
+        code: "change-entity-id-mismatch",
+        entityId: change.entityId,
+        message: `Change "${change.op}" for "${change.entityId}" contains an entity with a different id.`,
+      });
+    }
+
+    const expected = expectedById.get(change.entityId);
+    if (!expected) {
+      errors.push({
+        code: "unexpected-change",
+        entityId: change.entityId,
+        message: `Comparison contains an unexpected change for entity "${change.entityId}".`,
+      });
+    } else if (!sameChangePayload(change, expected)) {
+      errors.push({
+        code: "change-payload-mismatch",
+        entityId: change.entityId,
+        message: `Change payload for entity "${change.entityId}" does not match the canonical snapshot difference.`,
+      });
+    }
+  }
+
+  for (const expected of canonical.changes) {
+    if (!actualById.has(expected.entityId)) {
+      errors.push({
+        code: "missing-change",
+        entityId: expected.entityId,
+        message: `Comparison is missing the canonical change for entity "${expected.entityId}".`,
       });
     }
   }
 
   return errors;
+}
+
+function sameChangePayload(left: EntityChange, right: EntityChange): boolean {
+  if (left.op !== right.op) {
+    return false;
+  }
+  switch (left.op) {
+    case "added":
+      return right.op === "added" &&
+        entityFingerprint(left.after) === entityFingerprint(right.after);
+    case "removed":
+      return right.op === "removed" &&
+        entityFingerprint(left.before) === entityFingerprint(right.before);
+    case "modified":
+      return right.op === "modified" &&
+        entityFingerprint(left.before) === entityFingerprint(right.before) &&
+        entityFingerprint(left.after) === entityFingerprint(right.after);
+  }
 }

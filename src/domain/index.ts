@@ -35,6 +35,8 @@ export {
 export {
   type StoryId,
   type SceneId,
+  type StoryTransform,
+  type ComparisonChange,
   type Action,
   type Scene,
   type Story,
@@ -48,6 +50,20 @@ export {
   validateStory,
   storyDurationMs,
 } from "@/domain/story";
+
+export {
+  type EntityRenderState,
+  type CameraRenderState,
+  type ActiveSceneRenderState,
+  type MotionMode,
+  type PlaybackPreferences,
+  type SceneCommunication,
+  type StoryRenderState,
+  type RenderStoryAtInput,
+  type RenderInputIssue,
+  StoryRenderInputError,
+  renderStoryAt,
+} from "@/domain/story-engine";
 
 export {
   type ComparisonId,
@@ -83,6 +99,16 @@ export {
   serializeProjectDocument,
   parseProjectDocument,
 } from "@/domain/serialization";
+
+export {
+  DomainDecodeError,
+  decodeGraphEntity,
+  decodeGraphSnapshot,
+  decodeAction,
+  decodeStory,
+  decodeComparison,
+  decodeProjectDocument,
+} from "@/domain/runtime-decoder";
 
 export {
   currentArchitectureSnapshot,
