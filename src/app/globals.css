@@ -281,6 +281,7 @@ h1 {
 }
 
 .editorIntro .eyebrow {
+  color: #b23c1c;
   margin-bottom: 8px;
 }
 
@@ -396,7 +397,7 @@ h1 {
 }
 
 .panelHeading span {
-  color: #6a7881;
+  color: #566169;
   display: block;
   font-size: 0.66rem;
   font-weight: 800;
@@ -448,7 +449,7 @@ h1 {
 }
 
 .surfaceCard span {
-  color: #748087;
+  color: #566169;
   font-size: 0.7rem;
 }
 
@@ -518,7 +519,7 @@ h1 {
 }
 
 .layerList button small {
-  color: #78868d;
+  color: #566169;
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.62rem;
 }
@@ -716,7 +717,7 @@ h1 {
 }
 
 .graphNode small {
-  color: #74838b;
+  color: #566169;
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.58rem;
   margin-top: 3px;
@@ -943,7 +944,7 @@ h1 {
 }
 
 .copilotPreview dt {
-  color: #6a7881;
+  color: #566169;
   font-size: 0.7rem;
   font-weight: 700;
 }

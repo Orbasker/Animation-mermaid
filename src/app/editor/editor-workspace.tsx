@@ -59,6 +59,7 @@ import {
   createHttpCopilotTransport,
   type CopilotTransport,
 } from "./ai-copilot/copilot-transport";
+import { e2eCopilotTransportFromWindow } from "./ai-copilot/e2e-transport";
 
 const SURFACES = ["Source", "Story", "Compare", "Layers", "Inspector", "Copilot"] as const;
 type Surface = (typeof SURFACES)[number];
@@ -171,7 +172,7 @@ export function EditorWorkspace({
   const [initialRunId, setInitialRunId] = useState<string>();
   const [applyRecord, setApplyRecord] = useState<ApplyRecord>();
   const transport = useMemo(
-    () => copilotTransport ?? createHttpCopilotTransport(),
+    () => copilotTransport ?? e2eCopilotTransportFromWindow() ?? createHttpCopilotTransport(),
     [copilotTransport],
   );
   const [selectedIds, setSelectedIds] = useState<readonly EntityId[]>([]);
