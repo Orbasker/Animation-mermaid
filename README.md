@@ -60,6 +60,58 @@ pnpm build
 The checks cover ESLint, strict TypeScript validation, behavioral tests, and the
 production Next.js build.
 
+## AI agent foundation
+
+The repository ships a filesystem-first [eve](https://eve.dev) agent — a typed
+design-review agent — mounted into the Next.js app. `next.config.ts` wraps the
+config in `withEve()`, so the agent and the web app run from one dev server and
+deploy as one Vercel project.
+
+The agent lives under `agent/`:
+
+- `agent.ts` — model, reasoning effort, and AI Gateway usage tags
+  (`feature:design-review`, `env:<environment>`). The model is a Gateway catalog
+  slug; override it with `AI_GATEWAY_MODEL` to track the current catalog.
+- `instructions.md` — the design-review system prompt.
+- `tools/record_design_review.ts` — a typed tool with Zod input **and** output
+  schemas; eve validates both at runtime.
+- `skills/design-review-checklist/` — a load-on-demand review checklist.
+- `instrumentation.ts` — OpenTelemetry registration plus per-step `feature`/`env`
+  span context, so a run is identifiable in Vercel Agent Runs and Gateway traces.
+
+Evaluation fixtures live under `evals/`. `smoke.eval.ts` is the typed smoke
+prompt: it drives one review turn and asserts the run succeeded and recorded a
+schema-valid verdict.
+
+### Model authentication (AI Gateway, OIDC)
+
+The agent routes model calls through the Vercel AI Gateway using OIDC — no
+provider API key. After linking the project (see below), pull the token:
+
+```bash
+vercel env pull .env.local --yes   # writes a short-lived VERCEL_OIDC_TOKEN (~24h)
+```
+
+Re-run it when the token expires. `.env.local` is git-ignored; never commit it.
+See `.env.example` for the environment-shaped names and safe placeholders.
+
+### Run the agent and the smoke prompt
+
+```bash
+pnpm dev            # Next.js app + eve agent from one dev server
+pnpm agent:info     # inspect the discovered agent surface
+pnpm agent:eval     # run the smoke eval against a local server
+```
+
+Target a Preview Deployment instead of a local server with the deployment URL:
+
+```bash
+pnpm agent:eval --url https://<preview-deployment-url>
+```
+
+Both the Gateway traces (filtered by the `feature:`/`env:` tags) and the Vercel
+**Observability → Agent Runs** tab identify the smoke run.
+
 ## Vercel project setup
 
 Authenticate with the Vercel CLI, then link your local checkout to the intended project:

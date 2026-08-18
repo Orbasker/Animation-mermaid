@@ -10,6 +10,9 @@ export default defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    ".eve/**",
+    ".output/**",
+    ".vercel/**",
     "next-env.d.ts",
   ]),
 ]);
