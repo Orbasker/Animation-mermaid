@@ -119,4 +119,75 @@ describe("EditorWorkspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Load 200-node stress fixture" }));
     await waitFor(() => expect(screen.getByText("200 components")).toBeInTheDocument());
   });
+
+  it("authors a four-scene review and persists it through reload", async () => {
+    const repository = await openRepository();
+    const first = render(
+      <EditorWorkspace
+        autosaveDelayMs={0}
+        initialProject={sampleProjectDocument()}
+        repository={repository}
+      />,
+    );
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+    expect(screen.getByText("3 scenes")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add scene" }));
+    expect(screen.getByText("4 scenes")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Scene 4")).toBeInTheDocument();
+
+    await screen.findByText("Saved locally");
+    first.unmount();
+
+    render(<EditorWorkspace autosaveDelayMs={0} repository={repository} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+    expect(await screen.findByText("4 scenes")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Scene 4")).toBeInTheDocument();
+  });
+
+  it("reorders scenes without losing any", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+
+    expect(screen.getByRole("textbox", { name: "Scene 1 title" })).toHaveValue(
+      "Client sends a request",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Move scene 1 later" }));
+
+    expect(screen.getByRole("textbox", { name: "Scene 1 title" })).toHaveValue(
+      "Backend handles it",
+    );
+    expect(screen.getByText("3 scenes")).toBeInTheDocument();
+  });
+
+  it("scrubs the timeline preview with the deterministic story engine", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter preview" }));
+    expect(screen.getByText(/Scene 1: Client sends a request/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("slider", { name: "Scrubber" }), {
+      target: { value: "9999" },
+    });
+    expect(screen.getByText(/Scene 3: Persist to the database/)).toBeInTheDocument();
+  });
+
+  it("adds an entity action to the selected scene from the canvas selection", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    const client = await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+    fireEvent.click(screen.getByRole("button", { name: "Scene 3" }));
+    fireEvent.click(client);
+    fireEvent.click(screen.getByRole("button", { name: "Highlight" }));
+
+    expect(screen.getByText("Highlight client")).toBeInTheDocument();
+  });
 });
