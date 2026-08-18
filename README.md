@@ -265,61 +265,6 @@ turns behind them under **Agent Runs**. An approved or rejected outcome carries
 `agentSessionId`, which is the eve session the narrative came from — that is the
 join between the two views.
 
-## Answering review questions in Slack
-
-Reviewers can ask questions about a design review in a Slack thread and get
-streamed answers from the same eve agent. The integration is built on the
-[Chat SDK](https://www.npmjs.com/package/chat) (`src/review-chat`), with the
-Slack adapter and a durable state backend.
-
-The unit of access is a **shared package**, never a local project. A package is
-the semantic-only `AgentContextPackage` — the same layout-free boundary the
-story workflow reads — and it must be shared explicitly before it can be
-discussed:
-
-| Endpoint                 | Purpose                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| `POST /api/review-share` | Share an `AgentContextPackage`; returns a content-addressed `shareId` (`rev_…`). |
-| `POST /api/slack/events` | Slack events + interactivity webhook.                                            |
-
-The flow:
-
-- **Mention binds a thread to one package.** Mentioning the bot with a share
-  code (`@design-review rev_… what changed here?`) subscribes the bot to that
-  thread and binds it to that one package and a fresh eve session. A mention
-  with no code, or an unknown code, is declined — a thread can only ever reach a
-  package that passed through `/api/review-share`, so local projects that were
-  never shared are unreachable by construction.
-- **Follow-ups continue the same session.** Every later message in the thread
-  re-resolves the package from its share id and continues the bound eve session,
-  so an answer draws only on what was shared.
-- **Streaming, with graceful degradation.** Assistant text streams through the
-  Chat SDK; subagent activity becomes structured task chunks on Slack. When a
-  channel cannot represent structured chunks, the answer is flattened to text so
-  nothing is silently dropped.
-- **Exactly-once, durable.** Webhook signatures are verified before any handler
-  runs, redelivered events are deduplicated, and subscriptions, thread bindings,
-  and shared packages live in the state backend — so a redeploy rejoins the same
-  conversation rather than starting over.
-
-### Configuration
-
-Set `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` from your Slack app, point the
-app's Event Subscriptions request URL at `/api/slack/events` (subscribe to
-`app_mention` and `message.channels`/`message.groups`), and set `REDIS_URL` for
-the durable Chat SDK state backend (required in production; local runs fall back
-to in-memory state). See `.env.example`.
-
-### Running it locally without a model
-
-```bash
-REVIEW_CHAT_AGENT=fixture pnpm dev
-```
-
-The fixture answers deterministically from the shared package without a Gateway
-credential, so the routing, subscription, and package-scoping behavior can be
-exercised offline. It is refused when `VERCEL_ENV=production`.
-
 ## Vercel project setup
 
 Authenticate with the Vercel CLI, then link your local checkout to the intended project:

@@ -40,15 +40,7 @@ export default defineConfig([
     files: ["src/domain/**"],
     rules: restrictedImport(
       "The domain layer is pure: it may only import from @/domain.",
-      [
-        [
-          "@/app/**",
-          "@/persistence/**",
-          "@/workflows/**",
-          "@/review-chat/**",
-          "@/lib/**",
-        ],
-      ],
+      [["@/app/**", "@/persistence/**", "@/workflows/**", "@/lib/**"]],
     ),
   },
   {
@@ -56,15 +48,7 @@ export default defineConfig([
     files: ["src/lib/**"],
     rules: restrictedImport(
       "@/lib is a leaf utility layer and must not import other app layers.",
-      [
-        [
-          "@/app/**",
-          "@/domain/**",
-          "@/persistence/**",
-          "@/workflows/**",
-          "@/review-chat/**",
-        ],
-      ],
+      [["@/app/**", "@/domain/**", "@/persistence/**", "@/workflows/**"]],
     ),
   },
   {
@@ -72,15 +56,15 @@ export default defineConfig([
     files: ["src/persistence/**"],
     rules: restrictedImport(
       "@/persistence may depend on @/domain, not on app-level or workflow layers.",
-      [["@/app/**", "@/workflows/**", "@/review-chat/**"]],
+      [["@/app/**", "@/workflows/**"]],
     ),
   },
   {
     name: "boundary-workflows",
     files: ["src/workflows/**"],
     rules: restrictedImport(
-      "@/workflows may depend on @/domain and @/lib, not on persistence, app, or chat layers.",
-      [["@/app/**", "@/persistence/**", "@/review-chat/**"]],
+      "@/workflows may depend on @/domain and @/lib, not on persistence or app layers.",
+      [["@/app/**", "@/persistence/**"]],
     ),
   },
   prettier,
