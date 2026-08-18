@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { EditorWorkspace } from "@/app/editor/editor-workspace";
+
 export const metadata: Metadata = {
-  title: "Editor",
-  description: "Create an animation from a Mermaid diagram.",
+  title: "Architecture workspace",
+  description: "Edit and review an imported Mermaid architecture graph.",
 };
 
 export default function EditorPage() {
@@ -21,18 +23,15 @@ export default function EditorPage() {
         </Link>
       </nav>
 
-      <section className="editorPlaceholder">
-        <p className="eyebrow">Workspace preview</p>
-        <h1>Animation editor</h1>
-        <p>The editing workspace is coming next.</p>
-        <div className="workspacePreview" aria-hidden="true">
-          <div className="previewPanel" />
-          <div className="previewCanvas">
-            <span />
-            <span />
-            <span />
+      <section className="editorWorkspaceFrame">
+        <header className="editorIntro">
+          <div>
+            <p className="eyebrow">Imported system map</p>
+            <h1>Architecture workspace</h1>
           </div>
-        </div>
+          <p>Shape the view. Keep the source intact.</p>
+        </header>
+        <EditorWorkspace />
       </section>
     </main>
   );

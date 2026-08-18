@@ -1,9 +1,24 @@
 # Animation Mermaid
 
 Animation Mermaid is a Next.js application for turning Mermaid diagrams into clear,
-shareable animations. The repository currently provides the application foundation, a
-product-oriented home page, and an `/editor` placeholder for the upcoming editing
-workspace.
+shareable animations. Its local-first editor imports Mermaid architecture diagrams into
+an interactive workspace where components can be arranged and explained visually.
+
+## Visual graph editor
+
+The `/editor` workspace keeps the imported Mermaid source intact while visual edits are
+stored against stable semantic entity IDs. Users can select and drag components, move
+them with the keyboard, create visual groups, hide or reveal components, add annotations,
+and focus a selection without changing the source diagram.
+
+The workspace includes Source, Story, Compare, Layers, and Inspector surfaces, plus
+pan/zoom controls and undo/redo for graph mutations. Changes autosave to IndexedDB and
+compatible positions and visual metadata are restored after reload or Mermaid reimport.
+A built-in 200-component preview exercises the dense-graph interaction path without
+overwriting the active project.
+
+The visual-edit persistence boundary is documented in
+[ADR 0001](docs/adr/0001-separate-visual-edits-from-semantic-graph.md).
 
 ## Local-first persistence
 
@@ -43,7 +58,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The editor placeholder is at
+Open [http://localhost:3000](http://localhost:3000). The editor workspace is at
 [http://localhost:3000/editor](http://localhost:3000/editor).
 
 ## Required checks

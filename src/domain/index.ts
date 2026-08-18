@@ -20,6 +20,9 @@ export {
   type GroupEntity,
   type GraphEntity,
   type LayoutHint,
+  type VisualGroup,
+  type GraphAnnotation,
+  type GraphViewState,
   type ImporterMetadata,
   type MermaidSource,
   type GraphSnapshot,
@@ -83,6 +86,18 @@ export {
   serializeProjectDocument,
   parseProjectDocument,
 } from "@/domain/serialization";
+
+export {
+  type EditorTransaction,
+  type EditorHistory,
+  applyEditorTransaction,
+  createEditorHistory,
+  commitEditorTransaction,
+  undoEditorHistory,
+  redoEditorHistory,
+  reconcileImportedSnapshot,
+  createStressSnapshot,
+} from "@/domain/editor";
 
 export {
   currentArchitectureSnapshot,
