@@ -91,6 +91,103 @@ export interface BuildAgentContextInput {
 }
 
 /**
+ * Narrows a context package to a chosen subset of entities, dropping everything else and any
+ * reference to it.
+ *
+ * This is the redaction primitive behind the copilot's context preview: a reviewer confirms
+ * exactly which components are sent, and unselected content must be *absent* from the request,
+ * not merely hidden. Filtering is not enough on its own — an included edge whose endpoint was
+ * dropped, or a group whose members were dropped, would leak the excluded id back into the
+ * payload — so this also prunes:
+ *
+ * - edges with a source or target that is not included;
+ * - group members that are not included, and groups left with no members;
+ * - a node's `groupId` when that group did not survive;
+ * - comparison changes whose entity is not included.
+ *
+ * The result is a smaller-but-consistent {@link AgentContextPackage}. Passing every entity id
+ * returns an equivalent package; passing none yields an empty graph, which the request schema
+ * rejects — the caller is expected to keep at least one entity.
+ */
+export function redactAgentContext(
+  context: AgentContextPackage,
+  includedEntityIds: Iterable<EntityId>,
+): AgentContextPackage {
+  const included = new Set<EntityId>(includedEntityIds);
+
+  // A group survives only if it is itself included and keeps at least one included member.
+  // Resolved first so a node can decide whether to keep its `groupId` in the same pass.
+  const survivingGroups = new Set<EntityId>();
+  for (const entity of context.graph.entities) {
+    if (
+      entity.kind === "group" &&
+      included.has(entity.id) &&
+      entity.memberIds.some((id) => included.has(id))
+    ) {
+      survivingGroups.add(entity.id);
+    }
+  }
+
+  const entities: AgentEntity[] = [];
+  for (const entity of context.graph.entities) {
+    if (!included.has(entity.id)) continue;
+    switch (entity.kind) {
+      case "node":
+        entities.push({
+          kind: "node",
+          id: entity.id,
+          label: entity.label,
+          ...(entity.groupId !== undefined && survivingGroups.has(entity.groupId)
+            ? { groupId: entity.groupId }
+            : {}),
+        });
+        break;
+      case "edge":
+        if (!included.has(entity.source) || !included.has(entity.target)) continue;
+        entities.push({
+          kind: "edge",
+          id: entity.id,
+          source: entity.source,
+          target: entity.target,
+          ...(entity.label !== undefined ? { label: entity.label } : {}),
+        });
+        break;
+      case "group":
+        if (!survivingGroups.has(entity.id)) continue;
+        entities.push({
+          kind: "group",
+          id: entity.id,
+          label: entity.label,
+          memberIds: entity.memberIds.filter((id) => included.has(id)),
+        });
+        break;
+    }
+  }
+
+  const comparison =
+    context.comparison !== undefined
+      ? {
+          baseSnapshotId: context.comparison.baseSnapshotId,
+          targetSnapshotId: context.comparison.targetSnapshotId,
+          changes: context.comparison.changes.filter((change) =>
+            included.has(change.entityId),
+          ),
+        }
+      : undefined;
+
+  return {
+    schemaVersion: context.schemaVersion,
+    intent: context.intent,
+    graph: {
+      snapshotId: context.graph.snapshotId,
+      diagramType: context.graph.diagramType,
+      entities,
+    },
+    ...(comparison !== undefined ? { comparison } : {}),
+  };
+}
+
+/**
  * Projects a snapshot (and optional comparison) into an {@link AgentContextPackage},
  * dropping layout and any renderer-specific data. This is the *only* supported way to build
  * the agent boundary, so the semantic-only guarantee lives in one place.

@@ -30,6 +30,6 @@ export {
 
 export { decisionToken, storyDecisionHook } from "./hooks";
 
-export { PROGRESS_NAMESPACE } from "./steps";
+export { PROGRESS_NAMESPACE, PROPOSAL_NAMESPACE } from "./steps";
 
 export { generateDesignReviewStory } from "./workflow";

@@ -183,8 +183,9 @@ replay one without the other.
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /api/design-review-story` | Start a run; returns `runId` (also in `x-workflow-run-id`). |
-| `GET /api/design-review-story/{runId}` | Status, plus the outcome once it settles. |
+| `GET /api/design-review-story/{runId}` | Status, plus the outcome once it settles — or a classified `error` message when the run has `failed`. |
 | `GET /api/design-review-story/{runId}/progress` | Replay the progress stream. `?startIndex=` resumes from a known chunk; negative values count back from the end, resolved against the `x-workflow-stream-tail-index` response header. |
+| `GET /api/design-review-story/{runId}/proposal` | Read the proposal a suspended run is waiting on, so a reviewer can see the scenes before deciding. `425` until the gate is reached. Seeing the proposal is not applying it. |
 | `POST /api/design-review-story/{runId}/decision` | Submit `{"decision":"approve"\|"reject"}`. A run that already settled answers `409`. |
 | `DELETE /api/design-review-story/{runId}` | Cancel a run before it settles. |
 
@@ -195,6 +196,34 @@ connection.
 Approval returns a deterministic payload: scene ids come from ordinal position
 and the story and proposal ids are content-addressed over the story itself, so
 two runs of the same request produce an identical proposal.
+
+### Reviewing and applying proposals in the editor
+
+The `/editor` workspace has an **AI copilot** surface that drives a run end to end
+and applies an accepted proposal to the local project. It is built to make the
+review safe rather than fast:
+
+- **Confirmed context, never a surprise.** You write the intent, then see and edit
+  the exact semantic package that will be sent — every component is a checkbox, and
+  unchecked ones (and any edge or group member that referenced them) are pruned from
+  the request, not merely hidden. No request starts until you confirm that preview.
+- **Durable, reconnectable runs.** Starting a run links its id to the project's
+  separate run store, so a reload rejoins the run in flight — progress, proposal, and
+  approval gate intact — rather than starting a second one. Runs can be cancelled and,
+  after a failure, started over.
+- **Review before applying.** At the approval gate the copilot reads the published
+  proposal and shows the thesis, the agent's self-critique, and a scene-by-scene diff
+  of what it would animate against your local snapshot — before you decide.
+- **One undoable transaction.** Applying an approved proposal adds the story as a
+  single change with its own undo/redo; applying the same content-addressed proposal
+  twice is a no-op. Discarding leaves the document byte-for-byte unchanged.
+- **Actionable failures.** Gateway budget, rate-limit, and provider errors are
+  classified from the run's recorded failure into one clear next action, and your
+  local work is never touched.
+
+The copilot talks to the endpoints above through a small `CopilotTransport`
+seam (`src/app/editor/ai-copilot`), so the whole flow is driven by a scripted
+transport in tests with no workflow runtime.
 
 ### Running it locally without a model
 

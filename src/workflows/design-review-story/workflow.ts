@@ -9,6 +9,7 @@ import {
   critiqueDraftStep,
   draftScenesStep,
   emitProgress,
+  emitProposal,
   emitResult,
   validateContext,
 } from "./steps";
@@ -85,6 +86,10 @@ export async function generateDesignReviewStory(
   // The hook is created before the progress note so the token is registered by the time a
   // client reads "awaiting-approval" and posts a decision.
   using hook = storyDecisionHook.create({ token: decisionToken(workflowRunId) });
+
+  // Publish the proposal before announcing the gate, so a client that reacts to
+  // "awaiting-approval" by fetching the proposal always finds it already written.
+  await emitProposal(proposal);
 
   await emitProgress({
     phase: "awaiting-approval",

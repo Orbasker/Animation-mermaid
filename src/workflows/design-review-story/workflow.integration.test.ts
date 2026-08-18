@@ -10,10 +10,11 @@ import {
   progressEventSchema,
   type ProgressEvent,
   type StoryOutcome,
+  type StoryProposal,
   type StoryRequest,
 } from "./contract";
 import { decisionToken, storyDecisionHook } from "./hooks";
-import { PROGRESS_NAMESPACE } from "./steps";
+import { PROGRESS_NAMESPACE, PROPOSAL_NAMESPACE } from "./steps";
 import { generateDesignReviewStory } from "./workflow";
 
 /**
@@ -108,6 +109,27 @@ describe("generateDesignReviewStory", () => {
     ]);
     expect(outcome.proposal.totalDurationMs).toBe(6_000);
     expect(await run.status).toBe("completed");
+  });
+
+  it("publishes the proposal for review while suspended, before any decision", async () => {
+    const run = await start(generateDesignReviewStory, [request()]);
+    // Reached the gate, but the reviewer has not decided — the run is still suspended.
+    await waitForHook(run, { token: decisionToken(run.runId) });
+
+    const reader = getRun(run.runId)
+      .getReadable<StoryProposal>({ namespace: PROPOSAL_NAMESPACE, startIndex: 0 })
+      .getReader();
+    const { value, done } = await reader.read();
+    await reader.cancel().catch(() => undefined);
+
+    expect(done).toBe(false);
+    expect(value?.story.snapshotId).toBe("snap-current");
+    expect(value?.story.scenes).toHaveLength(3);
+    // Seeing the proposal is not applying it: the run has not settled.
+    expect(await run.status).not.toBe("completed");
+
+    await storyDecisionHook.resume(decisionToken(run.runId), { decision: "reject" });
+    await run.returnValue;
   });
 
   it("returns the same proposal payload for two runs of the same request", async () => {

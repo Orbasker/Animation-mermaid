@@ -124,7 +124,17 @@ export {
   type AgentContextPackage,
   type BuildAgentContextInput,
   buildAgentContextPackage,
+  redactAgentContext,
 } from "@/domain/agent-context";
+
+export {
+  type StoryApplicationMode,
+  type SceneApplication,
+  type StoryApplicationPlan,
+  StoryNotApplicableError,
+  planStoryApplication,
+  applyStoryProposal,
+} from "@/domain/apply-proposal";
 
 export {
   type ProjectId,
