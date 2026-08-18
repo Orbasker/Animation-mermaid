@@ -75,6 +75,13 @@ pnpm build
 The checks cover ESLint, strict TypeScript validation, behavioral tests, and the
 production Next.js build.
 
+`pnpm test` runs two suites, which can also be run on their own:
+
+- `pnpm test:unit` — the default Vitest project (jsdom).
+- `pnpm test:integration` — `*.integration.test.ts`, run through the Workflow
+  DevKit's Vitest plugin, which compiles the workflow directives and executes
+  runs against an in-process runtime. No server and no model call is needed.
+
 ## AI agent foundation
 
 The repository ships a filesystem-first [eve](https://eve.dev) agent — a typed
@@ -126,6 +133,93 @@ pnpm agent:eval --url https://<preview-deployment-url>
 
 Both the Gateway traces (filtered by the `feature:`/`env:` tags) and the Vercel
 **Observability → Agent Runs** tab identify the smoke run.
+
+## Design-review story workflow
+
+`generateDesignReviewStory` (`src/workflows/design-review-story`) proposes an
+animated design-review narrative for a diagram and pauses for human approval
+before returning anything applicable. It is built with the
+[Workflow DevKit](https://useworkflow.dev): `next.config.ts` wraps the config in
+`withWorkflow()` alongside `withEve()`, so the app, the agent, and the workflow
+runtime deploy as one Vercel project.
+
+The split of responsibility is deliberate:
+
+- **eve owns agent behavior** — the model, the instructions, the
+  `design-review-storyboard` skill, and the conversational state behind an eve
+  session. The workflow asks one bounded, schema-checked question per step and
+  threads the eve session id between them.
+- **Workflow DevKit owns orchestration** — the order of those questions, the
+  retry budget for each, the human approval gate, and the durability that lets a
+  run outlive the request that started it.
+
+### Shape of a run
+
+| Phase | What happens |
+| --- | --- |
+| `validating-context` | The `AgentContextPackage` is parsed against a strict schema. An extra key — a layout coordinate, a renderer handle — fails the run rather than reaching the model. Invalid input is fatal, never retried. |
+| `analyzing-narrative` | The agent proposes a thesis, an audience, and ordered beats. |
+| `generating-scenes` | The agent drafts scenes from those beats. |
+| `critiquing` | The agent reviews its own draft. |
+| — | Scenes are assembled into a `Story` and validated with the project's own `validateStory`, so a proposal that reaches a caller is already known to apply cleanly. |
+| `awaiting-approval` | The run suspends — consuming nothing — until a human decides. |
+| `settled` | Approval returns the proposal; rejection returns an outcome with no proposal in it. |
+
+Each agent step retries transient failures (timeouts, rate limits, upstream 5xx)
+up to three times; a request the agent rejects outright is not retried. Because
+each step's result is recorded once, a retried scene draft never re-runs the
+narrative analysis before it.
+
+Nothing in the workflow writes to a project. Persistence stays local-first and
+client-owned, so a rejected proposal leaves nothing to undo, and only the
+`approved` outcome carries a payload a client could apply.
+
+### Streams and reconnecting
+
+The workflow run id is the durable handle. Progress notes go to a named
+`progress` stream and the settled outcome to the default one, so a client can
+replay one without the other.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/design-review-story` | Start a run; returns `runId` (also in `x-workflow-run-id`). |
+| `GET /api/design-review-story/{runId}` | Status, plus the outcome once it settles. |
+| `GET /api/design-review-story/{runId}/progress` | Replay the progress stream. `?startIndex=` resumes from a known chunk; negative values count back from the end, resolved against the `x-workflow-stream-tail-index` response header. |
+| `POST /api/design-review-story/{runId}/decision` | Submit `{"decision":"approve"\|"reject"}`. A run that already settled answers `409`. |
+| `DELETE /api/design-review-story/{runId}` | Cancel a run before it settles. |
+
+A client that reloads keeps only the run id, re-reads status, and replays
+progress from where it left off — the run itself was never held open by the
+connection.
+
+Approval returns a deterministic payload: scene ids come from ordinal position
+and the story and proposal ids are content-addressed over the story itself, so
+two runs of the same request produce an identical proposal.
+
+### Running it locally without a model
+
+Set the fixture agent to drive the whole flow deterministically — useful for
+seeing the endpoints work before wiring a Gateway credential:
+
+```bash
+DESIGN_REVIEW_STORY_AGENT=fixture pnpm dev
+```
+
+It is refused when `VERCEL_ENV=production`. `DESIGN_REVIEW_STORY_AGENT_SCRIPT`
+scripts its failures and output; see `.env.example`.
+
+### Observing a run
+
+```bash
+npx workflow web                 # dashboard for local runs
+npx workflow inspect runs        # or the terminal equivalent
+npx workflow inspect run <run-id> --backend vercel --project <project> --team <team>
+```
+
+Deployed runs appear under Vercel **Observability → Workflows**, and the eve
+turns behind them under **Agent Runs**. An approved or rejected outcome carries
+`agentSessionId`, which is the eve session the narrative came from — that is the
+join between the two views.
 
 ## Vercel project setup
 
