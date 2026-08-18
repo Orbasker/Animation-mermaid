@@ -48,13 +48,17 @@ function createScriptedTransport(fixture: E2ECopilotFixture): CopilotTransport {
       return {
         status: "approved",
         proposal: fixture.proposal,
-        ...(decision.reviewer !== undefined ? { reviewer: decision.reviewer } : {}),
+        ...(decision.reviewer !== undefined
+          ? { reviewer: decision.reviewer }
+          : {}),
         ...(decision.note !== undefined ? { note: decision.note } : {}),
       };
     }
     return {
       status: "rejected",
-      ...(decision?.reviewer !== undefined ? { reviewer: decision.reviewer } : {}),
+      ...(decision?.reviewer !== undefined
+        ? { reviewer: decision.reviewer }
+        : {}),
       ...(decision?.note !== undefined ? { note: decision.note } : {}),
     };
   }
@@ -64,7 +68,8 @@ function createScriptedTransport(fixture: E2ECopilotFixture): CopilotTransport {
       return { runId: fixture.runId };
     },
     async status(runId) {
-      if (decision) return { runId, status: "completed", outcome: terminalOutcome() };
+      if (decision)
+        return { runId, status: "completed", outcome: terminalOutcome() };
       return { runId, status: "running" };
     },
     async *streamProgress(_runId, options) {

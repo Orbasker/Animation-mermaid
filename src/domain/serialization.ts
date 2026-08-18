@@ -1,6 +1,4 @@
-import {
-  migrateDocument,
-} from "@/domain/schema-version";
+import { migrateDocument } from "@/domain/schema-version";
 import {
   validateProjectDocument,
   type ProjectDocument,

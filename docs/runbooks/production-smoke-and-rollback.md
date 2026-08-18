@@ -19,17 +19,17 @@ On the Preview URL, walk the journey once by hand:
    Mermaid intact.
 2. Move a component (arrow keys) and reload — the position persists (IndexedDB, per browser
    profile).
-3. **Story** surface → *Enter preview* → scrub the timeline; the playhead seeks to an arbitrary
+3. **Story** surface → _Enter preview_ → scrub the timeline; the playhead seeks to an arbitrary
    position and the canvas reflects it.
 4. **Compare** surface shows the semantic diff.
-5. **Copilot** surface → compose an intent → *Preview request*. Confirm the context preview lists
-   only the components you kept — this is the consent boundary. Nothing is sent before *Confirm &
-   generate*.
-6. *Confirm & generate*. A real run starts against the eve agent through the AI Gateway. Watch
+5. **Copilot** surface → compose an intent → _Preview request_. Confirm the context preview lists
+   only the components you kept — this is the consent boundary. Nothing is sent before _Confirm &
+   generate_.
+6. _Confirm & generate_. A real run starts against the eve agent through the AI Gateway. Watch
    progress stream in.
 7. **Reload mid-run.** The editor reconnects to the same run by id (not a second run) and shows the
    proposal at the approval gate.
-8. *Apply to project* applies the story as one undoable transaction; *Undo apply* reverts it byte
+8. _Apply to project_ applies the story as one undoable transaction; _Undo apply_ reverts it byte
    for byte. Discarding a proposal mutates nothing.
 
 Preconditions for the live AI path on a deployment:
@@ -41,7 +41,7 @@ Preconditions for the live AI path on a deployment:
 ## 2. Promote to production
 
 Promote the verified Preview deployment to production (Vercel dashboard → the deployment →
-*Promote to Production*, or `vercel promote <deployment-url>`).
+_Promote to Production_, or `vercel promote <deployment-url>`).
 
 ## 3. Production smoke
 
@@ -49,7 +49,7 @@ Immediately after promotion, on the production URL, run the shortened smoke:
 
 1. `/editor` loads; Source, Story, and Compare surfaces render.
 2. A move persists across a reload.
-3. Copilot → compose → preview → *Confirm & generate* starts a real run and streams progress.
+3. Copilot → compose → preview → _Confirm & generate_ starts a real run and streams progress.
 4. Reload reconnects to the in-flight run.
 5. Approve applies; undo reverts.
 
@@ -60,7 +60,7 @@ If all five pass, the promotion is good.
 If the smoke fails, roll back before investigating:
 
 - **Vercel dashboard:** Deployments → the previous known-good production deployment →
-  *Promote to Production* (instant alias swap, no rebuild).
+  _Promote to Production_ (instant alias swap, no rebuild).
 - **CLI:** `vercel rollback` (or `vercel promote <previous-good-url>`).
 
 Rollback is an alias swap and takes effect in seconds. No client data is at risk: projects are

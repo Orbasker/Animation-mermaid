@@ -43,7 +43,9 @@ function eveTransport(): AgentTransport {
 
   return {
     async turn(input) {
-      const options = { outputSchema: input.outputSchema as Record<string, never> };
+      const options = {
+        outputSchema: input.outputSchema as Record<string, never>,
+      };
 
       if (input.sessionId === undefined) {
         const { response } = await client.sessions.create({
@@ -119,9 +121,10 @@ function readScript(): FixtureScript {
  * the same closed set the model would.
  */
 function idsFromPrompt(prompt: string): readonly string[] {
-  const match = /(?:Use only these entity ids|Every id you name must be one of): ([^\n.]+)/.exec(
-    prompt,
-  );
+  const match =
+    /(?:Use only these entity ids|Every id you name must be one of): ([^\n.]+)/.exec(
+      prompt,
+    );
   if (!match) return [];
   return match[1]
     .split(",")
@@ -147,7 +150,8 @@ function fixtureTransport(): AgentTransport {
           return {
             sessionId,
             data: {
-              thesis: "The proposed architecture moves request fan-out behind one gateway.",
+              thesis:
+                "The proposed architecture moves request fan-out behind one gateway.",
               audience: "Engineers reviewing the migration.",
               beats: ids.slice(0, 3).map((id, index) => ({
                 summary: `Beat ${index + 1} concerns ${id}.`,
@@ -157,7 +161,8 @@ function fixtureTransport(): AgentTransport {
           };
 
         case "scenes": {
-          const count = script.sceneCount ?? Math.min(3, Math.max(1, ids.length));
+          const count =
+            script.sceneCount ?? Math.min(3, Math.max(1, ids.length));
           const targets = Array.from({ length: count }, (_, index) =>
             script.unknownEntity && index === 0
               ? "entity-that-does-not-exist"
@@ -183,7 +188,8 @@ function fixtureTransport(): AgentTransport {
             sessionId,
             data: {
               verdict: "ready_with_notes",
-              summary: "The scenes follow the thesis; pacing on the final beat is tight.",
+              summary:
+                "The scenes follow the thesis; pacing on the final beat is tight.",
               notes: [{ note: "Consider a longer hold on the last scene." }],
             },
           };

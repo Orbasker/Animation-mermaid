@@ -1,0 +1,22 @@
+title = "Animation Mermaid secret scan"
+
+# Build on gitleaks' maintained rule set rather than re-deriving detectors here.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore the self-test fixture and generated/dependency output."
+paths = [
+  '''tools/secret-scan/fixture\.env''',
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)\.eve/''',
+  '''(^|/)\.output/''',
+  '''(^|/)\.vercel/''',
+  '''(^|/)\.workflow-data/''',
+  '''(^|/)\.workflow-vitest/''',
+  '''(^|/)coverage/''',
+  '''(^|/)playwright-report/''',
+  '''(^|/)test-results/''',
+  '''(^|/)pnpm-lock\.yaml$''',
+]

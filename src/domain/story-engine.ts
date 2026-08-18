@@ -102,7 +102,9 @@ export class StoryRenderInputError extends Error {
   readonly issues: readonly RenderInputIssue[];
 
   constructor(issues: readonly RenderInputIssue[]) {
-    super(`Cannot render invalid input: ${issues.map((issue) => issue.message).join(" ")}`);
+    super(
+      `Cannot render invalid input: ${issues.map((issue) => issue.message).join(" ")}`,
+    );
     this.name = "StoryRenderInputError";
     this.issues = issues;
   }
@@ -142,7 +144,10 @@ function sampleScene(story: Story, timestampMs: number): SceneSample | null {
       const progress =
         scene.durationMs === 0
           ? 1
-          : Math.min(1, Math.max(0, (timestampMs - startedAtMs) / scene.durationMs));
+          : Math.min(
+              1,
+              Math.max(0, (timestampMs - startedAtMs) / scene.durationMs),
+            );
       return { scene, index, startedAtMs, progress };
     }
     startedAtMs = endsAtMs;
@@ -186,7 +191,11 @@ function applyEntityAction(
       state.traceProgress = Math.max(state.traceProgress, progress);
       break;
     case "transform":
-      state.transform = interpolateTransform(state.transform, action.to, progress);
+      state.transform = interpolateTransform(
+        state.transform,
+        action.to,
+        progress,
+      );
       break;
     case "compare":
       if (progress > 0) {
@@ -231,7 +240,9 @@ function interpolateNumber(from: number, to: number, progress: number): number {
     ? from * (1 - progress) + to * progress
     : from + (to - from) * progress;
   if (!Number.isFinite(value)) {
-    throw new RangeError("Transform interpolation produced a non-finite value.");
+    throw new RangeError(
+      "Transform interpolation produced a non-finite value.",
+    );
   }
   return value;
 }
@@ -265,7 +276,10 @@ function endpointName(
   return entity.kind === "edge" ? (entity.label ?? entity.id) : entity.label;
 }
 
-function entityName(entity: GraphEntity, entities: Map<EntityId, GraphEntity>): string {
+function entityName(
+  entity: GraphEntity,
+  entities: Map<EntityId, GraphEntity>,
+): string {
   switch (entity.kind) {
     case "node":
     case "group":
@@ -322,10 +336,7 @@ function motionMode(preferences: PlaybackPreferences | undefined): MotionMode {
   return preferences?.reducedMotion ? "reduced" : "full";
 }
 
-function decodeRenderInput<T>(
-  scope: "snapshot" | "story",
-  decode: () => T,
-): T {
+function decodeRenderInput<T>(scope: "snapshot" | "story", decode: () => T): T {
   try {
     return decode();
   } catch (error) {

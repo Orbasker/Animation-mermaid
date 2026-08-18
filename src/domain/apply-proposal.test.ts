@@ -44,7 +44,9 @@ function proposedStory(id = "story-proposed"): Story {
         id: sceneId("scene-2"),
         title: "Reach the service",
         durationMs: 1500,
-        actions: [{ type: "highlight", target: entityId("service"), style: "active" }],
+        actions: [
+          { type: "highlight", target: entityId("service"), style: "active" },
+        ],
       },
     ],
   });
@@ -106,7 +108,9 @@ describe("planStoryApplication", () => {
     const plan = planStoryApplication(baseProject(), invalid);
 
     expect(plan.applicable).toBe(false);
-    expect(plan.errors.some((error) => error.code === "action-missing-entity")).toBe(true);
+    expect(
+      plan.errors.some((error) => error.code === "action-missing-entity"),
+    ).toBe(true);
   });
 
   it("marks an already-present story as a no-op", () => {

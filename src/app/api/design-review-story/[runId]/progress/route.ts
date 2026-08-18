@@ -14,7 +14,9 @@ interface RouteContext {
  * bytes — so an HTTP body needs them re-encoded. One JSON object per line lets a client parse
  * events as they arrive instead of waiting for the stream to finish.
  */
-function toNdjson(source: ReadableStream<ProgressEvent>): ReadableStream<Uint8Array> {
+function toNdjson(
+  source: ReadableStream<ProgressEvent>,
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return source.pipeThrough(
     new TransformStream<ProgressEvent, Uint8Array>({
@@ -38,18 +40,27 @@ function toNdjson(source: ReadableStream<ProgressEvent>): ReadableStream<Uint8Ar
  * that pipes a live stream keeps the invocation running — and billing — to the function's max
  * duration after a client disconnects unless Vercel is told to forward the abort.
  */
-export async function GET(request: Request, context: RouteContext): Promise<Response> {
+export async function GET(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const { runId } = await context.params;
   const run = getRun(runId);
 
   if (!(await run.exists)) {
-    return Response.json({ error: `No run with id "${runId}".` }, { status: 404 });
+    return Response.json(
+      { error: `No run with id "${runId}".` },
+      { status: 404 },
+    );
   }
 
   const raw = new URL(request.url).searchParams.get("startIndex");
   const startIndex = raw === null ? undefined : Number.parseInt(raw, 10);
   if (startIndex !== undefined && Number.isNaN(startIndex)) {
-    return Response.json({ error: "startIndex must be an integer." }, { status: 400 });
+    return Response.json(
+      { error: "startIndex must be an integer." },
+      { status: 400 },
+    );
   }
 
   const readable = run.getReadable<ProgressEvent>({

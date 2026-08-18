@@ -90,10 +90,18 @@ const graphEntitySchema = z.discriminatedUnion("kind", [
 
 const entityChangeSchema = z.discriminatedUnion("op", [
   z
-    .object({ op: z.literal("added"), entityId: entityIdSchema, after: graphEntitySchema })
+    .object({
+      op: z.literal("added"),
+      entityId: entityIdSchema,
+      after: graphEntitySchema,
+    })
     .strict(),
   z
-    .object({ op: z.literal("removed"), entityId: entityIdSchema, before: graphEntitySchema })
+    .object({
+      op: z.literal("removed"),
+      entityId: entityIdSchema,
+      before: graphEntitySchema,
+    })
     .strict(),
   z
     .object({
@@ -115,7 +123,9 @@ const entityChangeSchema = z.discriminatedUnion("op", [
 export const agentContextPackageSchema = z
   .object({
     schemaVersion: schemaVersionSchema,
-    intent: z.string().min(1, "intent must describe what the workflow should do"),
+    intent: z
+      .string()
+      .min(1, "intent must describe what the workflow should do"),
     graph: z
       .object({
         snapshotId: z.string().min(1),
@@ -205,9 +215,15 @@ const actionSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z
-    .object({ type: z.literal("annotate"), target: entityIdSchema, text: z.string().min(1) })
+    .object({
+      type: z.literal("annotate"),
+      target: entityIdSchema,
+      text: z.string().min(1),
+    })
     .strict(),
-  z.object({ type: z.literal("camera"), focus: z.array(entityIdSchema) }).strict(),
+  z
+    .object({ type: z.literal("camera"), focus: z.array(entityIdSchema) })
+    .strict(),
 ]);
 
 /**

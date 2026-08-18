@@ -125,8 +125,16 @@ const CLOSERS: Readonly<Record<string, string>> = {
 };
 
 type ChainResult =
-  | { readonly ok: true; readonly chunks: string[]; readonly links: ConnectorMatch[] }
-  | { readonly ok: false; readonly reason: "ampersand" | "syntax"; readonly offset: number };
+  | {
+      readonly ok: true;
+      readonly chunks: string[];
+      readonly links: ConnectorMatch[];
+    }
+  | {
+      readonly ok: false;
+      readonly reason: "ampersand" | "syntax";
+      readonly offset: number;
+    };
 
 /**
  * Splits an edge statement into its node chunks and the connectors between them, walking the
@@ -234,8 +242,14 @@ function parseNodeChunk(
 }
 
 interface ParserState {
-  readonly nodes: Map<string, { id: string; label: string; shape: NodeShape; groupId?: string }>;
-  readonly groups: Map<string, { id: string; label: string; memberIds: string[] }>;
+  readonly nodes: Map<
+    string,
+    { id: string; label: string; shape: NodeShape; groupId?: string }
+  >;
+  readonly groups: Map<
+    string,
+    { id: string; label: string; memberIds: string[] }
+  >;
   readonly edges: ParsedEdge[];
   readonly diagnostics: MermaidDiagnostic[];
   /** Stack of open subgraph ids (innermost last). */
@@ -310,11 +324,16 @@ function openSubgraph(
     // `subgraph "Some Title"` — derive a stable id from the sanitized title.
     const sanitized = sanitizeLabel(rest);
     label = sanitized.value || "subgraph";
-    id = label.replace(/[^A-Za-z0-9_]+/g, "-").replace(/^-+|-+$/g, "") || "subgraph";
+    id =
+      label.replace(/[^A-Za-z0-9_]+/g, "-").replace(/^-+|-+$/g, "") ||
+      "subgraph";
   }
 
   const parentGroup = currentGroup(state);
-  if (parentGroup !== undefined && !state.groups.get(parentGroup)?.memberIds.includes(id)) {
+  if (
+    parentGroup !== undefined &&
+    !state.groups.get(parentGroup)?.memberIds.includes(id)
+  ) {
     state.groups.get(parentGroup)?.memberIds.push(id);
   }
   if (!state.groups.has(id)) {
@@ -324,7 +343,9 @@ function openSubgraph(
   void location;
 }
 
-function classifyKeyword(stmt: string): MermaidDiagnosticCode | "subgraph" | "end" | "direction" | null {
+function classifyKeyword(
+  stmt: string,
+): MermaidDiagnosticCode | "subgraph" | "end" | "direction" | null {
   const first = stmt.split(/\s+/, 1)[0]?.toLowerCase() ?? "";
   switch (first) {
     case "subgraph":
@@ -375,7 +396,12 @@ function handleEdgeStatement(
     return;
   }
 
-  const parsedNodes: { id: string; label: string; shape: NodeShape; sanitized: boolean }[] = [];
+  const parsedNodes: {
+    id: string;
+    label: string;
+    shape: NodeShape;
+    sanitized: boolean;
+  }[] = [];
   for (const chunk of result.chunks) {
     if (chunk.length === 0) {
       state.diagnostics.push({
@@ -411,7 +437,9 @@ function handleEdgeStatement(
     const connector = result.links[k];
     const source = parsedNodes[k].id;
     const target = parsedNodes[k + 1].id;
-    const labelText = connector.label ? sanitizeLabel(connector.label).value : undefined;
+    const labelText = connector.label
+      ? sanitizeLabel(connector.label).value
+      : undefined;
     state.edges.push({
       source,
       target,
@@ -543,7 +571,14 @@ export function parseFlowchart(text: string): ParsedFlowchart {
       message: "Source contains no flowchart.",
       line: 1,
     });
-    return { direction, nodes: [], groups: [], edges: [], diagnostics, fatal: true };
+    return {
+      direction,
+      nodes: [],
+      groups: [],
+      edges: [],
+      diagnostics,
+      fatal: true,
+    };
   }
 
   const state: ParserState = {

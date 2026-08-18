@@ -1,6 +1,10 @@
 import { defineEval } from "eve/evals";
 
-const VERDICTS = new Set(["approve", "approve_with_changes", "request_changes"]);
+const VERDICTS = new Set([
+  "approve",
+  "approve_with_changes",
+  "request_changes",
+]);
 
 /**
  * Shape check for the schema-validated `record_design_review` output. eve

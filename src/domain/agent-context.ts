@@ -1,4 +1,7 @@
-import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Versioned,
+} from "@/domain/schema-version";
 import type { EntityId, GraphSnapshot, SnapshotId } from "@/domain/graph";
 import type { Comparison, EntityChange } from "@/domain/comparison";
 
@@ -55,9 +58,7 @@ export interface AgentContextPackage extends Versioned {
   };
 }
 
-function toAgentEntity(
-  entity: GraphSnapshot["entities"][number],
-): AgentEntity {
+function toAgentEntity(entity: GraphSnapshot["entities"][number]): AgentEntity {
   switch (entity.kind) {
     case "node":
       return {
@@ -137,13 +138,15 @@ export function redactAgentContext(
           kind: "node",
           id: entity.id,
           label: entity.label,
-          ...(entity.groupId !== undefined && survivingGroups.has(entity.groupId)
+          ...(entity.groupId !== undefined &&
+          survivingGroups.has(entity.groupId)
             ? { groupId: entity.groupId }
             : {}),
         });
         break;
       case "edge":
-        if (!included.has(entity.source) || !included.has(entity.target)) continue;
+        if (!included.has(entity.source) || !included.has(entity.target))
+          continue;
         entities.push({
           kind: "edge",
           id: entity.id,

@@ -39,10 +39,17 @@ describe("importMermaidFlowchart acceptance", () => {
   it("imports all expected nodes, edges, and groups", () => {
     const imported = importText(ACCEPTANCE_FLOWCHART).snapshot!;
     const byKind = (kind: string) =>
-      imported.entities.filter((e) => e.kind === kind).map((e) => e.id).sort();
+      imported.entities
+        .filter((e) => e.kind === kind)
+        .map((e) => e.id)
+        .sort();
     expect(byKind("node")).toEqual(["api", "client", "db", "service"]);
     expect(byKind("group")).toEqual(["backend"]);
-    expect(byKind("edge")).toEqual(["api->service", "client->api", "service->db"]);
+    expect(byKind("edge")).toEqual([
+      "api->service",
+      "client->api",
+      "service->db",
+    ]);
   });
 
   it("preserves the original Mermaid source byte-for-byte", () => {
@@ -70,18 +77,27 @@ describe("importMermaidFlowchart reimport", () => {
   it("keeps ids stable when a label changes, so only that entity differs", () => {
     const original = importText(ACCEPTANCE_FLOWCHART).snapshot!;
     const edited = importText(
-      ACCEPTANCE_FLOWCHART.replace("service[Orders Service]", "service[Fulfilment]"),
+      ACCEPTANCE_FLOWCHART.replace(
+        "service[Orders Service]",
+        "service[Fulfilment]",
+      ),
       "snap-edited",
     ).snapshot!;
 
-    const reconnected = reconnectedEntityIds(original.entities, edited.entities);
+    const reconnected = reconnectedEntityIds(
+      original.entities,
+      edited.entities,
+    );
     expect(reconnected).toContain("service");
     expect(reconnected).toContain("client");
     expect(reconnected.length).toBe(original.entities.length);
 
     const diff = compareSnapshots(comparisonId("c"), original, edited);
     expect(diff.changes).toHaveLength(1);
-    expect(diff.changes[0]).toMatchObject({ op: "modified", entityId: "service" });
+    expect(diff.changes[0]).toMatchObject({
+      op: "modified",
+      entityId: "service",
+    });
   });
 });
 
@@ -91,8 +107,8 @@ describe("importMermaidFlowchart safety and diagnostics", () => {
 
   it("still imports the safe parts", () => {
     expect(result.ok).toBe(true);
-    const nodeIds = result.snapshot!.entities
-      .filter((e) => e.kind === "node")
+    const nodeIds = result
+      .snapshot!.entities.filter((e) => e.kind === "node")
       .map((e) => e.id);
     expect(nodeIds).toContain("a");
     expect(nodeIds).toContain("b");
@@ -112,7 +128,9 @@ describe("importMermaidFlowchart safety and diagnostics", () => {
   });
 
   it("reports unsupported constructs with source locations", () => {
-    const ampersand = result.diagnostics.find((d) => d.code === "unsupported-ampersand");
+    const ampersand = result.diagnostics.find(
+      (d) => d.code === "unsupported-ampersand",
+    );
     expect(ampersand).toBeDefined();
     expect(ampersand!.line).toBeGreaterThan(0);
     expect(ampersand!.snippet).toContain("&");

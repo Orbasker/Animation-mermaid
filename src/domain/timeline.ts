@@ -35,11 +35,27 @@ export type TimelineOperation =
       readonly id: SceneId;
     }
   | { readonly type: "remove-scene"; readonly sceneId: SceneId }
-  | { readonly type: "rename-scene"; readonly sceneId: SceneId; readonly title: string }
-  | { readonly type: "set-duration"; readonly sceneId: SceneId; readonly durationMs: number }
-  | { readonly type: "move-scene"; readonly sceneId: SceneId; readonly toIndex: number }
+  | {
+      readonly type: "rename-scene";
+      readonly sceneId: SceneId;
+      readonly title: string;
+    }
+  | {
+      readonly type: "set-duration";
+      readonly sceneId: SceneId;
+      readonly durationMs: number;
+    }
+  | {
+      readonly type: "move-scene";
+      readonly sceneId: SceneId;
+      readonly toIndex: number;
+    }
   /** Upsert an action: any existing action on the same channel and target is replaced. */
-  | { readonly type: "set-action"; readonly sceneId: SceneId; readonly action: Action }
+  | {
+      readonly type: "set-action";
+      readonly sceneId: SceneId;
+      readonly action: Action;
+    }
   | {
       readonly type: "remove-action";
       readonly sceneId: SceneId;
@@ -82,7 +98,10 @@ function upsertAction(
   action: Action,
 ): readonly Action[] {
   const key = actionConflictKey(action);
-  return [...actions.filter((existing) => actionConflictKey(existing) !== key), action];
+  return [
+    ...actions.filter((existing) => actionConflictKey(existing) !== key),
+    action,
+  ];
 }
 
 function matchesChannelTarget(
@@ -122,7 +141,9 @@ export function applyTimelineOperation(
       return { ...story, scenes };
     }
     case "duplicate-scene": {
-      const index = story.scenes.findIndex((item) => item.id === operation.sceneId);
+      const index = story.scenes.findIndex(
+        (item) => item.id === operation.sceneId,
+      );
       if (index < 0) return story;
       const source = story.scenes[index];
       const copy: Scene = {
@@ -139,8 +160,12 @@ export function applyTimelineOperation(
       return { ...story, scenes };
     }
     case "remove-scene": {
-      const scenes = story.scenes.filter((item) => item.id !== operation.sceneId);
-      return scenes.length === story.scenes.length ? story : { ...story, scenes };
+      const scenes = story.scenes.filter(
+        (item) => item.id !== operation.sceneId,
+      );
+      return scenes.length === story.scenes.length
+        ? story
+        : { ...story, scenes };
     }
     case "rename-scene":
       return mapScene(story, operation.sceneId, (scene) => ({
@@ -153,9 +178,14 @@ export function applyTimelineOperation(
         durationMs: operation.durationMs,
       }));
     case "move-scene": {
-      const from = story.scenes.findIndex((item) => item.id === operation.sceneId);
+      const from = story.scenes.findIndex(
+        (item) => item.id === operation.sceneId,
+      );
       if (from < 0) return story;
-      const to = Math.max(0, Math.min(story.scenes.length - 1, operation.toIndex));
+      const to = Math.max(
+        0,
+        Math.min(story.scenes.length - 1, operation.toIndex),
+      );
       if (to === from) return story;
       const scenes = [...story.scenes];
       const [moved] = scenes.splice(from, 1);
@@ -242,7 +272,9 @@ export function repairSceneReferences(
   const scenes = story.scenes.map((scene) => {
     const actions = scene.actions.flatMap((action): Action[] => {
       if (action.type === "camera") {
-        return [{ ...action, focus: action.focus.filter((id) => entityIds.has(id)) }];
+        return [
+          { ...action, focus: action.focus.filter((id) => entityIds.has(id)) },
+        ];
       }
       return entityIds.has(action.target) ? [action] : [];
     });

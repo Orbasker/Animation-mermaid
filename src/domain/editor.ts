@@ -9,10 +9,29 @@ import {
 } from "@/domain/graph";
 
 export type EditorTransaction =
-  | { readonly type: "move"; readonly entityId: EntityId; readonly x: number; readonly y: number }
-  | { readonly type: "set-hidden"; readonly entityIds: readonly EntityId[]; readonly hidden: boolean }
-  | { readonly type: "group"; readonly id: string; readonly label: string; readonly memberIds: readonly EntityId[] }
-  | { readonly type: "annotate"; readonly id: string; readonly text: string; readonly entityId?: EntityId };
+  | {
+      readonly type: "move";
+      readonly entityId: EntityId;
+      readonly x: number;
+      readonly y: number;
+    }
+  | {
+      readonly type: "set-hidden";
+      readonly entityIds: readonly EntityId[];
+      readonly hidden: boolean;
+    }
+  | {
+      readonly type: "group";
+      readonly id: string;
+      readonly label: string;
+      readonly memberIds: readonly EntityId[];
+    }
+  | {
+      readonly type: "annotate";
+      readonly id: string;
+      readonly text: string;
+      readonly entityId?: EntityId;
+    };
 
 export interface EditorHistory {
   readonly past: readonly GraphSnapshot[];
@@ -33,7 +52,9 @@ export function applyEditorTransaction(
   switch (transaction.type) {
     case "move": {
       const previous = snapshot.layout ?? [];
-      const index = previous.findIndex((hint) => hint.entityId === transaction.entityId);
+      const index = previous.findIndex(
+        (hint) => hint.entityId === transaction.entityId,
+      );
       const nextHint: LayoutHint = {
         ...(index >= 0 ? previous[index] : { entityId: transaction.entityId }),
         x: transaction.x,
@@ -41,7 +62,9 @@ export function applyEditorTransaction(
       };
       const layout =
         index >= 0
-          ? previous.map((hint, hintIndex) => (hintIndex === index ? nextHint : hint))
+          ? previous.map((hint, hintIndex) =>
+              hintIndex === index ? nextHint : hint,
+            )
           : [...previous, nextHint];
       return { ...snapshot, layout };
     }
@@ -62,10 +85,14 @@ export function applyEditorTransaction(
         label: transaction.label,
         memberIds: [...new Set(transaction.memberIds)],
       };
-      const existingIndex = view.groups.findIndex((item) => item.id === group.id);
+      const existingIndex = view.groups.findIndex(
+        (item) => item.id === group.id,
+      );
       const groups =
         existingIndex >= 0
-          ? view.groups.map((item, index) => (index === existingIndex ? group : item))
+          ? view.groups.map((item, index) =>
+              index === existingIndex ? group : item,
+            )
           : [...view.groups, group];
       return { ...snapshot, view: { ...view, groups } };
     }
@@ -73,9 +100,13 @@ export function applyEditorTransaction(
       const annotation = {
         id: transaction.id,
         text: transaction.text,
-        ...(transaction.entityId !== undefined ? { entityId: transaction.entityId } : {}),
+        ...(transaction.entityId !== undefined
+          ? { entityId: transaction.entityId }
+          : {}),
       };
-      const withoutCurrent = view.annotations.filter((item) => item.id !== annotation.id);
+      const withoutCurrent = view.annotations.filter(
+        (item) => item.id !== annotation.id,
+      );
       const annotations = transaction.text.trim()
         ? [...withoutCurrent, annotation]
         : withoutCurrent;
@@ -130,7 +161,9 @@ export function reconcileImportedSnapshot(
       .map((hint) => [hint.entityId, hint]),
   );
   const importedLayout = imported.layout ?? [];
-  const layout = importedLayout.map((hint) => previousLayout.get(hint.entityId) ?? hint);
+  const layout = importedLayout.map(
+    (hint) => previousLayout.get(hint.entityId) ?? hint,
+  );
   const layoutIds = new Set(layout.map((hint) => hint.entityId));
   for (const hint of previousLayout.values()) {
     if (!layoutIds.has(hint.entityId)) layout.push(hint);
@@ -139,7 +172,9 @@ export function reconcileImportedSnapshot(
   const previousView = previous.view;
   const view = previousView
     ? {
-        hiddenEntityIds: previousView.hiddenEntityIds.filter((id) => entityIds.has(id)),
+        hiddenEntityIds: previousView.hiddenEntityIds.filter((id) =>
+          entityIds.has(id),
+        ),
         groups: previousView.groups
           .map((group) => ({
             ...group,
@@ -147,7 +182,9 @@ export function reconcileImportedSnapshot(
           }))
           .filter((group) => group.memberIds.length > 0),
         annotations: previousView.annotations.filter(
-          (annotation) => annotation.entityId === undefined || entityIds.has(annotation.entityId),
+          (annotation) =>
+            annotation.entityId === undefined ||
+            entityIds.has(annotation.entityId),
         ),
       }
     : undefined;

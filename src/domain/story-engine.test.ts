@@ -8,12 +8,7 @@ import {
   type EntityId,
   type GraphSnapshot,
 } from "@/domain/graph";
-import {
-  createStory,
-  sceneId,
-  storyId,
-  type Story,
-} from "@/domain/story";
+import { createStory, sceneId, storyId, type Story } from "@/domain/story";
 
 const source = {
   diagramType: "flowchart",
@@ -168,13 +163,17 @@ describe("renderStoryAt", () => {
       timestampMs: 1500,
     });
 
-    expect(state.entities.find((entity) => entity.id === entityId("a"))).toMatchObject({
+    expect(
+      state.entities.find((entity) => entity.id === entityId("a")),
+    ).toMatchObject({
       focusProgress: 0.5,
     });
     expect(
       state.entities.find((entity) => entity.id === entityId("a->b")),
     ).toMatchObject({ traceProgress: 0.5 });
-    expect(state.entities.find((entity) => entity.id === entityId("b"))).toMatchObject({
+    expect(
+      state.entities.find((entity) => entity.id === entityId("b")),
+    ).toMatchObject({
       transform: {
         translateX: 50,
         translateY: 20,
@@ -208,8 +207,9 @@ describe("renderStoryAt", () => {
       id: sceneId("trace-edge"),
       progress: 0.001,
     });
-    expect(justAfterBoundary.entities.find((entity) => entity.id === "a->b"))
-      .toMatchObject({ opacity: 0.001, traceProgress: 0.001 });
+    expect(
+      justAfterBoundary.entities.find((entity) => entity.id === "a->b"),
+    ).toMatchObject({ opacity: 0.001, traceProgress: 0.001 });
     expect(atBoundary.activeScene).toMatchObject({
       id: sceneId("trace-edge"),
       progress: 0,
@@ -218,8 +218,9 @@ describe("renderStoryAt", () => {
       id: sceneId("reveal-a"),
       progress: 0.999,
     });
-    expect(justBeforeBoundary.entities.find((entity) => entity.id === "a->b"))
-      .toMatchObject({ opacity: 0, traceProgress: 0 });
+    expect(
+      justBeforeBoundary.entities.find((entity) => entity.id === "a->b"),
+    ).toMatchObject({ opacity: 0, traceProgress: 0 });
   });
 
   it.each([
@@ -260,20 +261,23 @@ describe("renderStoryAt", () => {
           "Compare B: modified",
         ]),
       );
-      expect(state.entities.find((entity) => entity.id === entityId("a")))
-        .toMatchObject({ focusProgress: 1 });
-      expect(state.entities.find((entity) => entity.id === entityId("a->b")))
-        .toMatchObject({ traceProgress: 1 });
-      expect(state.entities.find((entity) => entity.id === entityId("b")))
-        .toMatchObject({
-          transform: {
-            translateX: 100,
-            translateY: 40,
-            scale: 1.2,
-            rotateDeg: 10,
-          },
-          comparison: "modified",
-        });
+      expect(
+        state.entities.find((entity) => entity.id === entityId("a")),
+      ).toMatchObject({ focusProgress: 1 });
+      expect(
+        state.entities.find((entity) => entity.id === entityId("a->b")),
+      ).toMatchObject({ traceProgress: 1 });
+      expect(
+        state.entities.find((entity) => entity.id === entityId("b")),
+      ).toMatchObject({
+        transform: {
+          translateX: 100,
+          translateY: 40,
+          scale: 1.2,
+          rotateDeg: 10,
+        },
+        comparison: "modified",
+      });
     },
   );
 
@@ -351,7 +355,11 @@ describe("renderStoryAt", () => {
     });
 
     expect(() =>
-      renderStoryAt({ snapshot: graph(), story: missingTarget, timestampMs: 0 }),
+      renderStoryAt({
+        snapshot: graph(),
+        story: missingTarget,
+        timestampMs: 0,
+      }),
     ).toThrow(/unknown entity.*ghost/i);
   });
 
@@ -382,18 +390,15 @@ describe("renderStoryAt", () => {
     expect(second.camera.to).toEqual([entityId("a")]);
   });
 
-  it.each([0, 1, 2])(
-    "rejects a zero-duration scene at index %s",
-    (index) => {
-      expect(() =>
-        renderStoryAt({
-          snapshot: graph(),
-          story: storyWithZeroDurationAt(index),
-          timestampMs: 0,
-        }),
-      ).toThrow(/zero duration/i);
-    },
-  );
+  it.each([0, 1, 2])("rejects a zero-duration scene at index %s", (index) => {
+    expect(() =>
+      renderStoryAt({
+        snapshot: graph(),
+        story: storyWithZeroDurationAt(index),
+        timestampMs: 0,
+      }),
+    ).toThrow(/zero duration/i);
+  });
 
   it("rejects conflicting same-channel actions on one target", () => {
     const conflicting = createStory({
@@ -454,7 +459,12 @@ describe("renderStoryAt", () => {
       });
     } catch (error) {
       expect(error).toMatchObject({
-        issues: [expect.objectContaining({ scope: "snapshot", code: "duplicate-entity-id" })],
+        issues: [
+          expect.objectContaining({
+            scope: "snapshot",
+            code: "duplicate-entity-id",
+          }),
+        ],
       });
     }
   });
@@ -608,7 +618,8 @@ describe("renderStoryAt", () => {
       durationMs: 1,
       progress: 1,
     });
-    expect(state.entities.find((entity) => entity.id === entityId("a")))
-      .toMatchObject({ opacity: 1, visible: true });
+    expect(
+      state.entities.find((entity) => entity.id === entityId("a")),
+    ).toMatchObject({ opacity: 1, visible: true });
   });
 });

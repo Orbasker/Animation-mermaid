@@ -127,16 +127,19 @@ describe("schema version", () => {
     ["unsupported", 99],
   ])("rejects %s nested versions during version-1 migration", (_, version) => {
     const document = legacyDocument();
-    const nested = { ...document.stories[0] } as { schemaVersion?: number; id: string };
+    const nested = { ...document.stories[0] } as {
+      schemaVersion?: number;
+      id: string;
+    };
     if (version === undefined) {
       delete nested.schemaVersion;
     } else {
       nested.schemaVersion = version;
     }
 
-    expect(() =>
-      migrateDocument({ ...document, stories: [nested] }),
-    ).toThrow(/stories\[0\].*schemaVersion 1/i);
+    expect(() => migrateDocument({ ...document, stories: [nested] })).toThrow(
+      /stories\[0\].*schemaVersion 1/i,
+    );
   });
 
   it.each(["focus", "trace", "transform", "compare"])(

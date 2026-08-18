@@ -117,7 +117,10 @@ describe("generateDesignReviewStory", () => {
     await waitForHook(run, { token: decisionToken(run.runId) });
 
     const reader = getRun(run.runId)
-      .getReadable<StoryProposal>({ namespace: PROPOSAL_NAMESPACE, startIndex: 0 })
+      .getReadable<StoryProposal>({
+        namespace: PROPOSAL_NAMESPACE,
+        startIndex: 0,
+      })
       .getReader();
     const { value, done } = await reader.read();
     await reader.cancel().catch(() => undefined);
@@ -128,18 +131,24 @@ describe("generateDesignReviewStory", () => {
     // Seeing the proposal is not applying it: the run has not settled.
     expect(await run.status).not.toBe("completed");
 
-    await storyDecisionHook.resume(decisionToken(run.runId), { decision: "reject" });
+    await storyDecisionHook.resume(decisionToken(run.runId), {
+      decision: "reject",
+    });
     await run.returnValue;
   });
 
   it("returns the same proposal payload for two runs of the same request", async () => {
     const first = await start(generateDesignReviewStory, [request()]);
-    const firstHook = await waitForHook(first, { token: decisionToken(first.runId) });
+    const firstHook = await waitForHook(first, {
+      token: decisionToken(first.runId),
+    });
     await storyDecisionHook.resume(firstHook.token, { decision: "approve" });
     const a = (await first.returnValue) as StoryOutcome;
 
     const second = await start(generateDesignReviewStory, [request()]);
-    const secondHook = await waitForHook(second, { token: decisionToken(second.runId) });
+    const secondHook = await waitForHook(second, {
+      token: decisionToken(second.runId),
+    });
     await storyDecisionHook.resume(secondHook.token, { decision: "approve" });
     const b = (await second.returnValue) as StoryOutcome;
 
@@ -174,7 +183,9 @@ describe("generateDesignReviewStory", () => {
       "critiquing",
     ]);
 
-    await storyDecisionHook.resume(decisionToken(runId), { decision: "approve" });
+    await storyDecisionHook.resume(decisionToken(runId), {
+      decision: "approve",
+    });
     const outcome = await rejoined.returnValue;
 
     expect(outcome.status).toBe("approved");
@@ -206,7 +217,9 @@ describe("generateDesignReviewStory", () => {
       (event) => event.attempt !== undefined,
     );
     const perPhase = (phase: string) =>
-      attempts.filter((event) => event.phase === phase).map((event) => event.attempt);
+      attempts
+        .filter((event) => event.phase === phase)
+        .map((event) => event.attempt);
 
     expect(perPhase("generating-scenes")).toEqual([1, 2, 3]);
     expect(perPhase("analyzing-narrative")).toEqual([1]);
@@ -252,7 +265,8 @@ describe("generateDesignReviewStory", () => {
     await expect(run.returnValue).rejects.toThrow();
 
     const attempts = (await readProgress(run.runId)).filter(
-      (event) => event.phase === "analyzing-narrative" && event.attempt !== undefined,
+      (event) =>
+        event.phase === "analyzing-narrative" && event.attempt !== undefined,
     );
 
     expect(attempts).toHaveLength(1);
@@ -292,7 +306,10 @@ describe("generateDesignReviewStory", () => {
       // Layout data is exactly what the context boundary exists to keep out.
       {
         ...request(),
-        context: { ...request().context, layout: [{ entityId: "api", x: 1, y: 2 }] },
+        context: {
+          ...request().context,
+          layout: [{ entityId: "api", x: 1, y: 2 }],
+        },
       } as StoryRequest,
     ]);
 
@@ -356,7 +373,9 @@ describe("generateDesignReviewStory", () => {
     // The hook is consumed, so a second decision has nothing to resume. The decision route
     // turns this into a 409 rather than letting a late approval land on a settled run.
     await expect(
-      storyDecisionHook.resume(decisionToken(run.runId), { decision: "reject" }),
+      storyDecisionHook.resume(decisionToken(run.runId), {
+        decision: "reject",
+      }),
     ).rejects.toThrow();
   });
 });

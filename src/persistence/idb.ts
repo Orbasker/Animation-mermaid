@@ -67,7 +67,10 @@ export function runTransaction<T>(
   work: (transaction: IDBTransaction) => Promise<T> | T,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const transaction = database.transaction(storeNames as string | string[], mode);
+    const transaction = database.transaction(
+      storeNames as string | string[],
+      mode,
+    );
 
     let result: T;
     let workFailed = false;
@@ -81,7 +84,7 @@ export function runTransaction<T>(
         workFailed
           ? failure
           : (transaction.error ??
-            new DOMException("Transaction aborted.", "AbortError")),
+              new DOMException("Transaction aborted.", "AbortError")),
       );
 
     let output: Promise<T> | T;

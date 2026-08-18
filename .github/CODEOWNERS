@@ -1,0 +1,11 @@
+# Default owner for everything in the repository.
+* @Orbasker
+
+# CI, security, and repository standards.
+/.github/ @Orbasker
+/tools/ @Orbasker
+/.gitleaks.toml @Orbasker
+
+# Core domain logic and its persistence boundary.
+/src/domain/ @Orbasker
+/src/persistence/ @Orbasker

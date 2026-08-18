@@ -9,7 +9,11 @@ import {
   redoEditorHistory,
   undoEditorHistory,
 } from "@/domain/editor";
-import { createGraphSnapshot, entityId, validateGraphSnapshot } from "@/domain/graph";
+import {
+  createGraphSnapshot,
+  entityId,
+  validateGraphSnapshot,
+} from "@/domain/graph";
 import { currentArchitectureSnapshot } from "@/domain/fixtures";
 
 const source = {
@@ -51,7 +55,9 @@ describe("graph editor transactions", () => {
 
     expect(annotated.source).toEqual(original.source);
     expect(annotated.entities).toEqual(original.entities);
-    expect(annotated.layout?.find((hint) => hint.entityId === "client")).toMatchObject({
+    expect(
+      annotated.layout?.find((hint) => hint.entityId === "client"),
+    ).toMatchObject({
       x: 180,
       y: 96,
     });
@@ -122,11 +128,15 @@ describe("reimport reconciliation", () => {
     const reconciled = reconcileImportedSnapshot(previous, imported);
 
     expect(reconciled.source.text).toContain("c[C]");
-    expect(reconciled.layout?.find((hint) => hint.entityId === "client")).toMatchObject({
+    expect(
+      reconciled.layout?.find((hint) => hint.entityId === "client"),
+    ).toMatchObject({
       x: 420,
       y: 160,
     });
-    expect(reconciled.layout?.find((hint) => hint.entityId === "c")).toMatchObject({
+    expect(
+      reconciled.layout?.find((hint) => hint.entityId === "c"),
+    ).toMatchObject({
       x: 240,
       y: 10,
     });

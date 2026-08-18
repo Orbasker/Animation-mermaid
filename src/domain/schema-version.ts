@@ -61,20 +61,22 @@ export function assertCurrentSchemaVersion(document: {
 export interface Migration {
   readonly from: SchemaVersion;
   readonly to: SchemaVersion;
-  readonly migrate: (document: Record<string, unknown>) => Record<string, unknown>;
+  readonly migrate: (
+    document: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 type PersistedArtifactKind =
-  | "ProjectDocument"
-  | "GraphSnapshot"
-  | "Story"
-  | "Comparison";
+  "ProjectDocument" | "GraphSnapshot" | "Story" | "Comparison";
 
 function migrationError(path: string, expectation: string): never {
   throw new Error(`Cannot migrate ${path}: ${expectation}.`);
 }
 
-function migrationRecord(value: unknown, path: string): Record<string, unknown> {
+function migrationRecord(
+  value: unknown,
+  path: string,
+): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     migrationError(path, "expected an object");
   }
@@ -131,16 +133,23 @@ function validateV1GraphEntity(value: unknown, path: string): void {
       break;
     case "group":
       migrationString(entity.label, `${path}.label`);
-      migrationArray(entity.memberIds, `${path}.memberIds`).forEach((member, index) =>
-        migrationString(member, `${path}.memberIds[${index}]`),
+      migrationArray(entity.memberIds, `${path}.memberIds`).forEach(
+        (member, index) =>
+          migrationString(member, `${path}.memberIds[${index}]`),
       );
       break;
     default:
-      migrationError(`${path}.kind`, `unsupported entity kind "${String(entity.kind)}"`);
+      migrationError(
+        `${path}.kind`,
+        `unsupported entity kind "${String(entity.kind)}"`,
+      );
   }
 }
 
-function validateV1Snapshot(value: unknown, path: string): Record<string, unknown> {
+function validateV1Snapshot(
+  value: unknown,
+  path: string,
+): Record<string, unknown> {
   const snapshot = migrationRecord(value, path);
   if (snapshot.schemaVersion !== 1) {
     migrationError(path, "expected nested schemaVersion 1");
@@ -156,22 +165,25 @@ function validateV1Snapshot(value: unknown, path: string): Record<string, unknow
     `${path}.source.importer.importerVersion`,
   );
   migrationString(importer.importedAt, `${path}.source.importer.importedAt`);
-  migrationArray(snapshot.entities, `${path}.entities`).forEach((entity, index) =>
-    validateV1GraphEntity(entity, `${path}.entities[${index}]`),
+  migrationArray(snapshot.entities, `${path}.entities`).forEach(
+    (entity, index) =>
+      validateV1GraphEntity(entity, `${path}.entities[${index}]`),
   );
   if (snapshot.layout !== undefined) {
-    migrationArray(snapshot.layout, `${path}.layout`).forEach((value, index) => {
-      const layout = migrationRecord(value, `${path}.layout[${index}]`);
-      migrationString(layout.entityId, `${path}.layout[${index}].entityId`);
-      migrationNumber(layout.x, `${path}.layout[${index}].x`);
-      migrationNumber(layout.y, `${path}.layout[${index}].y`);
-      if (layout.width !== undefined) {
-        migrationNumber(layout.width, `${path}.layout[${index}].width`);
-      }
-      if (layout.height !== undefined) {
-        migrationNumber(layout.height, `${path}.layout[${index}].height`);
-      }
-    });
+    migrationArray(snapshot.layout, `${path}.layout`).forEach(
+      (value, index) => {
+        const layout = migrationRecord(value, `${path}.layout[${index}]`);
+        migrationString(layout.entityId, `${path}.layout[${index}].entityId`);
+        migrationNumber(layout.x, `${path}.layout[${index}].x`);
+        migrationNumber(layout.y, `${path}.layout[${index}].y`);
+        if (layout.width !== undefined) {
+          migrationNumber(layout.width, `${path}.layout[${index}].width`);
+        }
+        if (layout.height !== undefined) {
+          migrationNumber(layout.height, `${path}.layout[${index}].height`);
+        }
+      },
+    );
   }
   return snapshot;
 }
@@ -211,11 +223,17 @@ function validateV1Action(value: unknown, path: string): void {
       );
       break;
     default:
-      migrationError(path, `unsupported schemaVersion 1 action "${String(action.type)}"`);
+      migrationError(
+        path,
+        `unsupported schemaVersion 1 action "${String(action.type)}"`,
+      );
   }
 }
 
-function validateV1Story(value: unknown, path: string): Record<string, unknown> {
+function validateV1Story(
+  value: unknown,
+  path: string,
+): Record<string, unknown> {
   const story = migrationRecord(value, path);
   if (story.schemaVersion !== 1) {
     migrationError(path, "expected nested schemaVersion 1");
@@ -223,17 +241,19 @@ function validateV1Story(value: unknown, path: string): Record<string, unknown> 
   migrationString(story.id, `${path}.id`);
   migrationString(story.title, `${path}.title`);
   migrationString(story.snapshotId, `${path}.snapshotId`);
-  migrationArray(story.scenes, `${path}.scenes`).forEach((value, sceneIndex) => {
-    const scenePath = `${path}.scenes[${sceneIndex}]`;
-    const scene = migrationRecord(value, scenePath);
-    migrationString(scene.id, `${scenePath}.id`);
-    migrationString(scene.title, `${scenePath}.title`);
-    migrationNumber(scene.durationMs, `${scenePath}.durationMs`);
-    migrationArray(scene.actions, `${scenePath}.actions`).forEach(
-      (action, actionIndex) =>
-        validateV1Action(action, `${scenePath}.actions[${actionIndex}]`),
-    );
-  });
+  migrationArray(story.scenes, `${path}.scenes`).forEach(
+    (value, sceneIndex) => {
+      const scenePath = `${path}.scenes[${sceneIndex}]`;
+      const scene = migrationRecord(value, scenePath);
+      migrationString(scene.id, `${scenePath}.id`);
+      migrationString(scene.title, `${scenePath}.title`);
+      migrationNumber(scene.durationMs, `${scenePath}.durationMs`);
+      migrationArray(scene.actions, `${scenePath}.actions`).forEach(
+        (action, actionIndex) =>
+          validateV1Action(action, `${scenePath}.actions[${actionIndex}]`),
+      );
+    },
+  );
   return story;
 }
 
@@ -253,7 +273,10 @@ function validateV1Change(value: unknown, path: string): void {
       validateV1GraphEntity(change.after, `${path}.after`);
       break;
     default:
-      migrationError(`${path}.op`, `unsupported change operation "${String(change.op)}"`);
+      migrationError(
+        `${path}.op`,
+        `unsupported change operation "${String(change.op)}"`,
+      );
   }
 }
 
@@ -268,13 +291,15 @@ function validateV1Comparison(
   migrationString(comparison.id, `${path}.id`);
   migrationString(comparison.baseSnapshotId, `${path}.baseSnapshotId`);
   migrationString(comparison.targetSnapshotId, `${path}.targetSnapshotId`);
-  migrationArray(comparison.changes, `${path}.changes`).forEach((change, index) =>
-    validateV1Change(change, `${path}.changes[${index}]`),
+  migrationArray(comparison.changes, `${path}.changes`).forEach(
+    (change, index) => validateV1Change(change, `${path}.changes[${index}]`),
   );
   return comparison;
 }
 
-function detectV1Artifact(document: Record<string, unknown>): PersistedArtifactKind {
+function detectV1Artifact(
+  document: Record<string, unknown>,
+): PersistedArtifactKind {
   if (
     "snapshots" in document ||
     "stories" in document ||
@@ -298,7 +323,9 @@ function detectV1Artifact(document: Record<string, unknown>): PersistedArtifactK
   return migrationError("schemaVersion 1 document", "unknown artifact shape");
 }
 
-function migrateV1Artifact(document: Record<string, unknown>): Record<string, unknown> {
+function migrateV1Artifact(
+  document: Record<string, unknown>,
+): Record<string, unknown> {
   const kind = detectV1Artifact(document);
   switch (kind) {
     case "GraphSnapshot":
@@ -313,8 +340,14 @@ function migrateV1Artifact(document: Record<string, unknown>): Record<string, un
     case "ProjectDocument": {
       migrationString(document.id, "ProjectDocument.id");
       migrationString(document.name, "ProjectDocument.name");
-      const snapshots = migrationArray(document.snapshots, "ProjectDocument.snapshots");
-      const stories = migrationArray(document.stories, "ProjectDocument.stories");
+      const snapshots = migrationArray(
+        document.snapshots,
+        "ProjectDocument.snapshots",
+      );
+      const stories = migrationArray(
+        document.stories,
+        "ProjectDocument.stories",
+      );
       const comparisons = migrationArray(
         document.comparisons,
         "ProjectDocument.comparisons",
@@ -356,9 +389,9 @@ export const MIGRATIONS: readonly Migration[] = [
  * recognized version or when no migration path reaches the current version. A document
  * already at the current version is returned unchanged.
  */
-export function migrateDocument<
-  T extends { readonly schemaVersion?: unknown },
->(document: T): Record<string, unknown> {
+export function migrateDocument<T extends { readonly schemaVersion?: unknown }>(
+  document: T,
+): Record<string, unknown> {
   const version = document.schemaVersion;
   if (!isSupportedSchemaVersion(version)) {
     throw new Error(

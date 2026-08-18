@@ -1,0 +1,6 @@
+title = "Secret scanner self-test"
+
+# Same detectors as the repo scan, but with no fixture allowlist: this config
+# proves the scanner still rejects a planted credential.
+[extend]
+useDefault = true

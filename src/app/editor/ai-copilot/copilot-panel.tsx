@@ -35,11 +35,18 @@ export interface CopilotPanelProps {
  * The panel renders one section per client phase and never starts a request until the reviewer
  * has confirmed the context preview — the "Generate" control does not exist before then.
  */
-export function CopilotPanel({ controller, project, applyControls }: CopilotPanelProps) {
+export function CopilotPanel({
+  controller,
+  project,
+  applyControls,
+}: CopilotPanelProps) {
   const { state } = controller;
 
   const plan = useMemo(
-    () => (state.proposal ? planStoryApplication(project, state.proposal.story) : undefined),
+    () =>
+      state.proposal
+        ? planStoryApplication(project, state.proposal.story)
+        : undefined,
     [project, state.proposal],
   );
 
@@ -54,14 +61,13 @@ export function CopilotPanel({ controller, project, applyControls }: CopilotPane
         <ComposeSection controller={controller} />
       ) : null}
 
-      {RUNNING_PHASES.has(state.phase) ? <ProgressSection controller={controller} /> : null}
+      {RUNNING_PHASES.has(state.phase) ? (
+        <ProgressSection controller={controller} />
+      ) : null}
 
       {state.phase === "reviewing" || state.phase === "deciding" ? (
         state.proposal ? (
-          <ReviewSection
-            controller={controller}
-            plan={plan}
-          />
+          <ReviewSection controller={controller} plan={plan} />
         ) : null
       ) : null}
 
@@ -126,7 +132,11 @@ export function CopilotPanel({ controller, project, applyControls }: CopilotPane
   );
 }
 
-function ComposeSection({ controller }: { readonly controller: CopilotController }) {
+function ComposeSection({
+  controller,
+}: {
+  readonly controller: CopilotController;
+}) {
   const { state, context, redactedContext } = controller;
   const previewing = state.phase === "previewing";
   const includedCount = redactedContext.graph.entities.length;
@@ -155,7 +165,9 @@ function ComposeSection({ controller }: { readonly controller: CopilotController
           disabled={previewing}
         />
 
-        <label htmlFor="copilot-intent">What should the animation explain?</label>
+        <label htmlFor="copilot-intent">
+          What should the animation explain?
+        </label>
         <textarea
           id="copilot-intent"
           onChange={(event) => controller.setIntent(event.target.value)}
@@ -188,7 +200,8 @@ function ComposeSection({ controller }: { readonly controller: CopilotController
           Context sent to AI · {includedCount} of {totalCount}
         </legend>
         <p className="panelNote">
-          Only checked components are sent. Everything else is absent from the request.
+          Only checked components are sent. Everything else is absent from the
+          request.
         </p>
         <ul>
           {context.graph.entities.map((entity) => {
@@ -214,7 +227,11 @@ function ComposeSection({ controller }: { readonly controller: CopilotController
       </fieldset>
 
       {previewing ? (
-        <div className="copilotPreview" role="group" aria-label="Request preview">
+        <div
+          className="copilotPreview"
+          role="group"
+          aria-label="Request preview"
+        >
           <h3>Confirm the request</h3>
           <dl>
             <div>
@@ -257,7 +274,11 @@ function ComposeSection({ controller }: { readonly controller: CopilotController
   );
 }
 
-function ProgressSection({ controller }: { readonly controller: CopilotController }) {
+function ProgressSection({
+  controller,
+}: {
+  readonly controller: CopilotController;
+}) {
   const { state } = controller;
   return (
     <div className="copilotProgress">
@@ -302,8 +323,13 @@ function ReviewSection({
         <p className="panelNote">For {proposal.analysis.audience}</p>
       </section>
 
-      <section className="copilotCritique" data-verdict={proposal.critique.verdict}>
-        <strong>Agent review · {proposal.critique.verdict.replace(/_/g, " ")}</strong>
+      <section
+        className="copilotCritique"
+        data-verdict={proposal.critique.verdict}
+      >
+        <strong>
+          Agent review · {proposal.critique.verdict.replace(/_/g, " ")}
+        </strong>
         <p>{proposal.critique.summary}</p>
         {proposal.critique.notes.length > 0 ? (
           <ul>
@@ -320,7 +346,10 @@ function ReviewSection({
       <section className="copilotDiff">
         <h4>
           {plan?.scenes.length ?? proposal.story.scenes.length} scenes ·{" "}
-          {Math.round((plan?.totalDurationMs ?? proposal.totalDurationMs) / 100) / 10}s
+          {Math.round(
+            (plan?.totalDurationMs ?? proposal.totalDurationMs) / 100,
+          ) / 10}
+          s
         </h4>
         <ol>
           {(plan?.scenes ?? []).map((scene, index) => (
@@ -342,7 +371,8 @@ function ReviewSection({
         ) : null}
         {plan && !applicable ? (
           <p className="copilotErrorReason" role="alert">
-            This proposal cannot be applied to your project: {plan.errors[0]?.message}
+            This proposal cannot be applied to your project:{" "}
+            {plan.errors[0]?.message}
           </p>
         ) : null}
       </section>

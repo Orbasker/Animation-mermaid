@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -55,7 +61,9 @@ function proposalFixture(): StoryProposal {
         id: sceneId("scene-2"),
         title: "Service handles it",
         durationMs: 2000,
-        actions: [{ type: "highlight", target: entityId("service"), style: "active" }],
+        actions: [
+          { type: "highlight", target: entityId("service"), style: "active" },
+        ],
       },
     ],
   });
@@ -66,7 +74,9 @@ function proposalFixture(): StoryProposal {
     analysis: {
       thesis: "A request flows client → api → service.",
       audience: "Engineers reviewing the design.",
-      beats: [{ summary: "Client calls the API.", entityIds: [entityId("client")] }],
+      beats: [
+        { summary: "Client calls the API.", entityIds: [entityId("client")] },
+      ],
     },
     critique: {
       verdict: "ready_with_notes",
@@ -106,10 +116,19 @@ class FakeTransport implements CopilotTransport {
   private cancelled = false;
   private streamEnded = false;
 
-  constructor(private readonly options: { readonly proposal: StoryProposal; readonly failWith?: string }) {}
+  constructor(
+    private readonly options: {
+      readonly proposal: StoryProposal;
+      readonly failWith?: string;
+    },
+  ) {}
 
   private get approvedOutcome(): StoryOutcome {
-    return { status: "approved", proposal: this.options.proposal, agentSessionId: "sess" };
+    return {
+      status: "approved",
+      proposal: this.options.proposal,
+      agentSessionId: "sess",
+    };
   }
 
   private get rejectedOutcome(): StoryOutcome {
@@ -125,7 +144,11 @@ class FakeTransport implements CopilotTransport {
     if (this.cancelled) return { runId, status: "cancelled" };
     if (this.options.failWith) {
       return this.streamEnded
-        ? { runId, status: "failed", error: classifyFailureMessage(this.options.failWith) }
+        ? {
+            runId,
+            status: "failed",
+            error: classifyFailureMessage(this.options.failWith),
+          }
         : { runId, status: "running" };
     }
     if (this.decision === "approve") {
@@ -167,7 +190,10 @@ class FakeTransport implements CopilotTransport {
   }
 }
 
-async function openCopilot(transport: CopilotTransport, options: { repository?: ProjectRepository } = {}) {
+async function openCopilot(
+  transport: CopilotTransport,
+  options: { repository?: ProjectRepository } = {},
+) {
   render(
     <EditorWorkspace
       autosaveDelayMs={0}
@@ -181,9 +207,12 @@ async function openCopilot(transport: CopilotTransport, options: { repository?: 
 }
 
 function compose(intent: string) {
-  fireEvent.change(screen.getByLabelText("What should the animation explain?"), {
-    target: { value: intent },
-  });
+  fireEvent.change(
+    screen.getByLabelText("What should the animation explain?"),
+    {
+      target: { value: intent },
+    },
+  );
 }
 
 async function driveToReview() {
@@ -199,13 +228,17 @@ describe("AI copilot", () => {
     await openCopilot(transport);
 
     // No generate control exists before previewing.
-    expect(screen.queryByRole("button", { name: /Confirm & generate/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Confirm & generate/ }),
+    ).toBeNull();
 
     compose("Explain the request path.");
     fireEvent.click(screen.getByRole("button", { name: "Preview request" }));
 
     // Previewing shows the confirm control but has still sent nothing.
-    expect(screen.getByRole("button", { name: /Confirm & generate/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Confirm & generate/ }),
+    ).toBeInTheDocument();
     expect(transport.started).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Confirm & generate/ }));
@@ -269,7 +302,8 @@ describe("AI copilot", () => {
   it("preserves local work and explains the next action on failure", async () => {
     const transport = new FakeTransport({
       proposal: proposalFixture(),
-      failWith: "The agent rejected the request with 402; retrying cannot help: budget exceeded",
+      failWith:
+        "The agent rejected the request with 402; retrying cannot help: budget exceeded",
     });
     await openCopilot(transport);
 
@@ -279,7 +313,9 @@ describe("AI copilot", () => {
 
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(/budget is exhausted/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start over" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Start over" }),
+    ).toBeInTheDocument();
 
     // The local project is untouched — the original story is still the only one.
     fireEvent.click(screen.getByRole("tab", { name: "Story" }));
@@ -310,9 +346,17 @@ describe("AI copilot", () => {
     first.unmount();
 
     // A fresh mount with no initialProject loads from the repository and rejoins the run.
-    render(<EditorWorkspace autosaveDelayMs={0} copilotTransport={transport} repository={repository} />);
+    render(
+      <EditorWorkspace
+        autosaveDelayMs={0}
+        copilotTransport={transport}
+        repository={repository}
+      />,
+    );
     await screen.findByRole("button", { name: /Client\. Position/i });
     fireEvent.click(screen.getByRole("tab", { name: "Copilot" }));
-    expect(await screen.findByText("AI proposed walkthrough")).toBeInTheDocument();
+    expect(
+      await screen.findByText("AI proposed walkthrough"),
+    ).toBeInTheDocument();
   });
 });
