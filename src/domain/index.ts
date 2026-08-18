@@ -41,6 +41,7 @@ export {
   type CreateStoryInput,
   type StoryValidationCode,
   type StoryValidationError,
+  type StoryValidationTarget,
   ACTION_TYPES,
   storyId,
   sceneId,

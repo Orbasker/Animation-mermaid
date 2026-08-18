@@ -1,2 +1,7 @@
 packages:
   - "."
+
+# No published `builtin-modules` release survives both Workflow DevKit bundle targets;
+# `tools/builtin-modules/index.js` explains why and supplies a static ESM array instead.
+overrides:
+  builtin-modules: "file:./tools/builtin-modules"

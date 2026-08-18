@@ -1,0 +1,12 @@
+{
+  "name": "builtin-modules",
+  "version": "3.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Local shim for builtin-modules; see index.js for why.",
+  "exports": {
+    "types": "./index.d.ts",
+    "default": "./index.js"
+  },
+  "files": ["index.js", "index.d.ts"]
+}
