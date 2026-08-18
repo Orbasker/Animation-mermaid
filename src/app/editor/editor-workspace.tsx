@@ -857,9 +857,8 @@ export function EditorWorkspace({
     const previous = snapshot;
     setSaveState("Reimporting…");
     try {
-      const { importerByDiagramType, detectImporter } = await import(
-        "@/domain/import/registry"
-      );
+      const { importerByDiagramType, detectImporter } =
+        await import("@/domain/import/registry");
       const importer =
         importerByDiagramType(previous.source.diagramType) ??
         detectImporter(source);
