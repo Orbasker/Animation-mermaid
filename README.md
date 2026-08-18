@@ -5,6 +5,21 @@ shareable animations. The repository currently provides the application foundati
 product-oriented home page, and an `/editor` placeholder for the upcoming editing
 workspace.
 
+## Local-first persistence
+
+Projects are stored on the device in IndexedDB via `ProjectRepository`
+(`src/persistence`). Editing never uploads a project document; the store keeps canonical,
+portable content separate from local bookkeeping and from hosted AI run identifiers.
+
+- **Autosave & recovery** — every write runs in a single IndexedDB transaction, so an
+  interrupted write is rolled back and the store recovers to the last complete transaction.
+- **Lifecycle** — `list`, `create`, `save`, `rename`, `duplicate`, `archive`/`unarchive`,
+  `delete`.
+- **Portable JSON** — `export` emits canonical document JSON (no metadata, no run ids) that
+  `import` migrates forward, validates, and loads into a fresh browser profile.
+- **Hosted AI runs** — `linkAiRun`/`aiRuns` record run identifiers in a separate object
+  store, kept out of the exported document.
+
 ## Prerequisites
 
 - Node.js matching `^22.22.2 || ^24.15.0 || >=26.0.0` (Node.js 24.15 or newer
