@@ -75,6 +75,28 @@ jobs:
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
+  provenance:
+    name: Package provenance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      # `npm audit signatures` verifies the installed tree, so a metadata-only
+      # `--package-lock-only` lockfile leaves it nothing to check. Do a real
+      # install from the public registry (npm can't read pnpm's lockfile).
+      # --ignore-scripts avoids lifecycle execution, --legacy-peer-deps keeps
+      # peer-range conflicts in the eve / workflow stack from failing
+      # resolution, and --no-audit/--no-fund keep the output focused.
+      - name: Install dependencies from the public registry
+        run: npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+
+      - name: Verify registry signatures and provenance attestations
+        run: npm audit signatures
+
   license-check:
     name: License policy
     runs-on: ubuntu-latest

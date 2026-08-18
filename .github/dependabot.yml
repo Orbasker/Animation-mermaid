@@ -4,8 +4,17 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 10
     versioning-strategy: increase
+    labels:
+      - dependencies
+    # Let a freshly published version settle before we adopt it — this is the
+    # cheapest defense against a compromised release, which is usually yanked
+    # within days. Security advisories bypass the cooldown and open immediately.
+    cooldown:
+      default-days: 5
+      semver-major-days: 7
     groups:
       # One PR per week for routine dev-tooling and minor/patch bumps keeps the
       # review load low; majors still arrive as individual PRs.
@@ -24,4 +33,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - github-actions
