@@ -20,6 +20,9 @@ export {
   type GroupEntity,
   type GraphEntity,
   type LayoutHint,
+  type VisualGroup,
+  type GraphAnnotation,
+  type GraphViewState,
   type ImporterMetadata,
   type MermaidSource,
   type GraphSnapshot,
@@ -43,6 +46,7 @@ export {
   type CreateStoryInput,
   type StoryValidationCode,
   type StoryValidationError,
+  type StoryValidationTarget,
   ACTION_TYPES,
   storyId,
   sceneId,
@@ -74,7 +78,45 @@ export {
   comparisonId,
   compareSnapshots,
   validateComparison,
+  withIdentityMap,
 } from "@/domain/comparison";
+
+export {
+  type IdentityPair,
+  type IdentityMap,
+  EMPTY_IDENTITY_MAP,
+  confirmIdentity,
+  rejectIdentity,
+  isConfirmed,
+  isRejected,
+} from "@/domain/identity-map";
+
+export {
+  type MatchStrategy,
+  type EntityMatch,
+  type MatchSuggestion,
+  type MatchResult,
+  type ChangeCategory,
+  type ChangeRecord,
+  type ArchitectureDiff,
+  type MatchOptions,
+  type SideStatus,
+  type SideEntity,
+  type SideBySideView,
+  type OverlayEntity,
+  type OverlayView,
+  type CompareStoryInput,
+  CHANGE_CATEGORIES,
+  recordEntityId,
+  matchEntities,
+  diffArchitectures,
+  filterChanges,
+  changeCategoryLabel,
+  buildSideBySideView,
+  buildOverlayView,
+  buildCompareSnapshot,
+  changesToCompareStory,
+} from "@/domain/semantic-compare";
 
 export {
   type AgentEntity,
@@ -111,7 +153,49 @@ export {
 } from "@/domain/runtime-decoder";
 
 export {
+  type EditorTransaction,
+  type EditorHistory,
+  applyEditorTransaction,
+  createEditorHistory,
+  commitEditorTransaction,
+  undoEditorHistory,
+  redoEditorHistory,
+  reconcileImportedSnapshot,
+  createStressSnapshot,
+} from "@/domain/editor";
+
+export {
   currentArchitectureSnapshot,
   proposedArchitectureSnapshot,
   sampleProjectDocument,
 } from "@/domain/fixtures";
+
+export {
+  type Direction,
+  type NodeShape,
+  type EdgeLineStyle,
+  type EdgeArrow,
+  type DiagnosticSeverity,
+  type MermaidDiagnosticCode,
+  type MermaidDiagnostic,
+  type MermaidImportResult,
+  type ParsedNode,
+  type ParsedEdge,
+  type ParsedGroup,
+  type ParsedFlowchart,
+  type ImportMermaidInput,
+  type LayoutOverride,
+  type LayoutOptions,
+  DIRECTIONS,
+  DEFAULT_DIRECTION,
+  MERMAID_IMPORTER,
+  MERMAID_IMPORTER_VERSION,
+  parseFlowchart,
+  importMermaidFlowchart,
+  reconnectedEntityIds,
+  layoutFlowchart,
+  mergeLayoutOverrides,
+  ACCEPTANCE_FLOWCHART,
+  RICH_FLOWCHART,
+  HOSTILE_FLOWCHART,
+} from "@/domain/mermaid";

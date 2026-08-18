@@ -5,12 +5,27 @@ import {
   comparisonId,
   validateComparison,
   type Comparison,
+  withIdentityMap,
 } from "@/domain/comparison";
 import {
   createGraphSnapshot,
   entityId,
   snapshotId,
 } from "@/domain/graph";
+import {
+  confirmIdentity,
+  EMPTY_IDENTITY_MAP,
+  isConfirmed,
+} from "@/domain/identity-map";
+import {
+  createProjectDocument,
+  projectId,
+  validateProjectDocument,
+} from "@/domain/project-document";
+import {
+  parseProjectDocument,
+  serializeProjectDocument,
+} from "@/domain/serialization";
 import {
   currentArchitectureSnapshot,
   proposedArchitectureSnapshot,
@@ -163,5 +178,31 @@ describe("compareSnapshots", () => {
     const canonical = compareSnapshots(comparisonId("forged"), current, proposed);
     expect(validateComparison(forge(canonical), current, proposed).map((error) => error.code))
       .toContain(expectedCode);
+  });
+
+  it("persists a confirmed identity map through serialization", () => {
+    const map = confirmIdentity(
+      EMPTY_IDENTITY_MAP,
+      entityId("service"),
+      entityId("orders"),
+    );
+    const cmp = withIdentityMap(
+      compareSnapshots(comparisonId("cmp"), current, proposed),
+      map,
+    );
+    const project = createProjectDocument({
+      id: projectId("p"),
+      name: "P",
+      snapshots: [current, proposed],
+      comparisons: [cmp],
+    });
+    expect(validateProjectDocument(project)).toEqual([]);
+
+    const restored = parseProjectDocument(serializeProjectDocument(project));
+    const restoredMap = restored.comparisons[0]?.identityMap;
+    expect(restoredMap).toBeDefined();
+    expect(
+      restoredMap && isConfirmed(restoredMap, entityId("service"), entityId("orders")),
+    ).toBe(true);
   });
 });

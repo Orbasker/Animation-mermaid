@@ -75,6 +75,24 @@ export interface LayoutHint {
   readonly height?: number;
 }
 
+export interface VisualGroup {
+  readonly id: string;
+  readonly label: string;
+  readonly memberIds: readonly EntityId[];
+}
+
+export interface GraphAnnotation {
+  readonly id: string;
+  readonly text: string;
+  readonly entityId?: EntityId;
+}
+
+export interface GraphViewState {
+  readonly hiddenEntityIds: readonly EntityId[];
+  readonly groups: readonly VisualGroup[];
+  readonly annotations: readonly GraphAnnotation[];
+}
+
 /** Metadata describing how a snapshot's source was imported. */
 export interface ImporterMetadata {
   /** Identifier of the importer that produced the snapshot, e.g. "mermaid-flowchart". */
@@ -108,6 +126,8 @@ export interface GraphSnapshot extends Versioned {
   readonly entities: readonly GraphEntity[];
   /** Optional positions, kept strictly separate from entity identity. */
   readonly layout?: readonly LayoutHint[];
+  /** User-authored presentation metadata, keyed by semantic entity ids. */
+  readonly view?: GraphViewState;
 }
 
 export interface CreateGraphSnapshotInput {
@@ -115,6 +135,7 @@ export interface CreateGraphSnapshotInput {
   readonly source: MermaidSource;
   readonly entities?: readonly GraphEntity[];
   readonly layout?: readonly LayoutHint[];
+  readonly view?: GraphViewState;
 }
 
 /** Builds a {@link GraphSnapshot} at the current schema version. */
@@ -127,6 +148,7 @@ export function createGraphSnapshot(
     source: input.source,
     entities: input.entities ?? [],
     ...(input.layout !== undefined ? { layout: input.layout } : {}),
+    ...(input.view !== undefined ? { view: input.view } : {}),
   };
 }
 
@@ -137,7 +159,10 @@ export type GraphValidationCode =
   | "node-orphan-group"
   | "node-group-kind-mismatch"
   | "layout-missing-entity"
-  | "non-finite-layout";
+  | "non-finite-layout"
+  | "visibility-missing-entity"
+  | "visual-group-missing-member"
+  | "annotation-missing-entity";
 
 export interface GraphValidationError {
   readonly code: GraphValidationCode;
@@ -239,6 +264,38 @@ export function validateGraphSnapshot(
           message: `Layout hint "${hint.entityId}" ${field} must be finite.`,
         });
       }
+    }
+  }
+
+  for (const hiddenId of snapshot.view?.hiddenEntityIds ?? []) {
+    if (!ids.has(hiddenId)) {
+      errors.push({
+        code: "visibility-missing-entity",
+        entityId: hiddenId,
+        message: `Visibility state references unknown entity "${hiddenId}".`,
+      });
+    }
+  }
+
+  for (const group of snapshot.view?.groups ?? []) {
+    for (const memberId of group.memberIds) {
+      if (!ids.has(memberId)) {
+        errors.push({
+          code: "visual-group-missing-member",
+          entityId: memberId,
+          message: `Visual group "${group.id}" references unknown member "${memberId}".`,
+        });
+      }
+    }
+  }
+
+  for (const annotation of snapshot.view?.annotations ?? []) {
+    if (annotation.entityId !== undefined && !ids.has(annotation.entityId)) {
+      errors.push({
+        code: "annotation-missing-entity",
+        entityId: annotation.entityId,
+        message: `Annotation "${annotation.id}" references unknown entity "${annotation.entityId}".`,
+      });
     }
   }
 

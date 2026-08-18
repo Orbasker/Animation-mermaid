@@ -1,5 +1,6 @@
 import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
 import type { EntityId, GraphEntity, GraphSnapshot, SnapshotId } from "@/domain/graph";
+import type { IdentityMap } from "@/domain/identity-map";
 
 export type ComparisonId = string & { readonly __brand: "ComparisonId" };
 
@@ -33,6 +34,20 @@ export interface Comparison extends Versioned {
   readonly baseSnapshotId: SnapshotId;
   readonly targetSnapshotId: SnapshotId;
   readonly changes: readonly EntityChange[];
+  /**
+   * The user's confirmed cross-snapshot identity answers, if any. Persisting the map here —
+   * rather than only the derived changes — is what lets a semantic diff be recomputed and lets
+   * a confirmed rename/rewire survive a reload instead of degrading back into add/remove.
+   */
+  readonly identityMap?: IdentityMap;
+}
+
+/** Returns a copy of the comparison carrying the given identity map. */
+export function withIdentityMap(
+  comparison: Comparison,
+  identityMap: IdentityMap,
+): Comparison {
+  return { ...comparison, identityMap };
 }
 
 /**

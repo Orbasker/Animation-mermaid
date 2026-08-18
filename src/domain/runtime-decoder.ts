@@ -5,6 +5,7 @@ import {
   EdgeEntity,
   GraphEntity,
   GraphSnapshot,
+  GraphViewState,
   GroupEntity,
   LayoutHint,
   MermaidSource,
@@ -23,6 +24,7 @@ import {
   type Comparison,
   type EntityChange,
 } from "@/domain/comparison";
+import type { IdentityMap, IdentityPair } from "@/domain/identity-map";
 import { projectId, type ProjectDocument } from "@/domain/project-document";
 import { CURRENT_SCHEMA_VERSION } from "@/domain/schema-version";
 
@@ -181,6 +183,46 @@ function decodeMermaidSource(value: unknown, path: string): MermaidSource {
   };
 }
 
+function decodeGraphViewState(value: unknown, path: string): GraphViewState {
+  const record = decodeRecord(value, path);
+  return {
+    hiddenEntityIds: decodeEntityIdArray(
+      record.hiddenEntityIds,
+      `${path}.hiddenEntityIds`,
+    ),
+    groups: decodeArray(record.groups, `${path}.groups`, (group, groupPath) => {
+      const groupRecord = decodeRecord(group, groupPath);
+      return {
+        id: decodeString(groupRecord.id, `${groupPath}.id`),
+        label: decodeString(groupRecord.label, `${groupPath}.label`),
+        memberIds: decodeEntityIdArray(
+          groupRecord.memberIds,
+          `${groupPath}.memberIds`,
+        ),
+      };
+    }),
+    annotations: decodeArray(
+      record.annotations,
+      `${path}.annotations`,
+      (annotation, annotationPath) => {
+        const annotationRecord = decodeRecord(annotation, annotationPath);
+        return {
+          id: decodeString(annotationRecord.id, `${annotationPath}.id`),
+          text: decodeString(annotationRecord.text, `${annotationPath}.text`),
+          ...(annotationRecord.entityId !== undefined
+            ? {
+                entityId: decodeEntityId(
+                  annotationRecord.entityId,
+                  `${annotationPath}.entityId`,
+                ),
+              }
+            : {}),
+        };
+      },
+    ),
+  };
+}
+
 export function decodeGraphSnapshot(
   value: unknown,
   path = "snapshot",
@@ -196,6 +238,9 @@ export function decodeGraphSnapshot(
       ? {
           layout: decodeArray(record.layout, `${path}.layout`, decodeLayoutHint),
         }
+      : {}),
+    ...(record.view !== undefined
+      ? { view: decodeGraphViewState(record.view, `${path}.view`) }
       : {}),
   };
 }
@@ -315,6 +360,30 @@ function decodeEntityChange(value: unknown, path: string): EntityChange {
   }
 }
 
+function decodeIdentityPair(value: unknown, path: string): IdentityPair {
+  const record = decodeRecord(value, path);
+  return {
+    base: decodeEntityId(record.base, `${path}.base`),
+    target: decodeEntityId(record.target, `${path}.target`),
+  };
+}
+
+function decodeIdentityMap(value: unknown, path: string): IdentityMap {
+  const record = decodeRecord(value, path);
+  return {
+    confirmed: decodeArray(
+      record.confirmed,
+      `${path}.confirmed`,
+      decodeIdentityPair,
+    ),
+    rejected: decodeArray(
+      record.rejected,
+      `${path}.rejected`,
+      decodeIdentityPair,
+    ),
+  };
+}
+
 export function decodeComparison(value: unknown, path = "comparison"): Comparison {
   const record = decodeRecord(value, path);
   decodeCurrentVersion(record, path);
@@ -328,6 +397,14 @@ export function decodeComparison(value: unknown, path = "comparison"): Compariso
       decodeString(record.targetSnapshotId, `${path}.targetSnapshotId`),
     ),
     changes: decodeArray(record.changes, `${path}.changes`, decodeEntityChange),
+    ...(record.identityMap !== undefined
+      ? {
+          identityMap: decodeIdentityMap(
+            record.identityMap,
+            `${path}.identityMap`,
+          ),
+        }
+      : {}),
   };
 }
 

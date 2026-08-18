@@ -207,6 +207,17 @@ function actionConflictKey(action: Action): string {
 }
 
 /**
+ * The parts of a snapshot a story is validated against: the snapshot's identity and the ids
+ * of the entities in it. A full {@link GraphSnapshot} satisfies this, and so does the
+ * semantic-only graph view handed to the AI workflow, so scene data can be checked against
+ * the same rules on either side of the agent boundary.
+ */
+export interface StoryValidationTarget {
+  readonly id: GraphSnapshot["id"];
+  readonly entities: readonly { readonly id: EntityId }[];
+}
+
+/**
  * Validates a story against the snapshot it animates: the story must target that snapshot,
  * scene ids must be unique, durations and their aggregate must be finite and positive,
  * transforms must be finite, action channels cannot conflict, and every referenced entity
@@ -214,7 +225,7 @@ function actionConflictKey(action: Action): string {
  */
 export function validateStory(
   story: Story,
-  snapshot: GraphSnapshot,
+  snapshot: StoryValidationTarget,
 ): readonly StoryValidationError[] {
   const errors: StoryValidationError[] = [];
 

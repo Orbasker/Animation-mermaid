@@ -17,13 +17,13 @@ describe("application routes", () => {
     );
   });
 
-  it("marks the editor route as the next workspace", () => {
+  it("renders the architecture editing workspace", () => {
     render(<EditorPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Animation editor" }),
+      screen.getByRole("heading", { name: "Architecture workspace" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("The editing workspace is coming next.")).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: "Workspace surfaces" })).toBeInTheDocument();
   });
 });
 
