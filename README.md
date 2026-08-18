@@ -20,6 +20,42 @@ overwriting the active project.
 The visual-edit persistence boundary is documented in
 [ADR 0001](docs/adr/0001-separate-visual-edits-from-semantic-graph.md).
 
+## Cancellable import & layout worker
+
+Mermaid parsing and ELK layout are CPU-heavy, so they run in a dedicated, cancellable Web
+Worker (`src/domain/mermaid/worker`) instead of on the UI thread. A single job runner
+(`runImportLayoutJob`) parses, normalizes, and lays out a diagram; the worker wraps it and the
+main-thread controller (`MermaidImportRunner`) drives it:
+
+- **Off the UI thread.** Importing and laying out even the shipped stress fixtures never blocks
+  editor interaction. Where the browser has no `Worker`, the identical job runs inline as a
+  graceful fallback.
+- **Cancellation & stale-result suppression.** Each request supersedes the previous one: the
+  prior worker is terminated so its CPU work stops immediately, and every message is matched to
+  the in-flight request id so a superseded job can never apply stale graph data.
+- **Recoverable errors.** A worker crash, a fatal parse, or an exceeded limit surfaces a typed
+  error; the Mermaid source and current graph are always left untouched.
+- **Bounded progress.** The runner reports parse → normalize → layout progress with a ratio in
+  `[0, 1]`.
+
+Configurable limits (`MermaidJobLimits`, checked cheapest-first) bound the work any diagram can
+force onto a core:
+
+| Limit           | Default | Rejection code    |
+| --------------- | ------- | ----------------- |
+| `maxInputBytes` | 256 KiB | `input-too-large` |
+| `maxNodes`      | 2,000   | `too-many-nodes`  |
+| `maxEdges`      | 4,000   | `too-many-edges`  |
+| `timeoutMs`     | 10,000  | `timeout`         |
+
+Behaviour is covered by unit tests (`worker/job.test.ts`, `worker/runner.test.ts`) and browser
+tests (`e2e/worker-import.spec.ts`); the dense-graph render budget lives in
+`e2e/performance.spec.ts`.
+
+> ELK's engine (`elk-worker.min.js`) assumes any worker context is _its own_ worker and would
+> otherwise hijack the message channel. `src/domain/mermaid/worker/elk-runtime-shim.ts` steers
+> it to its in-process mode so it runs synchronously inside our worker instead.
+
 ## Local-first persistence
 
 Projects are stored on the device in IndexedDB via `ProjectRepository`
