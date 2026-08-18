@@ -1,50 +1,91 @@
 export {
   CURRENT_SCHEMA_VERSION,
+  SUPPORTED_SCHEMA_VERSIONS,
   type SchemaVersion,
   type Versioned,
+  type Migration,
+  MIGRATIONS,
+  isSupportedSchemaVersion,
   isCurrentSchemaVersion,
   assertCurrentSchemaVersion,
+  migrateDocument,
 } from "@/domain/schema-version";
 
 export {
-  type NodeId,
-  type EdgeId,
-  type SubgraphId,
-  type GraphNode,
-  type GraphEdge,
-  type Subgraph,
-  type ProjectGraph,
-  type CreateProjectGraphInput,
+  type EntityId,
+  type SnapshotId,
+  type EntityKind,
+  type NodeEntity,
+  type EdgeEntity,
+  type GroupEntity,
+  type GraphEntity,
+  type LayoutHint,
+  type ImporterMetadata,
+  type MermaidSource,
+  type GraphSnapshot,
+  type CreateGraphSnapshotInput,
+  type GraphValidationCode,
   type GraphValidationError,
-  nodeId,
-  edgeId,
-  subgraphId,
-  createProjectGraph,
-  validateProjectGraph,
-} from "@/domain/project-graph";
+  entityId,
+  snapshotId,
+  createGraphSnapshot,
+  validateGraphSnapshot,
+} from "@/domain/graph";
 
 export {
+  type StoryId,
   type SceneId,
-  type StepId,
-  type ElementRef,
   type Action,
-  type Step,
   type Scene,
-  type SceneDocument,
-  type CreateSceneDocumentInput,
-  type SceneValidationError,
+  type Story,
+  type CreateStoryInput,
+  type StoryValidationCode,
+  type StoryValidationError,
   ACTION_TYPES,
+  storyId,
   sceneId,
-  stepId,
-  createSceneDocument,
-  validateSceneDocument,
-} from "@/domain/scene-document";
+  createStory,
+  validateStory,
+  storyDurationMs,
+} from "@/domain/story";
 
 export {
-  type Project,
-  type CreateProjectInput,
+  type ComparisonId,
+  type EntityChange,
+  type Comparison,
+  type ComparisonValidationCode,
+  type ComparisonValidationError,
+  comparisonId,
+  compareSnapshots,
+  validateComparison,
+} from "@/domain/comparison";
+
+export {
+  type AgentEntity,
+  type AgentGraphView,
+  type AgentContextPackage,
+  type BuildAgentContextInput,
+  buildAgentContextPackage,
+} from "@/domain/agent-context";
+
+export {
+  type ProjectId,
+  type ProjectDocument,
+  type CreateProjectDocumentInput,
   type ProjectValidationError,
-  createProject,
-  createProjectFromSource,
-  validateProject,
-} from "@/domain/project";
+  projectId,
+  createProjectDocument,
+  validateProjectDocument,
+  isValidProjectDocument,
+} from "@/domain/project-document";
+
+export {
+  serializeProjectDocument,
+  parseProjectDocument,
+} from "@/domain/serialization";
+
+export {
+  currentArchitectureSnapshot,
+  proposedArchitectureSnapshot,
+  sampleProjectDocument,
+} from "@/domain/fixtures";

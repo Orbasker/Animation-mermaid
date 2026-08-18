@@ -4,11 +4,14 @@ import {
   CURRENT_SCHEMA_VERSION,
   assertCurrentSchemaVersion,
   isCurrentSchemaVersion,
+  isSupportedSchemaVersion,
+  migrateDocument,
 } from "@/domain/schema-version";
 
 describe("schema version", () => {
   it("recognizes the current version", () => {
     expect(isCurrentSchemaVersion(CURRENT_SCHEMA_VERSION)).toBe(true);
+    expect(isSupportedSchemaVersion(CURRENT_SCHEMA_VERSION)).toBe(true);
   });
 
   it("rejects unknown or missing versions", () => {
@@ -16,6 +19,7 @@ describe("schema version", () => {
     expect(isCurrentSchemaVersion(CURRENT_SCHEMA_VERSION + 1)).toBe(false);
     expect(isCurrentSchemaVersion(undefined)).toBe(false);
     expect(isCurrentSchemaVersion("1")).toBe(false);
+    expect(isSupportedSchemaVersion("1")).toBe(false);
   });
 
   it("asserts on documents at the current version", () => {
@@ -28,6 +32,19 @@ describe("schema version", () => {
     expect(() => assertCurrentSchemaVersion({ schemaVersion: 99 })).toThrow(
       /Unsupported schemaVersion: 99/,
     );
-    expect(() => assertCurrentSchemaVersion({})).toThrow(/Unsupported schemaVersion/);
+    expect(() => assertCurrentSchemaVersion({})).toThrow(
+      /Unsupported schemaVersion/,
+    );
+  });
+
+  it("passes a current-version document through migration untouched", () => {
+    const document = { schemaVersion: CURRENT_SCHEMA_VERSION, name: "x" };
+    expect(migrateDocument(document)).toEqual(document);
+  });
+
+  it("refuses to migrate an unsupported version", () => {
+    expect(() => migrateDocument({ schemaVersion: 99 })).toThrow(
+      /unsupported schemaVersion/i,
+    );
   });
 });
