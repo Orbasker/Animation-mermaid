@@ -1,7 +1,11 @@
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { openDatabase, promisifyRequest, runTransaction } from "@/persistence/idb";
+import {
+  openDatabase,
+  promisifyRequest,
+  runTransaction,
+} from "@/persistence/idb";
 
 const STORE = "values";
 

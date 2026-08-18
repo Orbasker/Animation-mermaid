@@ -8,7 +8,9 @@ const ENV_KEYS = [
   "VERCEL_ENV",
 ] as const;
 
-const saved = Object.fromEntries(ENV_KEYS.map((key) => [key, process.env[key]]));
+const saved = Object.fromEntries(
+  ENV_KEYS.map((key) => [key, process.env[key]]),
+);
 
 afterEach(() => {
   for (const key of ENV_KEYS) {
@@ -19,7 +21,8 @@ afterEach(() => {
 
 function fixtureMode(script?: object) {
   process.env.DESIGN_REVIEW_STORY_AGENT = "fixture";
-  if (script) process.env.DESIGN_REVIEW_STORY_AGENT_SCRIPT = JSON.stringify(script);
+  if (script)
+    process.env.DESIGN_REVIEW_STORY_AGENT_SCRIPT = JSON.stringify(script);
   else delete process.env.DESIGN_REVIEW_STORY_AGENT_SCRIPT;
   return resolveAgentTransport();
 }
@@ -58,7 +61,9 @@ describe("the fixture agent", () => {
       outputSchema: {},
     });
 
-    const targets = (reply.data as { scenes: { actions: { target: string }[] }[] }).scenes
+    const targets = (
+      reply.data as { scenes: { actions: { target: string }[] }[] }
+    ).scenes
       .flatMap((scene) => scene.actions)
       .map((action) => action.target);
 
@@ -68,7 +73,13 @@ describe("the fixture agent", () => {
   it("fails the scripted number of leading attempts, then succeeds", async () => {
     const transport = fixtureMode({ failures: { scenes: 2 } });
     const turn = (attempt: number) =>
-      transport.turn({ sessionId: "s1", attempt, phase: "scenes", prompt, outputSchema: {} });
+      transport.turn({
+        sessionId: "s1",
+        attempt,
+        phase: "scenes",
+        prompt,
+        outputSchema: {},
+      });
 
     await expect(turn(1)).rejects.toThrow();
     await expect(turn(2)).rejects.toThrow();
@@ -91,10 +102,19 @@ describe("the fixture agent", () => {
   });
 
   it("fails with the scripted status so both retry branches can be driven", async () => {
-    const transport = fixtureMode({ failures: { scenes: 1 }, failureStatus: 400 });
+    const transport = fixtureMode({
+      failures: { scenes: 1 },
+      failureStatus: 400,
+    });
 
     await expect(
-      transport.turn({ sessionId: "s", attempt: 1, phase: "scenes", prompt, outputSchema: {} }),
+      transport.turn({
+        sessionId: "s",
+        attempt: 1,
+        phase: "scenes",
+        prompt,
+        outputSchema: {},
+      }),
     ).rejects.toMatchObject({ status: 400 });
   });
 
@@ -108,7 +128,9 @@ describe("the fixture agent", () => {
       outputSchema: {},
     });
 
-    const [scene] = (reply.data as { scenes: { actions: { target: string }[] }[] }).scenes;
+    const [scene] = (
+      reply.data as { scenes: { actions: { target: string }[] }[] }
+    ).scenes;
 
     expect(scene.actions[0].target).toBe("entity-that-does-not-exist");
   });

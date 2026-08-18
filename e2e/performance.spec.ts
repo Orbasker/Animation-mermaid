@@ -11,10 +11,14 @@ const RENDER_BUDGET_MS = 6_000;
 
 test("renders the 200-node stress fixture within budget", async ({ page }) => {
   await page.goto("/editor");
-  await expect(page.getByRole("button", { name: /^Database\. Position/ })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Database\. Position/ }),
+  ).toBeVisible();
 
   const started = Date.now();
-  await page.getByRole("button", { name: "Load 200-node stress fixture" }).click();
+  await page
+    .getByRole("button", { name: "Load 200-node stress fixture" })
+    .click();
 
   await expect(page.locator(".documentBadge")).toHaveText("200 components");
   const nodes = page.locator(".graphNode");

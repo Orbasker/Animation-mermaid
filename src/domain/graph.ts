@@ -1,4 +1,7 @@
-import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Versioned,
+} from "@/domain/schema-version";
 
 /**
  * Stable semantic identifier for a graph entity. An id is assigned once, when an entity is

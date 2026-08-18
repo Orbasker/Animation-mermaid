@@ -9,7 +9,9 @@ const finding = z.object({
   area: z
     .string()
     .min(1)
-    .describe("The part of the design the finding is about, e.g. 'node contrast'."),
+    .describe(
+      "The part of the design the finding is about, e.g. 'node contrast'.",
+    ),
   severity,
   recommendation: z
     .string()
@@ -18,11 +20,16 @@ const finding = z.object({
 });
 
 const inputSchema = z.object({
-  summary: z.string().min(1).describe("One-paragraph overall assessment of the design."),
+  summary: z
+    .string()
+    .min(1)
+    .describe("One-paragraph overall assessment of the design."),
   verdict: z
     .enum(["approve", "approve_with_changes", "request_changes"])
     .describe("The overall review outcome."),
-  findings: z.array(finding).describe("Individual findings, most severe first."),
+  findings: z
+    .array(finding)
+    .describe("Individual findings, most severe first."),
 });
 
 const outputSchema = z.object({

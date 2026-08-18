@@ -1,5 +1,13 @@
-import { CURRENT_SCHEMA_VERSION, type Versioned } from "@/domain/schema-version";
-import type { EntityId, GraphEntity, GraphSnapshot, SnapshotId } from "@/domain/graph";
+import {
+  CURRENT_SCHEMA_VERSION,
+  type Versioned,
+} from "@/domain/schema-version";
+import type {
+  EntityId,
+  GraphEntity,
+  GraphSnapshot,
+  SnapshotId,
+} from "@/domain/graph";
 import type { IdentityMap } from "@/domain/identity-map";
 
 export type ComparisonId = string & { readonly __brand: "ComparisonId" };
@@ -15,8 +23,16 @@ export function comparisonId(value: string): ComparisonId {
  * coordinates never produce a change.
  */
 export type EntityChange =
-  | { readonly op: "added"; readonly entityId: EntityId; readonly after: GraphEntity }
-  | { readonly op: "removed"; readonly entityId: EntityId; readonly before: GraphEntity }
+  | {
+      readonly op: "added";
+      readonly entityId: EntityId;
+      readonly after: GraphEntity;
+    }
+  | {
+      readonly op: "removed";
+      readonly entityId: EntityId;
+      readonly before: GraphEntity;
+    }
   | {
       readonly op: "modified";
       readonly entityId: EntityId;
@@ -57,9 +73,11 @@ export function withIdentityMap(
  */
 function entityFingerprint(entity: GraphEntity): string {
   const attributes = (value: Readonly<Record<string, string>> | undefined) =>
-    Object.fromEntries(Object.entries(value ?? {}).sort(([left], [right]) =>
-      left.localeCompare(right),
-    ));
+    Object.fromEntries(
+      Object.entries(value ?? {}).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    );
 
   switch (entity.kind) {
     case "node":
@@ -237,14 +255,20 @@ function sameChangePayload(left: EntityChange, right: EntityChange): boolean {
   }
   switch (left.op) {
     case "added":
-      return right.op === "added" &&
-        entityFingerprint(left.after) === entityFingerprint(right.after);
+      return (
+        right.op === "added" &&
+        entityFingerprint(left.after) === entityFingerprint(right.after)
+      );
     case "removed":
-      return right.op === "removed" &&
-        entityFingerprint(left.before) === entityFingerprint(right.before);
+      return (
+        right.op === "removed" &&
+        entityFingerprint(left.before) === entityFingerprint(right.before)
+      );
     case "modified":
-      return right.op === "modified" &&
+      return (
+        right.op === "modified" &&
         entityFingerprint(left.before) === entityFingerprint(right.before) &&
-        entityFingerprint(left.after) === entityFingerprint(right.after);
+        entityFingerprint(left.after) === entityFingerprint(right.after)
+      );
   }
 }

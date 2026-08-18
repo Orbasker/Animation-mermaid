@@ -68,11 +68,17 @@ export async function emitProgress(event: ProgressEvent): Promise<void> {
  * sees "attempt 2" appear, and the notes together record how many times each phase actually
  * ran.
  */
-async function noteAttempt(phase: ProgressEvent["phase"], attempt: number): Promise<void> {
+async function noteAttempt(
+  phase: ProgressEvent["phase"],
+  attempt: number,
+): Promise<void> {
   await writeProgress({
     phase,
     attempt,
-    message: attempt === 1 ? "Calling the agent." : `Retrying the agent (attempt ${attempt}).`,
+    message:
+      attempt === 1
+        ? "Calling the agent."
+        : `Retrying the agent (attempt ${attempt}).`,
   });
 }
 
@@ -167,7 +173,9 @@ export async function critiqueDraftStep(input: {
   readonly sessionId: string;
 }): Promise<AgentReply<Critique>> {
   "use step";
-  return withAgentErrors("critiquing", (attempt) => critiqueDraft({ ...input, attempt }));
+  return withAgentErrors("critiquing", (attempt) =>
+    critiqueDraft({ ...input, attempt }),
+  );
 }
 critiqueDraftStep.maxRetries = 3;
 

@@ -13,7 +13,9 @@ import { serializeProjectDocument } from "@/domain/serialization";
  * catch a real regression, loose enough to absorb ordinary content growth.
  */
 
-function exportBytes(document: Parameters<typeof serializeProjectDocument>[0]): number {
+function exportBytes(
+  document: Parameters<typeof serializeProjectDocument>[0],
+): number {
   return Buffer.byteLength(serializeProjectDocument(document), "utf8");
 }
 

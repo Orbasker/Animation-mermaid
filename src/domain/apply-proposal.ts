@@ -108,7 +108,9 @@ export function planStoryApplication(
   const siblingStoryIds = project.stories
     .filter((existing) => existing.snapshotId === story.snapshotId)
     .map((existing) => existing.id);
-  const alreadyPresent = project.stories.some((existing) => existing.id === story.id);
+  const alreadyPresent = project.stories.some(
+    (existing) => existing.id === story.id,
+  );
 
   const errors: StoryValidationError[] = snapshot
     ? [...validateStory(story, snapshot)]
@@ -126,7 +128,10 @@ export function planStoryApplication(
     mode: alreadyPresent ? "noop" : "add",
     siblingStoryIds,
     scenes,
-    totalDurationMs: scenes.reduce((total, scene) => total + scene.durationMs, 0),
+    totalDurationMs: scenes.reduce(
+      (total, scene) => total + scene.durationMs,
+      0,
+    ),
     errors,
     applicable: errors.length === 0,
   };

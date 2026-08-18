@@ -94,7 +94,12 @@ describe("validateGraphSnapshot", () => {
       id: snapshotId("s"),
       source,
       entities: [
-        { kind: "node", id: entityId("a"), label: "A", groupId: entityId("ghost-group") },
+        {
+          kind: "node",
+          id: entityId("a"),
+          label: "A",
+          groupId: entityId("ghost-group"),
+        },
         {
           kind: "edge",
           id: entityId("e"),
@@ -110,7 +115,9 @@ describe("validateGraphSnapshot", () => {
       ],
       layout: [{ entityId: entityId("ghost-layout"), x: 0, y: 0 }],
     });
-    const codes = validateGraphSnapshot(snapshot).map((e) => e.code).sort();
+    const codes = validateGraphSnapshot(snapshot)
+      .map((e) => e.code)
+      .sort();
     expect(codes).toEqual([
       "edge-missing-endpoint",
       "group-missing-member",
@@ -204,7 +211,11 @@ describe("validateGraphSnapshot", () => {
       },
     });
 
-    expect(validateGraphSnapshot(snapshot).map((error) => error.code).sort()).toEqual([
+    expect(
+      validateGraphSnapshot(snapshot)
+        .map((error) => error.code)
+        .sort(),
+    ).toEqual([
       "annotation-missing-entity",
       "visibility-missing-entity",
       "visual-group-missing-member",

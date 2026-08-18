@@ -46,7 +46,9 @@ function edgeKey(edge: ParsedEdge, seen: Map<string, number>): string {
  * unsafe construct surfaces as a diagnostic rather than a thrown error. A fatal diagnostic
  * (bad header / empty source) yields `snapshot: null`.
  */
-export function importMermaidFlowchart(input: ImportMermaidInput): MermaidImportResult {
+export function importMermaidFlowchart(
+  input: ImportMermaidInput,
+): MermaidImportResult {
   const parsed = parseFlowchart(input.text);
 
   const hasError = parsed.diagnostics.some((d) => d.severity === "error");
@@ -66,7 +68,9 @@ export function importMermaidFlowchart(input: ImportMermaidInput): MermaidImport
       kind: "node",
       id: entityId(node.id),
       label: node.label,
-      ...(node.groupId !== undefined ? { groupId: entityId(node.groupId) } : {}),
+      ...(node.groupId !== undefined
+        ? { groupId: entityId(node.groupId) }
+        : {}),
       ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
     };
   });
@@ -93,7 +97,11 @@ export function importMermaidFlowchart(input: ImportMermaidInput): MermaidImport
     };
   });
 
-  const entities: GraphEntity[] = [...nodeEntities, ...groupEntities, ...edgeEntities];
+  const entities: GraphEntity[] = [
+    ...nodeEntities,
+    ...groupEntities,
+    ...edgeEntities,
+  ];
 
   const snapshot = createGraphSnapshot({
     id: input.snapshotId,

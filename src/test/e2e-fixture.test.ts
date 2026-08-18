@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { applyStoryProposal, planStoryApplication } from "@/domain/apply-proposal";
+import {
+  applyStoryProposal,
+  planStoryApplication,
+} from "@/domain/apply-proposal";
 import { sampleProjectDocument } from "@/domain/fixtures";
 import { validateProjectDocument } from "@/domain/project-document";
 import { validateStory } from "@/domain/story";
@@ -39,7 +42,10 @@ describe("baseline e2e fixture", () => {
   });
 
   it("validates against the snapshot it animates", () => {
-    const errors = validateStory(fixture.proposal.story, currentArchitectureSnapshot());
+    const errors = validateStory(
+      fixture.proposal.story,
+      currentArchitectureSnapshot(),
+    );
     expect(errors).toEqual([]);
   });
 

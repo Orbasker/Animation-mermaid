@@ -34,7 +34,8 @@ describe("parseFlowchart nodes and shapes", () => {
   const parsed = parseFlowchart(RICH_FLOWCHART);
 
   it("maps node shapes from syntax", () => {
-    const shapeOf = (id: string) => parsed.nodes.find((n) => n.id === id)?.shape;
+    const shapeOf = (id: string) =>
+      parsed.nodes.find((n) => n.id === id)?.shape;
     expect(shapeOf("start")).toBe("circle");
     expect(shapeOf("ui")).toBe("parallelogram");
     expect(shapeOf("decide")).toBe("diamond");
@@ -55,9 +56,18 @@ describe("parseFlowchart edges", () => {
     parsed.edges.find((e) => e.source === source && e.target === target);
 
   it("parses pipe, inline, dotted, and thick edges", () => {
-    expect(edge("ui", "decide")).toMatchObject({ label: "submit", line: "solid" });
-    expect(edge("decide", "work")).toMatchObject({ label: "yes", line: "solid" });
-    expect(edge("decide", "done")).toMatchObject({ label: "no", line: "dotted" });
+    expect(edge("ui", "decide")).toMatchObject({
+      label: "submit",
+      line: "solid",
+    });
+    expect(edge("decide", "work")).toMatchObject({
+      label: "yes",
+      line: "solid",
+    });
+    expect(edge("decide", "done")).toMatchObject({
+      label: "no",
+      line: "dotted",
+    });
     expect(edge("work", "done")).toMatchObject({ line: "thick" });
   });
 
@@ -89,6 +99,8 @@ describe("parseFlowchart subgraphs", () => {
 
   it("reports a stray end", () => {
     const parsedEnd = parseFlowchart("flowchart TD\n a[A]\n end");
-    expect(parsedEnd.diagnostics.map((d) => d.code)).toContain("unexpected-end");
+    expect(parsedEnd.diagnostics.map((d) => d.code)).toContain(
+      "unexpected-end",
+    );
   });
 });

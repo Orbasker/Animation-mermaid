@@ -78,15 +78,17 @@ interface AiRunsRow {
 }
 
 export type RepositoryErrorCode =
-  | "not-found"
-  | "already-exists"
-  | "invalid-import";
+  "not-found" | "already-exists" | "invalid-import";
 
 /** A typed failure so callers can branch on the cause without matching message strings. */
 export class RepositoryError extends Error {
   readonly code: RepositoryErrorCode;
 
-  constructor(code: RepositoryErrorCode, message: string, options?: ErrorOptions) {
+  constructor(
+    code: RepositoryErrorCode,
+    message: string,
+    options?: ErrorOptions,
+  ) {
     super(message, options);
     this.name = "RepositoryError";
     this.code = code;

@@ -36,12 +36,18 @@ async function failureMessage(run: {
  * still there, and did it settle?" without consuming the stream, so reconnecting is cheap and
  * repeatable.
  */
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(
+  _request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const { runId } = await context.params;
   const run = getRun<StoryOutcome>(runId);
 
   if (!(await run.exists)) {
-    return Response.json({ error: `No run with id "${runId}".` }, { status: 404 });
+    return Response.json(
+      { error: `No run with id "${runId}".` },
+      { status: 404 },
+    );
   }
 
   const status = await run.status;
@@ -62,12 +68,18 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
  * no outcome at all, whereas rejecting is a decision the run records and returns. Neither
  * touches a stored project.
  */
-export async function DELETE(_request: Request, context: RouteContext): Promise<Response> {
+export async function DELETE(
+  _request: Request,
+  context: RouteContext,
+): Promise<Response> {
   const { runId } = await context.params;
   const run = getRun(runId);
 
   if (!(await run.exists)) {
-    return Response.json({ error: `No run with id "${runId}".` }, { status: 404 });
+    return Response.json(
+      { error: `No run with id "${runId}".` },
+      { status: 404 },
+    );
   }
 
   await run.cancel();

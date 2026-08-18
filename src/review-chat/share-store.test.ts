@@ -43,16 +43,18 @@ describe("createStateBackedShareStore", () => {
   it("rejects a package that is not a valid agent context", async () => {
     const store = createStateBackedShareStore(createMemoryState());
 
-    await expect(store.share({ intent: "", graph: { entities: [] } })).rejects.toBeInstanceOf(
-      InvalidReviewPackageError,
-    );
+    await expect(
+      store.share({ intent: "", graph: { entities: [] } }),
+    ).rejects.toBeInstanceOf(InvalidReviewPackageError);
   });
 
   it("rejects a package carrying layout or renderer data", async () => {
     const store = createStateBackedShareStore(createMemoryState());
     const leaky = { ...samplePackage(), layout: { x: 1, y: 2 } };
 
-    await expect(store.share(leaky)).rejects.toBeInstanceOf(InvalidReviewPackageError);
+    await expect(store.share(leaky)).rejects.toBeInstanceOf(
+      InvalidReviewPackageError,
+    );
   });
 
   it("returns null for an id that was never shared (access is share-gated)", async () => {

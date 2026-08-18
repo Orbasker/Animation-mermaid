@@ -5,3 +5,12 @@ packages:
 # `tools/builtin-modules/index.js` explains why and supplies a static ESM array instead.
 overrides:
   builtin-modules: "file:./tools/builtin-modules"
+
+# Pre-existing high-severity advisories in transitive Workflow DevKit dependencies.
+# They have no non-breaking fix reachable from our lockfile yet; overriding these
+# deep runtime packages risks the build. The `high` audit gate still fails on any
+# NEW advisory. Dependabot tracks the upstream fixes; remove an id once patched.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-28wg-ghj8-5hjv # nanoid (via workflow > @workflow/core)
+    - GHSA-4cwx-7wf7-3272 # undici (via workflow runtime)

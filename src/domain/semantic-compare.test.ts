@@ -92,24 +92,56 @@ describe("diffArchitectures — semantic-key matching", () => {
 
   it("reports a group membership change as a move", () => {
     const before = snapshot("b", [
-      { kind: "node", id: entityId("svc"), label: "Svc", groupId: entityId("g1") },
-      { kind: "group", id: entityId("g1"), label: "One", memberIds: [entityId("svc")] },
+      {
+        kind: "node",
+        id: entityId("svc"),
+        label: "Svc",
+        groupId: entityId("g1"),
+      },
+      {
+        kind: "group",
+        id: entityId("g1"),
+        label: "One",
+        memberIds: [entityId("svc")],
+      },
       { kind: "group", id: entityId("g2"), label: "Two", memberIds: [] },
     ]);
     const after = snapshot("a", [
-      { kind: "node", id: entityId("svc"), label: "Svc", groupId: entityId("g2") },
+      {
+        kind: "node",
+        id: entityId("svc"),
+        label: "Svc",
+        groupId: entityId("g2"),
+      },
       { kind: "group", id: entityId("g1"), label: "One", memberIds: [] },
-      { kind: "group", id: entityId("g2"), label: "Two", memberIds: [entityId("svc")] },
+      {
+        kind: "group",
+        id: entityId("g2"),
+        label: "Two",
+        memberIds: [entityId("svc")],
+      },
     ]);
-    expect(categoryOf(diffArchitectures(before, after), "svc")).toEqual(["moved"]);
+    expect(categoryOf(diffArchitectures(before, after), "svc")).toEqual([
+      "moved",
+    ]);
   });
 
   it("reports an attribute change as metadata-changed", () => {
     const before = snapshot("b", [
-      { kind: "node", id: entityId("db"), label: "DB", attributes: { shape: "cylinder" } },
+      {
+        kind: "node",
+        id: entityId("db"),
+        label: "DB",
+        attributes: { shape: "cylinder" },
+      },
     ]);
     const after = snapshot("a", [
-      { kind: "node", id: entityId("db"), label: "DB", attributes: { shape: "hexagon" } },
+      {
+        kind: "node",
+        id: entityId("db"),
+        label: "DB",
+        attributes: { shape: "hexagon" },
+      },
     ]);
     const diff = diffArchitectures(before, after);
     const record = diff.records[0];
@@ -125,12 +157,22 @@ describe("matchEntities — suggestions and confirmation", () => {
     const before = snapshot("b", [
       { kind: "node", id: entityId("svc"), label: "Orders Service" },
       { kind: "node", id: entityId("db"), label: "Database" },
-      { kind: "edge", id: entityId("svc->db"), source: entityId("svc"), target: entityId("db") },
+      {
+        kind: "edge",
+        id: entityId("svc->db"),
+        source: entityId("svc"),
+        target: entityId("db"),
+      },
     ]);
     const after = snapshot("a", [
       { kind: "node", id: entityId("orders"), label: "Orders Service" },
       { kind: "node", id: entityId("db"), label: "Database" },
-      { kind: "edge", id: entityId("orders->db"), source: entityId("orders"), target: entityId("db") },
+      {
+        kind: "edge",
+        id: entityId("orders->db"),
+        source: entityId("orders"),
+        target: entityId("db"),
+      },
     ]);
 
     const before_confirm = diffArchitectures(before, after);
@@ -142,10 +184,18 @@ describe("matchEntities — suggestions and confirmation", () => {
     expect(suggestion).toBeDefined();
     expect(suggestion?.ambiguous).toBe(false);
 
-    const map = confirmIdentity(EMPTY_IDENTITY_MAP, entityId("svc"), entityId("orders"));
+    const map = confirmIdentity(
+      EMPTY_IDENTITY_MAP,
+      entityId("svc"),
+      entityId("orders"),
+    );
     const after_confirm = diffArchitectures(before, after, map);
-    expect(after_confirm.records.some((r) => r.category === "removed")).toBe(false);
-    expect(after_confirm.records.some((r) => r.category === "added")).toBe(false);
+    expect(after_confirm.records.some((r) => r.category === "removed")).toBe(
+      false,
+    );
+    expect(after_confirm.records.some((r) => r.category === "added")).toBe(
+      false,
+    );
     expect(after_confirm.matches.map((m) => m.strategy)).toContain("explicit");
   });
 
@@ -170,7 +220,11 @@ describe("matchEntities — suggestions and confirmation", () => {
     const after = snapshot("a", [
       { kind: "node", id: entityId("orders"), label: "Orders Service" },
     ]);
-    const map = rejectIdentity(EMPTY_IDENTITY_MAP, entityId("svc"), entityId("orders"));
+    const map = rejectIdentity(
+      EMPTY_IDENTITY_MAP,
+      entityId("svc"),
+      entityId("orders"),
+    );
     const result = matchEntities(before, after, map);
     expect(result.suggestions).toEqual([]);
     expect(result.matches).toEqual([]);
@@ -184,11 +238,21 @@ describe("matchEntities — suggestions and confirmation", () => {
     ];
     const before = snapshot("b", [
       ...nodes,
-      { kind: "edge", id: entityId("a->b"), source: entityId("a"), target: entityId("b") },
+      {
+        kind: "edge",
+        id: entityId("a->b"),
+        source: entityId("a"),
+        target: entityId("b"),
+      },
     ]);
     const after = snapshot("a", [
       ...nodes,
-      { kind: "edge", id: entityId("a->c"), source: entityId("a"), target: entityId("c") },
+      {
+        kind: "edge",
+        id: entityId("a->c"),
+        source: entityId("a"),
+        target: entityId("c"),
+      },
     ]);
 
     const suggestion = matchEntities(before, after).suggestions.find(
@@ -196,7 +260,11 @@ describe("matchEntities — suggestions and confirmation", () => {
     );
     expect(suggestion).toBeDefined();
 
-    const map = confirmIdentity(EMPTY_IDENTITY_MAP, entityId("a->b"), entityId("a->c"));
+    const map = confirmIdentity(
+      EMPTY_IDENTITY_MAP,
+      entityId("a->b"),
+      entityId("a->c"),
+    );
     const diff = diffArchitectures(before, after, map);
     expect(categoryOf(diff, "a->c")).toEqual(["rewired"]);
     expect(diff.records.some((r) => r.category === "removed")).toBe(false);
@@ -215,10 +283,14 @@ describe("views and scenes", () => {
     expect(view.target).toHaveLength(proposed.entities.length);
     const cache = view.target.find((e) => e.entity.id === entityId("cache"));
     expect(cache?.status).toBe("added");
-    const rewired = view.target.find((e) => e.entity.id === entityId("service->db"));
+    const rewired = view.target.find(
+      (e) => e.entity.id === entityId("service->db"),
+    );
     expect(rewired?.status).toBe("rewired");
     expect(rewired?.counterpart).toBe(entityId("service->db"));
-    const unchanged = view.target.find((e) => e.entity.id === entityId("client"));
+    const unchanged = view.target.find(
+      (e) => e.entity.id === entityId("client"),
+    );
     expect(unchanged?.status).toBe("unchanged");
   });
 
@@ -233,13 +305,21 @@ describe("views and scenes", () => {
   });
 
   it("builds a valid overlay snapshot", () => {
-    const overlay = buildCompareSnapshot(snapshotId("overlay"), current, proposed);
+    const overlay = buildCompareSnapshot(
+      snapshotId("overlay"),
+      current,
+      proposed,
+    );
     expect(validateGraphSnapshot(overlay)).toEqual([]);
     expect(overlay.entities.some((e) => e.id === entityId("cache"))).toBe(true);
   });
 
   it("converts filtered change records into a story that validates against the overlay", () => {
-    const overlay = buildCompareSnapshot(snapshotId("overlay"), current, proposed);
+    const overlay = buildCompareSnapshot(
+      snapshotId("overlay"),
+      current,
+      proposed,
+    );
     const story = changesToCompareStory({
       id: storyId("compare"),
       title: "What changed",

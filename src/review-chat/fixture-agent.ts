@@ -31,7 +31,11 @@ async function* fixtureStream(
  */
 export function createFixtureReviewAgent(): ReviewAgent {
   return {
-    async ask({ sessionId, pkg, question }: ReviewQuestion): Promise<ReviewAnswer> {
+    async ask({
+      sessionId,
+      pkg,
+      question,
+    }: ReviewQuestion): Promise<ReviewAnswer> {
       return {
         sessionId: sessionId ?? FIXTURE_SESSION_ID,
         stream: fixtureStream(pkg, question),

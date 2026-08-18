@@ -32,9 +32,15 @@ export interface AgentReply<T> {
 }
 
 function describeGraph(context: ValidatedAgentContext): string {
-  const nodes = context.graph.entities.filter((entity) => entity.kind === "node");
-  const edges = context.graph.entities.filter((entity) => entity.kind === "edge");
-  const groups = context.graph.entities.filter((entity) => entity.kind === "group");
+  const nodes = context.graph.entities.filter(
+    (entity) => entity.kind === "node",
+  );
+  const edges = context.graph.entities.filter(
+    (entity) => entity.kind === "edge",
+  );
+  const groups = context.graph.entities.filter(
+    (entity) => entity.kind === "group",
+  );
 
   const lines = [
     `Diagram type: ${context.graph.diagramType}`,
@@ -48,7 +54,9 @@ function describeGraph(context: ValidatedAgentContext): string {
     lines.push("", "Groups (id — label — members):");
     for (const group of groups) {
       if (group.kind !== "group") continue;
-      lines.push(`- ${group.id} — ${group.label} — ${group.memberIds.join(", ")}`);
+      lines.push(
+        `- ${group.id} — ${group.label} — ${group.memberIds.join(", ")}`,
+      );
     }
   }
 
@@ -56,7 +64,9 @@ function describeGraph(context: ValidatedAgentContext): string {
     lines.push("", "Edges (id — source -> target — label):");
     for (const edge of edges) {
       if (edge.kind !== "edge") continue;
-      lines.push(`- ${edge.id} — ${edge.source} -> ${edge.target}${edge.label ? ` — ${edge.label}` : ""}`);
+      lines.push(
+        `- ${edge.id} — ${edge.source} -> ${edge.target}${edge.label ? ` — ${edge.label}` : ""}`,
+      );
     }
   }
 
@@ -64,7 +74,9 @@ function describeGraph(context: ValidatedAgentContext): string {
     lines.push(
       "",
       `Comparison ${context.comparison.baseSnapshotId} -> ${context.comparison.targetSnapshotId}:`,
-      ...context.comparison.changes.map((change) => `- ${change.op} ${change.entityId}`),
+      ...context.comparison.changes.map(
+        (change) => `- ${change.op} ${change.entityId}`,
+      ),
     );
   }
 
@@ -215,7 +227,9 @@ export function classifyAgentError(error: unknown): never {
   const status = (error as { status?: unknown })?.status;
   if (typeof status === "number") {
     if (status === 429) {
-      throw new RetryableError("The agent is rate limited.", { retryAfter: "30s" });
+      throw new RetryableError("The agent is rate limited.", {
+        retryAfter: "30s",
+      });
     }
     if (status >= 500) {
       throw new RetryableError(`The agent returned ${status}.`);

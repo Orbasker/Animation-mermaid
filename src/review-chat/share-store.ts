@@ -25,9 +25,14 @@ export interface ReviewShareStore {
 }
 
 export class InvalidReviewPackageError extends Error {
-  readonly issues: readonly { readonly path: string; readonly message: string }[];
+  readonly issues: readonly {
+    readonly path: string;
+    readonly message: string;
+  }[];
 
-  constructor(issues: readonly { readonly path: string; readonly message: string }[]) {
+  constructor(
+    issues: readonly { readonly path: string; readonly message: string }[],
+  ) {
     super("The review package is not a valid agent context.");
     this.name = "InvalidReviewPackageError";
     this.issues = issues;
@@ -63,7 +68,9 @@ function parsePackage(input: unknown): ValidatedAgentContext {
  * The stored value re-parses on read: a value that predates a schema change, or was written by
  * anything other than {@link share}, is treated as absent rather than trusted.
  */
-export function createStateBackedShareStore(state: StateAdapter): ReviewShareStore {
+export function createStateBackedShareStore(
+  state: StateAdapter,
+): ReviewShareStore {
   return {
     async share(input) {
       const pkg = parsePackage(input);

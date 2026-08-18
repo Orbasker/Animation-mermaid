@@ -10,7 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "license:check": "node tools/check-licenses.mjs",
     "test": "pnpm test:unit && pnpm test:integration",
     "test:unit": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.mts",
@@ -45,9 +48,12 @@
     "@workflow/vitest": "^4.0.19",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
+    "eslint-config-prettier": "^10.1.8",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "30.0.1",
+    "prettier": "^3.9.6",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.67.0",
     "vitest": "4.1.10"
   },
   "packageManager": "pnpm@10.30.0"

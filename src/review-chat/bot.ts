@@ -12,7 +12,10 @@ import {
   type ReviewThread,
   type ReviewThreadState,
 } from "./handlers";
-import { createStateBackedShareStore, type ReviewShareStore } from "./share-store";
+import {
+  createStateBackedShareStore,
+  type ReviewShareStore,
+} from "./share-store";
 
 /** Ten minutes: Slack retries an unacknowledged event for a few minutes, so dedupe must outlast that. */
 const DEDUPE_TTL_MS = 600_000;
@@ -48,7 +51,9 @@ function toReviewThread(thread: Thread<ReviewThreadState>): ReviewThread {
       return thread.state;
     },
     post: (message: string | AsyncIterable<string | StreamChunk>) =>
-      typeof message === "string" ? thread.post(message) : thread.post(new StreamingPlan(message)),
+      typeof message === "string"
+        ? thread.post(message)
+        : thread.post(new StreamingPlan(message)),
   };
 }
 
@@ -58,7 +63,9 @@ function toReviewThread(thread: Thread<ReviewThreadState>): ReviewThread {
  * session, scoped to the same package. Locks force-release so a follow-up can interrupt a
  * still-streaming answer, and identical redelivered webhooks are dropped within the dedupe window.
  */
-export function createReviewChatBot(options: ReviewChatBotOptions): ReviewChatBot {
+export function createReviewChatBot(
+  options: ReviewChatBotOptions,
+): ReviewChatBot {
   const bot = new Chat({
     userName: options.userName ?? "design-review",
     adapters: { slack: options.slack ?? createSlackAdapter() },
@@ -74,10 +81,18 @@ export function createReviewChatBot(options: ReviewChatBotOptions): ReviewChatBo
   };
 
   bot.onNewMention((thread, message) =>
-    handleMention(toReviewThread(thread as Thread<ReviewThreadState>), message.text, deps),
+    handleMention(
+      toReviewThread(thread as Thread<ReviewThreadState>),
+      message.text,
+      deps,
+    ),
   );
   bot.onSubscribedMessage((thread, message) =>
-    handleFollowUp(toReviewThread(thread as Thread<ReviewThreadState>), message.text, deps),
+    handleFollowUp(
+      toReviewThread(thread as Thread<ReviewThreadState>),
+      message.text,
+      deps,
+    ),
   );
 
   return { bot, store: deps.store };

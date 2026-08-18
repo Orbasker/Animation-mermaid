@@ -52,11 +52,17 @@ function layoutOptions(direction: Direction): Record<string, string> {
  * ELK edges. Membership comes from each node's `groupId`, so the ELK hierarchy mirrors the
  * subgraph structure.
  */
-function toElkGraph(snapshot: GraphSnapshot, options: Required<Omit<LayoutOptions, "direction">>, direction: Direction): ElkNode {
+function toElkGraph(
+  snapshot: GraphSnapshot,
+  options: Required<Omit<LayoutOptions, "direction">>,
+  direction: Direction,
+): ElkNode {
   const groupChildren = new Map<string, ElkNode[]>();
   const topLevel: ElkNode[] = [];
   const groupIds = new Set(
-    snapshot.entities.filter((e) => e.kind === "group").map((e) => e.id as string),
+    snapshot.entities
+      .filter((e) => e.kind === "group")
+      .map((e) => e.id as string),
   );
 
   for (const groupId of groupIds) {
@@ -70,7 +76,9 @@ function toElkGraph(snapshot: GraphSnapshot, options: Required<Omit<LayoutOption
       width: options.nodeWidth,
       height: options.nodeHeight,
     };
-    const parent = entity.groupId ? groupChildren.get(entity.groupId as string) : undefined;
+    const parent = entity.groupId
+      ? groupChildren.get(entity.groupId as string)
+      : undefined;
     (parent ?? topLevel).push(elkNode);
   }
 
@@ -104,7 +112,12 @@ function toElkGraph(snapshot: GraphSnapshot, options: Required<Omit<LayoutOption
 }
 
 /** Flattens ELK's parent-relative coordinates into absolute {@link LayoutHint}s. */
-function collectHints(node: ElkNode, offsetX: number, offsetY: number, out: LayoutHint[]): void {
+function collectHints(
+  node: ElkNode,
+  offsetX: number,
+  offsetY: number,
+  out: LayoutHint[],
+): void {
   for (const child of node.children ?? []) {
     const x = offsetX + (child.x ?? 0);
     const y = offsetY + (child.y ?? 0);
@@ -143,7 +156,9 @@ export async function layoutFlowchart(
 
   const hints: LayoutHint[] = [];
   collectHints(laidOut, 0, 0, hints);
-  hints.sort((a, b) => (a.entityId as string).localeCompare(b.entityId as string));
+  hints.sort((a, b) =>
+    (a.entityId as string).localeCompare(b.entityId as string),
+  );
   return hints;
 }
 

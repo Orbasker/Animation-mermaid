@@ -20,16 +20,18 @@ import type {
 } from "./contract";
 
 export type ProposalRejectionCode =
-  | "no-scenes"
-  | "unknown-entity-reference"
-  | "story-schema-invalid";
+  "no-scenes" | "unknown-entity-reference" | "story-schema-invalid";
 
 /** A draft the workflow refuses to propose, with the reason stated in domain terms. */
 export class InvalidStoryDraftError extends Error {
   readonly code: ProposalRejectionCode;
   readonly details: readonly string[];
 
-  constructor(code: ProposalRejectionCode, message: string, details: readonly string[] = []) {
+  constructor(
+    code: ProposalRejectionCode,
+    message: string,
+    details: readonly string[] = [],
+  ) {
     super(message);
     this.name = "InvalidStoryDraftError";
     this.code = code;
@@ -65,7 +67,11 @@ export function assembleStory(
             ...(action.style !== undefined ? { style: action.style } : {}),
           };
         case "annotate":
-          return { type: "annotate", target: entityId(action.target), text: action.text };
+          return {
+            type: "annotate",
+            target: entityId(action.target),
+            text: action.text,
+          };
         case "camera":
           return { type: "camera", focus: action.focus.map(entityId) };
       }
@@ -107,18 +113,25 @@ export function buildStoryProposal(input: {
   const { title, context, drafts, analysis, critique } = input;
 
   if (drafts.length === 0) {
-    throw new InvalidStoryDraftError("no-scenes", "The agent returned no scenes.");
+    throw new InvalidStoryDraftError(
+      "no-scenes",
+      "The agent returned no scenes.",
+    );
   }
 
   const story = assembleStory(title, context, drafts);
 
   const errors = validateStory(story, {
     id: snapshotId(context.graph.snapshotId),
-    entities: context.graph.entities.map((entity) => ({ id: entityId(entity.id) })),
+    entities: context.graph.entities.map((entity) => ({
+      id: entityId(entity.id),
+    })),
   });
 
   if (errors.length > 0) {
-    const missingEntity = errors.some((error) => error.code === "action-missing-entity");
+    const missingEntity = errors.some(
+      (error) => error.code === "action-missing-entity",
+    );
     throw new InvalidStoryDraftError(
       missingEntity ? "unknown-entity-reference" : "story-schema-invalid",
       `The generated story failed ${errors.length} schema check(s): ${errors[0].message}`,

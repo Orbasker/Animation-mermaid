@@ -78,7 +78,12 @@ async function makeBot(
     apiUrl,
     nativeStreaming: false,
   });
-  const chat = createReviewChatBot({ state, slack, agent, structuredStreaming: false });
+  const chat = createReviewChatBot({
+    state,
+    slack,
+    agent,
+    structuredStreaming: false,
+  });
   const shareId = await chat.store.share(samplePackage());
   return { chat, shareId };
 }
@@ -103,8 +108,14 @@ async function deliver(
 
   const pending: Promise<unknown>[] = [];
   const response = await chat.bot.webhooks.slack(
-    new Request("http://localhost/api/slack/events", { method: "POST", body: raw, headers }),
-    { waitUntil: (task) => pending.push(Promise.resolve(task).catch(() => {})) },
+    new Request("http://localhost/api/slack/events", {
+      method: "POST",
+      body: raw,
+      headers,
+    }),
+    {
+      waitUntil: (task) => pending.push(Promise.resolve(task).catch(() => {})),
+    },
   );
   await Promise.all(pending);
   return response;
@@ -145,14 +156,22 @@ function followUpEvent(eventId = "Ev-follow") {
 
 describe("slack review webhook", () => {
   it("rejects a request with an invalid signature", async () => {
-    const { chat, shareId } = await makeBot(createMemoryState(), countingAgent());
-    const response = await deliver(chat, mentionEvent(shareId), { badSignature: true });
+    const { chat, shareId } = await makeBot(
+      createMemoryState(),
+      countingAgent(),
+    );
+    const response = await deliver(chat, mentionEvent(shareId), {
+      badSignature: true,
+    });
     expect(response.status).toBe(401);
   });
 
   it("accepts a correctly signed url_verification challenge", async () => {
     const { chat } = await makeBot(createMemoryState(), countingAgent());
-    const response = await deliver(chat, { type: "url_verification", challenge: "chal-123" });
+    const response = await deliver(chat, {
+      type: "url_verification",
+      challenge: "chal-123",
+    });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ challenge: "chal-123" });
   });

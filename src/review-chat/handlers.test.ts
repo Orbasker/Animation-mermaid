@@ -50,7 +50,9 @@ class FakeThread implements ReviewThread {
     this.stateValue = state;
   }
 
-  async post(message: string | AsyncIterable<string | StreamChunk>): Promise<unknown> {
+  async post(
+    message: string | AsyncIterable<string | StreamChunk>,
+  ): Promise<unknown> {
     if (typeof message === "string") {
       this.posts.push({ text: message });
       return undefined;
@@ -77,7 +79,11 @@ function samplePackage(): ValidatedAgentContext {
 
 async function depsWithShare(
   agent: ReviewAgent = createFixtureReviewAgent(),
-): Promise<{ deps: ReviewHandlerDeps; shareId: string; pkg: ValidatedAgentContext }> {
+): Promise<{
+  deps: ReviewHandlerDeps;
+  shareId: string;
+  pkg: ValidatedAgentContext;
+}> {
   const state = createMemoryState();
   const store = createStateBackedShareStore(state);
   const pkg = samplePackage();
@@ -90,7 +96,11 @@ describe("handleMention", () => {
     const { deps, shareId } = await depsWithShare();
     const thread = new FakeThread();
 
-    await handleMention(thread, `<@U0BOT> ${shareId} what does this design do?`, deps);
+    await handleMention(
+      thread,
+      `<@U0BOT> ${shareId} what does this design do?`,
+      deps,
+    );
 
     expect(thread.subscribed).toBe(true);
     expect((await thread.state)?.shareId).toBe(shareId);
@@ -112,7 +122,11 @@ describe("handleMention", () => {
     const { deps } = await depsWithShare();
     const thread = new FakeThread();
 
-    await handleMention(thread, `<@U0BOT> ${`rev_${"f".repeat(32)}`} explain this`, deps);
+    await handleMention(
+      thread,
+      `<@U0BOT> ${`rev_${"f".repeat(32)}`} explain this`,
+      deps,
+    );
 
     expect(thread.subscribed).toBe(false);
     expect(thread.lastPost).toMatch(/couldn't find a shared review package/i);
@@ -177,7 +191,12 @@ describe("streaming degradation", () => {
     async ask() {
       async function* mixed(): AsyncIterable<string | StreamChunk> {
         yield "Looking. ";
-        yield { type: "task_update", id: "c1", title: "Inspecting gateway", status: "complete" };
+        yield {
+          type: "task_update",
+          id: "c1",
+          title: "Inspecting gateway",
+          status: "complete",
+        };
         yield "It routes fan-out.";
       }
       return { sessionId: "s", stream: mixed() };

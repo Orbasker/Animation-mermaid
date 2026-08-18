@@ -9,12 +9,13 @@ describe("application routes", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole("heading", { name: "Turn Mermaid diagrams into motion" }),
+      screen.getByRole("heading", {
+        name: "Turn Mermaid diagrams into motion",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open the editor" })).toHaveAttribute(
-      "href",
-      "/editor",
-    );
+    expect(
+      screen.getByRole("link", { name: "Open the editor" }),
+    ).toHaveAttribute("href", "/editor");
   });
 
   it("renders the architecture editing workspace", () => {
@@ -23,7 +24,9 @@ describe("application routes", () => {
     expect(
       screen.getByRole("heading", { name: "Architecture workspace" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("tablist", { name: "Workspace surfaces" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("tablist", { name: "Workspace surfaces" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -35,6 +38,8 @@ describe("test isolation", () => {
   });
 
   it("starts with a clean document", () => {
-    expect(screen.queryByText("Temporary test content")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Temporary test content"),
+    ).not.toBeInTheDocument();
   });
 });

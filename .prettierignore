@@ -1,0 +1,27 @@
+# Build output and caches
+.next/
+out/
+build/
+coverage/
+.vercel/
+.eve/
+.output/
+.swc/
+.workflow-data/
+.workflow-vitest/
+.playwright/
+playwright-report/
+test-results/
+
+# Dependencies and lockfiles
+node_modules/
+pnpm-lock.yaml
+
+# Generated
+next-env.d.ts
+src/app/.well-known/
+
+# Whitespace-sensitive agent skill prompts and byte-exact test fixtures
+agent/skills/**
+e2e/fixtures/**
+tools/builtin-modules/**

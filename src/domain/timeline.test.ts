@@ -9,7 +9,10 @@ import {
   repairSceneReferences,
   type TimelineOperation,
 } from "@/domain/timeline";
-import { currentArchitectureSnapshot, sampleProjectDocument } from "@/domain/fixtures";
+import {
+  currentArchitectureSnapshot,
+  sampleProjectDocument,
+} from "@/domain/fixtures";
 
 const snapshot = currentArchitectureSnapshot();
 
@@ -29,8 +32,18 @@ describe("allocateSceneId", () => {
   it("never collides with existing scene ids", () => {
     const story = apply(
       emptyStory(),
-      { type: "add-scene", id: sceneId("scene-1"), title: "One", durationMs: 1000 },
-      { type: "add-scene", id: sceneId("scene-2"), title: "Two", durationMs: 1000 },
+      {
+        type: "add-scene",
+        id: sceneId("scene-1"),
+        title: "One",
+        durationMs: 1000,
+      },
+      {
+        type: "add-scene",
+        id: sceneId("scene-2"),
+        title: "Two",
+        durationMs: 1000,
+      },
     );
     expect(allocateSceneId(story)).toBe(sceneId("scene-3"));
   });
@@ -48,7 +61,12 @@ describe("applyTimelineOperation", () => {
       const id = allocateSceneId(story);
       story = apply(
         story,
-        { type: "add-scene", id, title: `Scene ${index + 1}`, durationMs: 1000 },
+        {
+          type: "add-scene",
+          id,
+          title: `Scene ${index + 1}`,
+          durationMs: 1000,
+        },
         { type: "set-action", sceneId: id, action: { type: "reveal", target } },
       );
     }
@@ -62,7 +80,13 @@ describe("applyTimelineOperation", () => {
       emptyStory(),
       { type: "add-scene", id: sceneId("a"), title: "A", durationMs: 1000 },
       { type: "add-scene", id: sceneId("b"), title: "B", durationMs: 1000 },
-      { type: "add-scene", id: sceneId("c"), title: "C", durationMs: 1000, afterSceneId: sceneId("a") },
+      {
+        type: "add-scene",
+        id: sceneId("c"),
+        title: "C",
+        durationMs: 1000,
+        afterSceneId: sceneId("a"),
+      },
     );
     expect(story.scenes.map((scene) => scene.id)).toEqual([
       sceneId("a"),
@@ -74,8 +98,17 @@ describe("applyTimelineOperation", () => {
   it("duplicates a scene without duplicating graph entities", () => {
     const story = apply(
       emptyStory(),
-      { type: "add-scene", id: sceneId("a"), title: "Reveal client", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "reveal", target: entityId("client") } },
+      {
+        type: "add-scene",
+        id: sceneId("a"),
+        title: "Reveal client",
+        durationMs: 1000,
+      },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "reveal", target: entityId("client") },
+      },
       { type: "duplicate-scene", sceneId: sceneId("a"), id: sceneId("a-copy") },
     );
 
@@ -94,14 +127,29 @@ describe("applyTimelineOperation", () => {
     const base = apply(
       emptyStory(),
       { type: "add-scene", id: sceneId("a"), title: "A", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "reveal", target: entityId("client") } },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "reveal", target: entityId("client") },
+      },
       { type: "add-scene", id: sceneId("b"), title: "B", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("b"), action: { type: "reveal", target: entityId("api") } },
+      {
+        type: "set-action",
+        sceneId: sceneId("b"),
+        action: { type: "reveal", target: entityId("api") },
+      },
     );
 
-    const reordered = apply(base, { type: "move-scene", sceneId: sceneId("b"), toIndex: 0 });
+    const reordered = apply(base, {
+      type: "move-scene",
+      sceneId: sceneId("b"),
+      toIndex: 0,
+    });
 
-    expect(reordered.scenes.map((scene) => scene.id)).toEqual([sceneId("b"), sceneId("a")]);
+    expect(reordered.scenes.map((scene) => scene.id)).toEqual([
+      sceneId("b"),
+      sceneId("a"),
+    ]);
     expect(reordered.scenes).toHaveLength(base.scenes.length);
     expect(reordered.scenes.flatMap((scene) => scene.actions)).toHaveLength(2);
   });
@@ -113,7 +161,10 @@ describe("applyTimelineOperation", () => {
       { type: "rename-scene", sceneId: sceneId("a"), title: "Renamed" },
       { type: "set-duration", sceneId: sceneId("a"), durationMs: 2500 },
     );
-    expect(story.scenes[0]).toMatchObject({ title: "Renamed", durationMs: 2500 });
+    expect(story.scenes[0]).toMatchObject({
+      title: "Renamed",
+      durationMs: 2500,
+    });
   });
 
   it("removes a scene", () => {
@@ -130,11 +181,21 @@ describe("applyTimelineOperation", () => {
     const story = apply(
       emptyStory(),
       { type: "add-scene", id: sceneId("a"), title: "A", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "reveal", target: entityId("api") } },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "hide", target: entityId("api") } },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "reveal", target: entityId("api") },
+      },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "hide", target: entityId("api") },
+      },
     );
 
-    expect(story.scenes[0].actions).toEqual([{ type: "hide", target: entityId("api") }]);
+    expect(story.scenes[0].actions).toEqual([
+      { type: "hide", target: entityId("api") },
+    ]);
     expect(validateStory(story, snapshot)).toEqual([]);
   });
 
@@ -142,18 +203,37 @@ describe("applyTimelineOperation", () => {
     const story = apply(
       emptyStory(),
       { type: "add-scene", id: sceneId("a"), title: "A", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "reveal", target: entityId("api") } },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "focus", target: entityId("api") } },
-      { type: "remove-action", sceneId: sceneId("a"), channel: "visibility", target: entityId("api") },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "reveal", target: entityId("api") },
+      },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "focus", target: entityId("api") },
+      },
+      {
+        type: "remove-action",
+        sceneId: sceneId("a"),
+        channel: "visibility",
+        target: entityId("api"),
+      },
     );
-    expect(story.scenes[0].actions).toEqual([{ type: "focus", target: entityId("api") }]);
+    expect(story.scenes[0].actions).toEqual([
+      { type: "focus", target: entityId("api") },
+    ]);
   });
 
   it("removes the single camera slot without a target", () => {
     const story = apply(
       emptyStory(),
       { type: "add-scene", id: sceneId("a"), title: "A", durationMs: 1000 },
-      { type: "set-action", sceneId: sceneId("a"), action: { type: "camera", focus: [entityId("api")] } },
+      {
+        type: "set-action",
+        sceneId: sceneId("a"),
+        action: { type: "camera", focus: [entityId("api")] },
+      },
       { type: "remove-action", sceneId: sceneId("a"), channel: "camera" },
     );
     expect(story.scenes[0].actions).toEqual([]);
@@ -161,9 +241,12 @@ describe("applyTimelineOperation", () => {
 
   it("leaves the story untouched for operations on unknown scenes", () => {
     const story = emptyStory();
-    expect(applyTimelineOperation(story, { type: "remove-scene", sceneId: sceneId("ghost") })).toBe(
-      story,
-    );
+    expect(
+      applyTimelineOperation(story, {
+        type: "remove-scene",
+        sceneId: sceneId("ghost"),
+      }),
+    ).toBe(story);
   });
 });
 
@@ -177,11 +260,15 @@ describe("scene reference warnings and repair", () => {
   it("warns per scene when referenced entities disappear", () => {
     const withoutService = {
       ...snapshot,
-      entities: snapshot.entities.filter((entity) => entity.id !== entityId("service")),
+      entities: snapshot.entities.filter(
+        (entity) => entity.id !== entityId("service"),
+      ),
     };
 
     const warnings = collectSceneReferenceWarnings(story, withoutService);
-    expect(warnings.map((warning) => warning.sceneId)).toEqual([sceneId("scene-backend")]);
+    expect(warnings.map((warning) => warning.sceneId)).toEqual([
+      sceneId("scene-backend"),
+    ]);
     expect(warnings[0].missingEntityIds).toContain(entityId("service"));
   });
 
@@ -189,7 +276,9 @@ describe("scene reference warnings and repair", () => {
     const withoutService = {
       ...snapshot,
       entities: snapshot.entities.filter(
-        (entity) => entity.id !== entityId("service") && entity.id !== entityId("api->service"),
+        (entity) =>
+          entity.id !== entityId("service") &&
+          entity.id !== entityId("api->service"),
       ),
     };
 
@@ -212,7 +301,9 @@ describe("scene reference warnings and repair", () => {
           id: sceneId("frame"),
           title: "Frame",
           durationMs: 1000,
-          actions: [{ type: "camera", focus: [entityId("client"), entityId("ghost")] }],
+          actions: [
+            { type: "camera", focus: [entityId("client"), entityId("ghost")] },
+          ],
         },
       ],
     });

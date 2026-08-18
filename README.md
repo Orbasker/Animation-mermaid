@@ -63,17 +63,20 @@ Open [http://localhost:3000](http://localhost:3000). The editor workspace is at
 
 ## Required checks
 
-Run all four checks before opening or merging a pull request:
+Continuous integration runs the exact commands below on every pull request, so
+run them locally before opening or merging one:
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm install --frozen-lockfile   # lockfile must be committed and in sync
+pnpm format:check                # Prettier
+pnpm lint                        # ESLint (incl. import boundaries + naming)
+pnpm typecheck                   # strict TypeScript (tsc --noEmit)
+pnpm test                        # unit + workflow integration tests
+pnpm build                       # production Next.js build
 ```
 
-The checks cover ESLint, strict TypeScript validation, behavioral tests, and the
-production Next.js build.
+Fix formatting automatically with `pnpm format`. Merge into `main` is blocked
+until every required check passes; direct pushes to `main` are not allowed.
 
 `pnpm test` runs two suites, which can also be run on their own:
 
@@ -81,6 +84,18 @@ production Next.js build.
 - `pnpm test:integration` — `*.integration.test.ts`, run through the Workflow
   DevKit's Vitest plugin, which compiles the workflow directives and executes
   runs against an in-process runtime. No server and no model call is needed.
+
+The full end-to-end journey (`pnpm test:e2e`, Playwright) also runs in CI.
+
+## Repository standards and security
+
+- Pull requests and issues use the templates under
+  [`.github/`](.github); see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full
+  workflow and branch/PR conventions.
+- CI additionally runs secret scanning (gitleaks, with a self-test that proves
+  it rejects a planted credential), dependency review and audit, and a
+  dependency **license policy** check (`pnpm license:check`).
+- Report vulnerabilities privately — see [`SECURITY.md`](SECURITY.md).
 
 ## AI agent foundation
 
@@ -155,15 +170,15 @@ The split of responsibility is deliberate:
 
 ### Shape of a run
 
-| Phase | What happens |
-| --- | --- |
-| `validating-context` | The `AgentContextPackage` is parsed against a strict schema. An extra key — a layout coordinate, a renderer handle — fails the run rather than reaching the model. Invalid input is fatal, never retried. |
-| `analyzing-narrative` | The agent proposes a thesis, an audience, and ordered beats. |
-| `generating-scenes` | The agent drafts scenes from those beats. |
-| `critiquing` | The agent reviews its own draft. |
-| — | Scenes are assembled into a `Story` and validated with the project's own `validateStory`, so a proposal that reaches a caller is already known to apply cleanly. |
-| `awaiting-approval` | The run suspends — consuming nothing — until a human decides. |
-| `settled` | Approval returns the proposal; rejection returns an outcome with no proposal in it. |
+| Phase                 | What happens                                                                                                                                                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validating-context`  | The `AgentContextPackage` is parsed against a strict schema. An extra key — a layout coordinate, a renderer handle — fails the run rather than reaching the model. Invalid input is fatal, never retried. |
+| `analyzing-narrative` | The agent proposes a thesis, an audience, and ordered beats.                                                                                                                                              |
+| `generating-scenes`   | The agent drafts scenes from those beats.                                                                                                                                                                 |
+| `critiquing`          | The agent reviews its own draft.                                                                                                                                                                          |
+| —                     | Scenes are assembled into a `Story` and validated with the project's own `validateStory`, so a proposal that reaches a caller is already known to apply cleanly.                                          |
+| `awaiting-approval`   | The run suspends — consuming nothing — until a human decides.                                                                                                                                             |
+| `settled`             | Approval returns the proposal; rejection returns an outcome with no proposal in it.                                                                                                                       |
 
 Each agent step retries transient failures (timeouts, rate limits, upstream 5xx)
 up to three times; a request the agent rejects outright is not retried. Because
@@ -180,14 +195,14 @@ The workflow run id is the durable handle. Progress notes go to a named
 `progress` stream and the settled outcome to the default one, so a client can
 replay one without the other.
 
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /api/design-review-story` | Start a run; returns `runId` (also in `x-workflow-run-id`). |
-| `GET /api/design-review-story/{runId}` | Status, plus the outcome once it settles — or a classified `error` message when the run has `failed`. |
-| `GET /api/design-review-story/{runId}/progress` | Replay the progress stream. `?startIndex=` resumes from a known chunk; negative values count back from the end, resolved against the `x-workflow-stream-tail-index` response header. |
-| `GET /api/design-review-story/{runId}/proposal` | Read the proposal a suspended run is waiting on, so a reviewer can see the scenes before deciding. `425` until the gate is reached. Seeing the proposal is not applying it. |
-| `POST /api/design-review-story/{runId}/decision` | Submit `{"decision":"approve"\|"reject"}`. A run that already settled answers `409`. |
-| `DELETE /api/design-review-story/{runId}` | Cancel a run before it settles. |
+| Endpoint                                         | Purpose                                                                                                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/design-review-story`                  | Start a run; returns `runId` (also in `x-workflow-run-id`).                                                                                                                          |
+| `GET /api/design-review-story/{runId}`           | Status, plus the outcome once it settles — or a classified `error` message when the run has `failed`.                                                                                |
+| `GET /api/design-review-story/{runId}/progress`  | Replay the progress stream. `?startIndex=` resumes from a known chunk; negative values count back from the end, resolved against the `x-workflow-stream-tail-index` response header. |
+| `GET /api/design-review-story/{runId}/proposal`  | Read the proposal a suspended run is waiting on, so a reviewer can see the scenes before deciding. `425` until the gate is reached. Seeing the proposal is not applying it.          |
+| `POST /api/design-review-story/{runId}/decision` | Submit `{"decision":"approve"\|"reject"}`. A run that already settled answers `409`.                                                                                                 |
+| `DELETE /api/design-review-story/{runId}`        | Cancel a run before it settles.                                                                                                                                                      |
 
 A client that reloads keeps only the run id, re-reads status, and replays
 progress from where it left off — the run itself was never held open by the
@@ -262,10 +277,10 @@ the semantic-only `AgentContextPackage` — the same layout-free boundary the
 story workflow reads — and it must be shared explicitly before it can be
 discussed:
 
-| Endpoint | Purpose |
-| --- | --- |
+| Endpoint                 | Purpose                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
 | `POST /api/review-share` | Share an `AgentContextPackage`; returns a content-addressed `shareId` (`rev_…`). |
-| `POST /api/slack/events` | Slack events + interactivity webhook. |
+| `POST /api/slack/events` | Slack events + interactivity webhook.                                            |
 
 The flow:
 

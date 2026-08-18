@@ -146,7 +146,9 @@ h1 {
   gap: 28px;
   padding: 16px 20px;
   text-decoration: none;
-  transition: box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .primaryAction:hover {
@@ -641,7 +643,11 @@ h1 {
     linear-gradient(#b7c4ca 1px, transparent 1px),
     linear-gradient(90deg, #b7c4ca 1px, transparent 1px);
   background-position: -1px -1px;
-  background-size: 16px 16px, 16px 16px, 80px 80px, 80px 80px;
+  background-size:
+    16px 16px,
+    16px 16px,
+    80px 80px,
+    80px 80px;
   min-height: 0;
   overflow: hidden;
   position: relative;

@@ -131,9 +131,15 @@ describe("serialization round-trip", () => {
 
     expect(restored).toEqual(migrated);
     expect(migrated.schemaVersion).toBe(2);
-    expect(migrated.snapshots.every((item) => item.schemaVersion === 2)).toBe(true);
-    expect(migrated.stories.every((item) => item.schemaVersion === 2)).toBe(true);
-    expect(migrated.comparisons.every((item) => item.schemaVersion === 2)).toBe(true);
+    expect(migrated.snapshots.every((item) => item.schemaVersion === 2)).toBe(
+      true,
+    );
+    expect(migrated.stories.every((item) => item.schemaVersion === 2)).toBe(
+      true,
+    );
+    expect(migrated.comparisons.every((item) => item.schemaVersion === 2)).toBe(
+      true,
+    );
   });
 
   it("rejects a payload that is not a JSON object", () => {
@@ -141,8 +147,13 @@ describe("serialization round-trip", () => {
   });
 
   it("rejects an unsupported schema version on parse", () => {
-    const bad = JSON.stringify({ ...sampleProjectDocument(), schemaVersion: 99 });
-    expect(() => parseProjectDocument(bad)).toThrow(/unsupported schemaVersion/i);
+    const bad = JSON.stringify({
+      ...sampleProjectDocument(),
+      schemaVersion: 99,
+    });
+    expect(() => parseProjectDocument(bad)).toThrow(
+      /unsupported schemaVersion/i,
+    );
   });
 
   it("rejects non-finite transforms instead of serializing them as null", () => {
@@ -320,7 +331,12 @@ describe("serialization round-trip", () => {
                 {
                   type: "transform",
                   target: "service",
-                  to: { translateX: 1, translateY: 2, scale: 1.2, rotateDeg: 3 },
+                  to: {
+                    translateX: 1,
+                    translateY: 2,
+                    scale: 1.2,
+                    rotateDeg: 3,
+                  },
                 },
                 { type: "compare", target: "db", change: "modified" },
                 { type: "highlight", target: "backend", style: "active" },
@@ -335,7 +351,9 @@ describe("serialization round-trip", () => {
     };
 
     const restored = parseProjectDocument(JSON.stringify(allActions));
-    expect(restored.stories[0].scenes[0].actions.map((action) => action.type)).toEqual([
+    expect(
+      restored.stories[0].scenes[0].actions.map((action) => action.type),
+    ).toEqual([
       "reveal",
       "hide",
       "focus",
@@ -388,7 +406,9 @@ describe("serialization round-trip", () => {
     ],
   ] as const)("rejects a malformed nested %s", (_, malformedProject) => {
     expect(() =>
-      parseProjectDocument(JSON.stringify(malformedProject(sampleProjectDocument()))),
+      parseProjectDocument(
+        JSON.stringify(malformedProject(sampleProjectDocument())),
+      ),
     ).toThrow(/project\.(snapshots|stories|comparisons)/i);
   });
 

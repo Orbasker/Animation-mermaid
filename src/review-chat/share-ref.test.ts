@@ -14,7 +14,9 @@ describe("parseShareRef", () => {
   });
 
   it("reads a share code out of a URL", () => {
-    expect(parseShareRef(`see https://example.com/review-share/${id}`)).toBe(id);
+    expect(parseShareRef(`see https://example.com/review-share/${id}`)).toBe(
+      id,
+    );
   });
 
   it("returns null when no share code is present", () => {

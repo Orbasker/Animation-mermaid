@@ -44,7 +44,10 @@ export interface RunSnapshot {
 
 export interface CopilotTransport {
   /** Starts a run and returns its durable id. */
-  start(request: StoryRequest, signal?: AbortSignal): Promise<{ readonly runId: string }>;
+  start(
+    request: StoryRequest,
+    signal?: AbortSignal,
+  ): Promise<{ readonly runId: string }>;
   /** Reads the current status, and the outcome or failure once the run has one. */
   status(runId: string, signal?: AbortSignal): Promise<RunSnapshot>;
   /**
@@ -60,9 +63,16 @@ export interface CopilotTransport {
    * Reads the proposal a suspended run is waiting on, or `undefined` if the run has not reached
    * the approval gate yet. Seeing the proposal is how the reviewer decides; it is not applying.
    */
-  proposal(runId: string, signal?: AbortSignal): Promise<StoryProposal | undefined>;
+  proposal(
+    runId: string,
+    signal?: AbortSignal,
+  ): Promise<StoryProposal | undefined>;
   /** Submits the human decision a paused run is waiting on. */
-  decide(runId: string, decision: StoryDecision, signal?: AbortSignal): Promise<void>;
+  decide(
+    runId: string,
+    decision: StoryDecision,
+    signal?: AbortSignal,
+  ): Promise<void>;
   /** Cancels a run before it settles. */
   cancel(runId: string, signal?: AbortSignal): Promise<void>;
 }
@@ -76,7 +86,8 @@ const NEXT_ACTION: Record<CopilotErrorKind, string> = {
     "The model provider returned an error. Your local project is unchanged — start a new run to try again.",
   validation:
     "The request could not be processed as sent. Adjust the intent or context selection and start a new run.",
-  network: "Could not reach the workflow service. Check your connection, then try again.",
+  network:
+    "Could not reach the workflow service. Check your connection, then try again.",
   canceled: "The run was cancelled. Your local project is unchanged.",
   unknown:
     "Something went wrong. Your local project is unchanged — start a new run to try again.",
@@ -98,7 +109,10 @@ function copilotError(kind: CopilotErrorKind, message: string): CopilotError {
 export function classifyFailureMessage(message: string): CopilotError {
   const text = message.toLowerCase();
 
-  if (/\b(402|403)\b/.test(text) || /budget|quota|credit|insufficient funds/.test(text)) {
+  if (
+    /\b(402|403)\b/.test(text) ||
+    /budget|quota|credit|insufficient funds/.test(text)
+  ) {
     return copilotError("budget", message);
   }
   if (/\b429\b/.test(text) || /rate limit/.test(text)) {
@@ -111,7 +125,10 @@ export function classifyFailureMessage(message: string): CopilotError {
   ) {
     return copilotError("validation", message);
   }
-  if (/\b5\d\d\b/.test(text) || /provider|gateway|upstream|timed out|timeout/.test(text)) {
+  if (
+    /\b5\d\d\b/.test(text) ||
+    /provider|gateway|upstream|timed out|timeout/.test(text)
+  ) {
     return copilotError("provider", message);
   }
   return copilotError("unknown", message);
@@ -146,7 +163,9 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
         ...(signal ? { signal } : {}),
       });
       if (!response.ok) {
-        throw new Error(`Could not start the run: ${await readError(response)}`);
+        throw new Error(
+          `Could not start the run: ${await readError(response)}`,
+        );
       }
       const body = (await response.json()) as { runId: string };
       return { runId: body.runId };
@@ -160,7 +179,9 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
         return { runId, status: "cancelled" };
       }
       if (!response.ok) {
-        throw new Error(`Could not read run status: ${await readError(response)}`);
+        throw new Error(
+          `Could not read run status: ${await readError(response)}`,
+        );
       }
       const body = (await response.json()) as {
         status: RunSnapshot["status"];
@@ -179,13 +200,17 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
 
     async *streamProgress(runId, options) {
       const query =
-        options?.startIndex !== undefined ? `?startIndex=${options.startIndex}` : "";
+        options?.startIndex !== undefined
+          ? `?startIndex=${options.startIndex}`
+          : "";
       const response = await fetch(
         `${root}/${encodeURIComponent(runId)}/progress${query}`,
         { ...(options?.signal ? { signal: options.signal } : {}) },
       );
       if (!response.ok || !response.body) {
-        throw new Error(`Could not read progress: ${await readError(response)}`);
+        throw new Error(
+          `Could not read progress: ${await readError(response)}`,
+        );
       }
 
       const reader = response.body.getReader();
@@ -220,7 +245,9 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
         return undefined;
       }
       if (!response.ok) {
-        throw new Error(`Could not read the proposal: ${await readError(response)}`);
+        throw new Error(
+          `Could not read the proposal: ${await readError(response)}`,
+        );
       }
       const body = (await response.json()) as { proposal: StoryProposal };
       return body.proposal;
@@ -237,7 +264,9 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
         },
       );
       if (!response.ok) {
-        throw new Error(`Could not submit the decision: ${await readError(response)}`);
+        throw new Error(
+          `Could not submit the decision: ${await readError(response)}`,
+        );
       }
     },
 
@@ -247,7 +276,9 @@ export function createHttpCopilotTransport(baseUrl = ""): CopilotTransport {
         ...(signal ? { signal } : {}),
       });
       if (!response.ok && response.status !== 404) {
-        throw new Error(`Could not cancel the run: ${await readError(response)}`);
+        throw new Error(
+          `Could not cancel the run: ${await readError(response)}`,
+        );
       }
     },
   };

@@ -16,7 +16,11 @@ import {
   type SceneDraft,
   type ValidatedAgentContext,
 } from "./contract";
-import { assembleStory, buildStoryProposal, InvalidStoryDraftError } from "./proposal";
+import {
+  assembleStory,
+  buildStoryProposal,
+  InvalidStoryDraftError,
+} from "./proposal";
 
 const snapshot = currentArchitectureSnapshot();
 
@@ -78,7 +82,10 @@ describe("buildStoryProposal", () => {
   it("derives scene ids from position rather than a generator", () => {
     const { story } = build();
 
-    expect(story.scenes.map((scene) => scene.id)).toEqual(["scene-1", "scene-2"]);
+    expect(story.scenes.map((scene) => scene.id)).toEqual([
+      "scene-1",
+      "scene-2",
+    ]);
   });
 
   it("changes the proposal id when the scenes change", () => {
@@ -152,7 +159,9 @@ describe("buildStoryProposal", () => {
       expect.unreachable("expected the draft to be rejected");
     } catch (error) {
       expect(error).toBeInstanceOf(InvalidStoryDraftError);
-      expect((error as InvalidStoryDraftError).code).toBe("unknown-entity-reference");
+      expect((error as InvalidStoryDraftError).code).toBe(
+        "unknown-entity-reference",
+      );
       expect((error as InvalidStoryDraftError).details[0]).toContain("ghost");
     }
   });

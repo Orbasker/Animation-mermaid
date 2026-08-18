@@ -1,7 +1,11 @@
 import { createReviewChatBot, type ReviewChatBot } from "./bot";
 import { resolveReviewChatState } from "./state";
 
-export { createReviewChatBot, type ReviewChatBot, type ReviewChatBotOptions } from "./bot";
+export {
+  createReviewChatBot,
+  type ReviewChatBot,
+  type ReviewChatBotOptions,
+} from "./bot";
 export {
   createStateBackedShareStore,
   shareIdFor,
@@ -16,9 +20,17 @@ export {
   type ReviewThreadState,
   type ReviewHandlerDeps,
 } from "./handlers";
-export { createEveReviewAgent, seedPrompt, type ReviewAgent } from "./eve-agent";
+export {
+  createEveReviewAgent,
+  seedPrompt,
+  type ReviewAgent,
+} from "./eve-agent";
 export { createFixtureReviewAgent, resolveReviewAgent } from "./fixture-agent";
-export { chunksFromEveEvents, degradeToText, AgentTurnFailedError } from "./stream-bridge";
+export {
+  chunksFromEveEvents,
+  degradeToText,
+  AgentTurnFailedError,
+} from "./stream-bridge";
 export { resolveReviewChatState } from "./state";
 
 let singleton: ReviewChatBot | null = null;

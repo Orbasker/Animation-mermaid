@@ -39,14 +39,18 @@ function describePackage(pkg: ValidatedAgentContext): string {
     `Snapshot: ${pkg.graph.snapshotId}`,
     "",
     "Nodes (id — label):",
-    ...nodes.map((node) => (node.kind === "node" ? `- ${node.id} — ${node.label}` : "")),
+    ...nodes.map((node) =>
+      node.kind === "node" ? `- ${node.id} — ${node.label}` : "",
+    ),
   ];
 
   if (groups.length > 0) {
     lines.push("", "Groups (id — label — members):");
     for (const group of groups) {
       if (group.kind !== "group") continue;
-      lines.push(`- ${group.id} — ${group.label} — ${group.memberIds.join(", ")}`);
+      lines.push(
+        `- ${group.id} — ${group.label} — ${group.memberIds.join(", ")}`,
+      );
     }
   }
 
@@ -64,7 +68,9 @@ function describePackage(pkg: ValidatedAgentContext): string {
     lines.push(
       "",
       `Comparison ${pkg.comparison.baseSnapshotId} -> ${pkg.comparison.targetSnapshotId}:`,
-      ...pkg.comparison.changes.map((change) => `- ${change.op} ${change.entityId}`),
+      ...pkg.comparison.changes.map(
+        (change) => `- ${change.op} ${change.entityId}`,
+      ),
     );
   }
 
@@ -76,7 +82,10 @@ function describePackage(pkg: ValidatedAgentContext): string {
  * agent to it, so a follow-up answer draws only on what was explicitly shared — never on a diagram
  * the reviewer happens to have open locally.
  */
-export function seedPrompt(pkg: ValidatedAgentContext, question: string): string {
+export function seedPrompt(
+  pkg: ValidatedAgentContext,
+  question: string,
+): string {
   return [
     "You are answering questions from reviewers in a Slack thread about one shared",
     "design-review package. Answer only from the package below. Do not invent components,",
@@ -117,7 +126,10 @@ export function createEveReviewAgent(): ReviewAgent {
         const { response } = await client.sessions.create({
           message: seedPrompt(pkg, question),
         });
-        return { sessionId: response.sessionId, stream: chunksFromEveEvents(response) };
+        return {
+          sessionId: response.sessionId,
+          stream: chunksFromEveEvents(response),
+        };
       }
       const session = client.sessions.attach(sessionId);
       const response = await session.send(question);
