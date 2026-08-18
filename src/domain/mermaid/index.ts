@@ -39,3 +39,29 @@ export {
   RICH_FLOWCHART,
   HOSTILE_FLOWCHART,
 } from "@/domain/mermaid/fixtures";
+
+export {
+  type ParticipantRole,
+  type ParsedParticipant,
+  type ParsedMessage,
+  type ParsedSequence,
+  type SequenceLayoutOptions,
+  SEQUENCE_IMPORTER,
+  SEQUENCE_IMPORTER_VERSION,
+  SEQUENCE_DIAGRAM_TYPE,
+  SEQUENCE_CAPABILITIES,
+  sequenceImporter,
+  parseSequence,
+  importMermaidSequence,
+  layoutSequence,
+  ACCEPTANCE_SEQUENCE,
+  RICH_SEQUENCE,
+  HOSTILE_SEQUENCE,
+} from "@/domain/mermaid/sequence";
+
+export {
+  FLOWCHART_DIAGRAM_TYPE,
+  FLOWCHART_CAPABILITIES,
+} from "@/domain/mermaid/capabilities";
+
+export { flowchartImporter } from "@/domain/mermaid/importer";

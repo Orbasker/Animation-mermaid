@@ -31,6 +31,8 @@ import {
   type NodeEntity,
 } from "@/domain/graph";
 import { applyStoryProposal } from "@/domain/apply-proposal";
+import { IMPORTER_CAPABILITIES } from "@/domain/import/capabilities";
+import type { ImporterCapabilities } from "@/domain/import/contract";
 import {
   actionChannel,
   storyDurationMs,
@@ -775,12 +777,16 @@ export function EditorWorkspace({
     if (!snapshot) return;
     setSaveState("Reimporting…");
     try {
-      const [{ importMermaidFlowchart }, { layoutFlowchart }] =
-        await Promise.all([
-          import("@/domain/mermaid/import"),
-          import("@/domain/mermaid/layout"),
-        ]);
-      const result = importMermaidFlowchart({
+      const { importerByDiagramType, detectImporter } =
+        await import("@/domain/import/registry");
+      const importer =
+        importerByDiagramType(snapshot.source.diagramType) ??
+        detectImporter(snapshot.source.text);
+      if (!importer) {
+        setSaveState("Reimport failed: unsupported diagram type");
+        return;
+      }
+      const result = importer.import({
         text: snapshot.source.text,
         snapshotId: snapshot.id,
         importedAt: new Date().toISOString(),
@@ -789,10 +795,10 @@ export function EditorWorkspace({
         setSaveState("Reimport failed");
         return;
       }
-      const computedLayout = await layoutFlowchart(result.snapshot);
+      const computedLayout = await importer.layout(result.snapshot);
       const reconciled = reconcileImportedSnapshot(snapshot, {
         ...result.snapshot,
-        layout: computedLayout,
+        layout: [...computedLayout],
       });
       setHistory((current) =>
         current
@@ -1306,11 +1312,17 @@ function SurfacePanel({
   );
 
   if (surface === "Source") {
+    const activeImporterId = snapshot.source.importer.importer;
     return (
       <div>
         <PanelHeading eyebrow="Read only" title="Mermaid source" />
+        <p className="panelNote">
+          Imported by <strong>{snapshot.source.diagramType}</strong> ·{" "}
+          {activeImporterId}@{snapshot.source.importer.importerVersion}
+        </p>
         <pre className="sourceCode">{snapshot.source.text}</pre>
         <p className="panelNote">Visual changes never rewrite this source.</p>
+        <ImporterCapabilityReport activeImporterId={activeImporterId} />
       </div>
     );
   }
@@ -1748,5 +1760,69 @@ function PanelHeading({
       <span>{eyebrow}</span>
       <h2>{title}</h2>
     </header>
+  );
+}
+
+const FEATURE_SUPPORT_LABEL: Readonly<
+  Record<ImporterCapabilities["features"][number]["support"], string>
+> = {
+  full: "Supported",
+  partial: "Partial",
+  none: "Not imported",
+};
+
+/**
+ * Reports which diagram grammars can be imported and what each one supports, so a user knows
+ * before pasting what will survive the import. The importer that produced the current snapshot
+ * is marked as active.
+ */
+function ImporterCapabilityReport({
+  activeImporterId,
+}: {
+  readonly activeImporterId: string;
+}) {
+  return (
+    <section
+      aria-labelledby="importer-capabilities"
+      className="capabilityReport"
+    >
+      <h3 id="importer-capabilities">Supported diagram formats</h3>
+      <ul className="capabilityList">
+        {IMPORTER_CAPABILITIES.map((capability) => {
+          const isActive = capability.importer === activeImporterId;
+          return (
+            <li className="capabilityCard" key={capability.importer}>
+              <div className="capabilityCardHead">
+                <strong>{capability.label}</strong>
+                {isActive ? (
+                  <span className="capabilityActive">Active</span>
+                ) : null}
+              </div>
+              <p className="capabilitySummary">{capability.summary}</p>
+              <ul className="capabilityFeatures">
+                {capability.features.map((feature) => (
+                  <li
+                    className={`capabilityFeature support-${feature.support}`}
+                    key={feature.name}
+                  >
+                    <span className="capabilityFeatureName">
+                      {feature.name}
+                    </span>
+                    <span className="capabilityFeatureSupport">
+                      {FEATURE_SUPPORT_LABEL[feature.support]}
+                    </span>
+                    {feature.detail ? (
+                      <span className="capabilityFeatureDetail">
+                        {feature.detail}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

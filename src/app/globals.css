@@ -438,6 +438,99 @@ h1 {
   margin-top: 14px;
 }
 
+.capabilityReport {
+  margin-top: 22px;
+}
+
+.capabilityReport h3 {
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+}
+
+.capabilityList {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.capabilityCard {
+  border: 1px solid #d9dedf;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.capabilityCardHead {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.capabilityActive {
+  background: #e4f2e8;
+  border-radius: 999px;
+  color: #1f7a45;
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.capabilitySummary {
+  color: #566169;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  margin: 6px 0 10px;
+}
+
+.capabilityFeatures {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.capabilityFeature {
+  border-left: 3px solid #d9dedf;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: 1fr auto;
+  padding: 2px 0 2px 10px;
+}
+
+.capabilityFeature.support-full {
+  border-left-color: #2f9e5c;
+}
+
+.capabilityFeature.support-partial {
+  border-left-color: #d89b2a;
+}
+
+.capabilityFeature.support-none {
+  border-left-color: #b0b7ba;
+}
+
+.capabilityFeatureName {
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.capabilityFeatureSupport {
+  color: #566169;
+  font-size: 0.66rem;
+  text-align: right;
+}
+
+.capabilityFeatureDetail {
+  color: #77828a;
+  font-size: 0.66rem;
+  grid-column: 1 / -1;
+  line-height: 1.45;
+}
+
 .surfaceCard {
   border-bottom: 1px solid #d9dedf;
   display: flex;
