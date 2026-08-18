@@ -1,4 +1,6 @@
-import ELK, { type ElkNode } from "elkjs/lib/elk.bundled.js";
+import ELK from "elkjs/lib/elk-api.js";
+import type { ElkNode } from "elkjs/lib/elk-api";
+import * as elkWorkerModule from "elkjs/lib/elk-worker.min.js";
 
 import type { EntityId, GraphSnapshot, LayoutHint } from "@/domain/graph";
 import { DEFAULT_DIRECTION, type Direction } from "@/domain/mermaid/types";
@@ -20,6 +22,37 @@ export interface LayoutOptions {
 
 const DEFAULT_NODE_WIDTH = 160;
 const DEFAULT_NODE_HEIGHT = 48;
+
+type ElkWorkerConstructor = new (url?: string) => {
+  postMessage(message: unknown): void;
+};
+
+/**
+ * Resolves ELK's in-process worker constructor from the module however the active bundler
+ * exposes it: Node/Vitest and Turbopack disagree on CommonJS-default interop, so the engine
+ * may sit on the namespace itself, `.Worker`, `.default`, or `.default.Worker`. We pick the
+ * first candidate that is actually constructable rather than betting on one interop shape.
+ */
+function resolveElkWorker(): ElkWorkerConstructor {
+  const exported = elkWorkerModule as unknown as Record<string, unknown> & {
+    default?: Record<string, unknown>;
+  };
+  const candidates: unknown[] = [
+    exported.Worker,
+    exported.default,
+    exported.default?.Worker,
+    exported.default?.default,
+    exported,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "function") {
+      return candidate as ElkWorkerConstructor;
+    }
+  }
+  throw new Error("Could not resolve the ELK in-process worker constructor.");
+}
+
+const ElkWorker = resolveElkWorker();
 
 const DIRECTION_TO_ELK: Readonly<Record<Direction, string>> = {
   TD: "DOWN",
@@ -150,7 +183,9 @@ export async function layoutFlowchart(
   };
   const direction = options.direction ?? DEFAULT_DIRECTION;
 
-  const elk = new ELK();
+  // Pass ELK its in-process worker explicitly. `elk.bundled.js` finds the same engine via a
+  // dynamic `require` that Turbopack mishandles in the browser; a static import does not.
+  const elk = new ELK({ workerFactory: (url) => new ElkWorker(url) });
   const graph = toElkGraph(snapshot, resolved, direction);
   const laidOut = await elk.layout(graph);
 

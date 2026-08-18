@@ -57,3 +57,47 @@ export const HOSTILE_FLOWCHART = [
   "  classDef danger fill:#f00",
   "  a ~~~ b",
 ].join("\n");
+
+/**
+ * Builds a dense but valid flowchart of `nodeCount` nodes wired into a chain with periodic
+ * cross-links, distributed across `groupCount` subgraphs. It is the worker stress fixture:
+ * large enough that parsing and ELK layout are visibly CPU-heavy, so a browser test can prove
+ * the work runs off the UI thread, yet deterministic so results are reproducible.
+ */
+export function buildStressFlowchart(
+  nodeCount: number,
+  groupCount = 8,
+): string {
+  const count = Math.max(1, Math.floor(nodeCount));
+  const groups = Math.max(1, Math.min(groupCount, count));
+  const perGroup = Math.ceil(count / groups);
+
+  const lines: string[] = ["flowchart TD"];
+  for (let g = 0; g < groups; g += 1) {
+    lines.push(`  subgraph group_${g}[Group ${g + 1}]`);
+    for (
+      let i = g * perGroup;
+      i < Math.min((g + 1) * perGroup, count);
+      i += 1
+    ) {
+      lines.push(`    n${i}[Service ${i + 1}]`);
+    }
+    lines.push("  end");
+  }
+  for (let i = 1; i < count; i += 1) {
+    lines.push(`  n${i - 1} --> n${i}`);
+  }
+  // Sparse cross-links so the layered layout has real work to do, not just a straight line.
+  for (let i = 0; i + 7 < count; i += 7) {
+    lines.push(`  n${i} -.-> n${i + 7}`);
+  }
+  return lines.join("\n");
+}
+
+/** The agreed default stress size exercised by the worker unit and browser tests. */
+export const STRESS_FLOWCHART_NODE_COUNT = 400;
+
+/** A ready-made large flowchart at {@link STRESS_FLOWCHART_NODE_COUNT}. */
+export const STRESS_FLOWCHART = buildStressFlowchart(
+  STRESS_FLOWCHART_NODE_COUNT,
+);

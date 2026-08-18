@@ -31,6 +31,11 @@ import {
   type NodeEntity,
 } from "@/domain/graph";
 import { applyStoryProposal } from "@/domain/apply-proposal";
+import type {
+  JobError,
+  JobProgress,
+  MermaidImportRunner,
+} from "@/domain/mermaid/worker";
 import {
   actionChannel,
   storyDurationMs,
@@ -51,6 +56,7 @@ import {
   type TimelineOperation,
 } from "@/domain/timeline";
 import type { ProjectDocument } from "@/domain/project-document";
+import { buildExportHtml, buildExportPayload, ExportError } from "@/export";
 import { ProjectRepository } from "@/persistence";
 import type { StoryProposal } from "@/workflows/design-review-story";
 
@@ -130,6 +136,14 @@ function positionFor(
   );
 }
 
+function slugify(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "design-review";
+}
+
 function clampZoom(value: number): number {
   return Math.min(1.8, Math.max(0.35, Math.round(value * 100) / 100));
 }
@@ -171,6 +185,29 @@ function actionTarget(action: Action): EntityId | undefined {
   return action.type === "camera" ? undefined : action.target;
 }
 
+/**
+ * Reads the structured {@link JobError} off a rejected import without importing the worker
+ * module's error class, so the editor's initial bundle stays free of the layout engine.
+ */
+function jobErrorOf(error: unknown): JobError | null {
+  if (error && typeof error === "object" && "error" in error) {
+    const candidate = (error as { error?: unknown }).error;
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      "code" in candidate &&
+      "message" in candidate
+    ) {
+      return candidate as JobError;
+    }
+  }
+  return null;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "The import failed.";
+}
+
 export function EditorWorkspace({
   repository: suppliedRepository,
   initialProject,
@@ -206,6 +243,7 @@ export function EditorWorkspace({
   const [previewMode, setPreviewMode] = useState(false);
   const ownsRepository = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const importRunnerRef = useRef<MermaidImportRunner | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -275,6 +313,14 @@ export function EditorWorkspace({
       if (ownsRepository.current) openedRepository?.close();
     };
   }, [initialProject, suppliedRepository]);
+
+  useEffect(
+    () => () => {
+      importRunnerRef.current?.dispose();
+      importRunnerRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!history || !project || !repository || stressPreview) return;
@@ -454,6 +500,34 @@ export function EditorWorkspace({
       previewState.entities.map((entity) => [entity.id, entity]),
     );
   }, [previewState]);
+
+  const exportStoryHtml = useCallback(() => {
+    if (!project || !snapshot || !activeStory) return;
+    try {
+      const withCurrentSnapshot = replaceSnapshot(project, snapshot);
+      const payload = buildExportPayload(withCurrentSnapshot, activeStory.id);
+      const html = buildExportHtml(payload);
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${slugify(activeStory.title)}.html`;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setAnnouncement(
+        `Exported "${activeStory.title}" as a self-contained HTML file.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof ExportError
+          ? error.message
+          : "The story could not be exported.";
+      setAnnouncement(message);
+    }
+  }, [project, snapshot, activeStory]);
 
   useEffect(() => {
     if (!isPlaying || storyDuration <= 0) return;
@@ -773,27 +847,23 @@ export function EditorWorkspace({
 
   async function reimport() {
     if (!snapshot) return;
+    // Capture the source and id up front: the reimport runs off the UI thread and must never
+    // rewrite the source text, and a worker failure leaves this snapshot exactly as it was.
+    const source = snapshot.source.text;
+    const snapshotId = snapshot.id;
+    const previous = snapshot;
     setSaveState("Reimporting…");
     try {
-      const [{ importMermaidFlowchart }, { layoutFlowchart }] =
-        await Promise.all([
-          import("@/domain/mermaid/import"),
-          import("@/domain/mermaid/layout"),
-        ]);
-      const result = importMermaidFlowchart({
-        text: snapshot.source.text,
-        snapshotId: snapshot.id,
-        importedAt: new Date().toISOString(),
-      });
-      if (!result.snapshot) {
-        setSaveState("Reimport failed");
-        return;
-      }
-      const computedLayout = await layoutFlowchart(result.snapshot);
-      const reconciled = reconcileImportedSnapshot(snapshot, {
-        ...result.snapshot,
-        layout: computedLayout,
-      });
+      const runner = await getImportRunner();
+      const handle = runner.run(
+        { text: source, snapshotId, importedAt: new Date().toISOString() },
+        (progress: JobProgress) =>
+          setSaveState(
+            `${progress.message} ${Math.round(progress.ratio * 100)}%`,
+          ),
+      );
+      const result = await handle.promise;
+      const reconciled = reconcileImportedSnapshot(previous, result.snapshot);
       setHistory((current) =>
         current
           ? {
@@ -808,12 +878,22 @@ export function EditorWorkspace({
         "Reimported Mermaid source and restored compatible visual edits.",
       );
     } catch (error) {
-      setSaveState(
-        error instanceof Error
-          ? `Reimport failed: ${error.message}`
-          : "Reimport failed",
-      );
+      const jobError = jobErrorOf(error);
+      // A superseded or cancelled run is expected — the newer run owns the outcome, and the
+      // source text and current graph are untouched.
+      if (jobError?.code === "cancelled") return;
+      const detail = jobError?.message ?? errorMessage(error);
+      setSaveState(`Reimport failed: ${detail}`);
+      setAnnouncement(`Reimport failed: ${detail} The source is unchanged.`);
     }
+  }
+
+  async function getImportRunner(): Promise<MermaidImportRunner> {
+    if (!importRunnerRef.current) {
+      const { MermaidImportRunner } = await import("@/domain/mermaid/worker");
+      importRunnerRef.current = new MermaidImportRunner();
+    }
+    return importRunnerRef.current;
   }
 
   function handleWheel(event: WheelEvent<HTMLDivElement>) {
@@ -1071,6 +1151,18 @@ export function EditorWorkspace({
               </button>
               <button onClick={loadStressFixture} type="button">
                 Load 200-node stress fixture
+              </button>
+              <button
+                disabled={!storyValid}
+                onClick={exportStoryHtml}
+                title={
+                  storyValid
+                    ? "Download a self-contained animated review"
+                    : "Fix the scene warnings to export this story"
+                }
+                type="button"
+              >
+                Export HTML
               </button>
             </div>
 
