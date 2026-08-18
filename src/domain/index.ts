@@ -47,13 +47,26 @@ export {
   type StoryValidationCode,
   type StoryValidationError,
   type StoryValidationTarget,
+  type ActionChannel,
   ACTION_TYPES,
   storyId,
   sceneId,
   createStory,
   validateStory,
   storyDurationMs,
+  actionTargets,
+  actionChannel,
+  actionConflictKey,
 } from "@/domain/story";
+
+export {
+  type TimelineOperation,
+  type SceneReferenceWarning,
+  allocateSceneId,
+  applyTimelineOperation,
+  collectSceneReferenceWarnings,
+  repairSceneReferences,
+} from "@/domain/timeline";
 
 export {
   type EntityRenderState,

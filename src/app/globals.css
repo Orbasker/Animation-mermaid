@@ -1169,3 +1169,208 @@ h1 {
     animation: none;
   }
 }
+
+.graphNode.isFocused {
+  border-color: #1f6f4a;
+  box-shadow: 4px 4px 0 #47c489;
+}
+
+.graphNode.isHighlighted {
+  background: #fff7d8;
+  border-color: #b78a17;
+}
+
+.previewBanner {
+  align-items: center;
+  background: #10212e;
+  border-radius: 5px;
+  color: #f2f6f8;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+}
+
+.previewBanner strong {
+  font-size: 0.82rem;
+}
+
+.previewBanner span {
+  color: #9fb3bf;
+  font-size: 0.72rem;
+}
+
+.timelineSurface {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineStoryPicker {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  gap: 4px;
+}
+
+.timelineActions,
+.timelineTransport,
+.sceneControls,
+.authoringButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timelineActions button,
+.sceneControls button,
+.authoringButtons button,
+.authoringAnnotate button,
+.timelineTransport button,
+.timelineWarnings button {
+  background: #f4f6f4;
+  border: 1px solid #cbd3d4;
+  border-radius: 4px;
+  color: #17262f;
+  cursor: pointer;
+  font-size: 0.72rem;
+  min-height: 32px;
+  padding: 5px 9px;
+}
+
+.timelineActions button:disabled,
+.authoringButtons button:disabled,
+.authoringAnnotate button:disabled,
+.sceneControls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.timelineWarnings {
+  background: #fff0e9;
+  border: 1px solid #f5bba8;
+  border-radius: 5px;
+  color: #6a2914;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.timelineWarnings ul {
+  font-size: 0.72rem;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.timelinePlayback {
+  border: 1px solid #d9dedf;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.timelinePlayback input[type="range"] {
+  width: 100%;
+}
+
+.sceneList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sceneCard {
+  border: 1px solid #d9dedf;
+  border-left: 3px solid #cbd3d4;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.sceneCard.isSelected {
+  border-left-color: #c74720;
+}
+
+.sceneCard.isActive {
+  background: #eef8f2;
+  border-left-color: #1f6f4a;
+}
+
+.sceneCard.hasWarning {
+  border-left-color: #bb431f;
+}
+
+.sceneCard input {
+  border: 1px solid #cbd3d4;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
+.sceneSelect {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: #67747b;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0;
+  text-transform: uppercase;
+}
+
+.sceneMeta,
+.authoringAnnotate {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  gap: 4px;
+}
+
+.sceneMeta input {
+  width: 120px;
+}
+
+.sceneActionList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sceneActionList li {
+  align-items: center;
+  background: #f4f6f4;
+  border-radius: 4px;
+  display: flex;
+  font-size: 0.7rem;
+  gap: 6px;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+
+.sceneActionList button {
+  background: transparent;
+  border: none;
+  color: #bb431f;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.sceneAuthoring {
+  border-top: 1px solid #d9dedf;
+  padding-top: 12px;
+}

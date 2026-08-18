@@ -139,7 +139,8 @@ export interface StoryValidationError {
   readonly sceneId?: SceneId;
 }
 
-function actionTargets(action: Action): readonly EntityId[] {
+/** The graph entities an action targets — the endpoints validated against the snapshot. */
+export function actionTargets(action: Action): readonly EntityId[] {
   switch (action.type) {
     case "reveal":
     case "hide":
@@ -169,7 +170,12 @@ function isFiniteStoryTransform(value: unknown): value is StoryTransform {
   );
 }
 
-type ActionChannel =
+/**
+ * The independent presentation channel an action drives. Two actions on the same channel and
+ * target conflict within a scene; the timeline editor uses this to upsert actions so a scene
+ * never carries contradictory instructions.
+ */
+export type ActionChannel =
   | "visibility"
   | "focus"
   | "trace"
@@ -179,7 +185,7 @@ type ActionChannel =
   | "annotation"
   | "camera";
 
-function actionChannel(action: Action): ActionChannel {
+export function actionChannel(action: Action): ActionChannel {
   switch (action.type) {
     case "reveal":
     case "hide":
@@ -201,7 +207,8 @@ function actionChannel(action: Action): ActionChannel {
   }
 }
 
-function actionConflictKey(action: Action): string {
+/** A key identifying the channel/target an action occupies, for conflict detection. */
+export function actionConflictKey(action: Action): string {
   const channel = actionChannel(action);
   return action.type === "camera" ? channel : `${channel}:${action.target}`;
 }

@@ -31,6 +31,25 @@ import {
   type NodeEntity,
 } from "@/domain/graph";
 import { applyStoryProposal } from "@/domain/apply-proposal";
+import {
+  actionChannel,
+  storyDurationMs,
+  validateStory,
+  type Action,
+  type ActionChannel,
+  type SceneId,
+  type Story,
+  type StoryId,
+} from "@/domain/story";
+import { renderStoryAt, type EntityRenderState } from "@/domain/story-engine";
+import {
+  allocateSceneId,
+  applyTimelineOperation,
+  collectSceneReferenceWarnings,
+  repairSceneReferences,
+  type SceneReferenceWarning,
+  type TimelineOperation,
+} from "@/domain/timeline";
 import type { ProjectDocument } from "@/domain/project-document";
 import { ProjectRepository } from "@/persistence";
 import type { StoryProposal } from "@/workflows/design-review-story";
@@ -102,6 +121,43 @@ function clampZoom(value: number): number {
   return Math.min(1.8, Math.max(0.35, Math.round(value * 100) / 100));
 }
 
+function isPreviewVisible(
+  states: ReadonlyMap<EntityId, EntityRenderState>,
+  id: EntityId,
+): boolean {
+  const state = states.get(id);
+  return state ? state.visible : true;
+}
+
+function summarizeAction(action: Action): string {
+  switch (action.type) {
+    case "reveal":
+      return `Reveal ${action.target}`;
+    case "hide":
+      return `Hide ${action.target}`;
+    case "focus":
+      return `Focus ${action.target}`;
+    case "trace":
+      return `Trace ${action.target}`;
+    case "transform":
+      return `Transform ${action.target}`;
+    case "compare":
+      return `Compare ${action.target} (${action.change})`;
+    case "highlight":
+      return `Highlight ${action.target}`;
+    case "annotate":
+      return `Annotate ${action.target}: ${action.text}`;
+    case "camera":
+      return action.focus.length > 0
+        ? `Frame ${action.focus.join(", ")}`
+        : "Fit whole diagram";
+  }
+}
+
+function actionTarget(action: Action): EntityId | undefined {
+  return action.type === "camera" ? undefined : action.target;
+}
+
 export function EditorWorkspace({
   repository: suppliedRepository,
   initialProject,
@@ -127,6 +183,11 @@ export function EditorWorkspace({
   const [pan, setPan] = useState<Point>({ x: 32, y: 32 });
   const [drag, setDrag] = useState<DragState>();
   const [stressPreview, setStressPreview] = useState(false);
+  const [activeStoryId, setActiveStoryId] = useState<StoryId>();
+  const [selectedSceneId, setSelectedSceneId] = useState<SceneId>();
+  const [playheadMs, setPlayheadMs] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
   const ownsRepository = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +227,8 @@ export function EditorWorkspace({
         }
         setProject(document);
         setHistory(createEditorHistory(document.snapshots[0]));
+        setActiveStoryId(document.stories[0]?.id);
+        setSelectedSceneId(document.stories[0]?.scenes[0]?.id);
         setSaveState(activeRepository ? "Ready to save" : "Preview mode");
 
         // Reconnect to the most recently linked run, if any — a reload rejoins an active run
@@ -299,6 +362,188 @@ export function EditorWorkspace({
     setApplyRecord({ ...applyRecord, undone: false });
     setAnnouncement("Reapplied the story.");
   }, [applyRecord]);
+
+  const stories = useMemo(() => project?.stories ?? [], [project]);
+  const activeStory = useMemo(
+    () => stories.find((story) => story.id === activeStoryId) ?? stories[0],
+    [stories, activeStoryId],
+  );
+
+  const storyWarnings = useMemo(
+    () =>
+      activeStory && snapshot
+        ? collectSceneReferenceWarnings(activeStory, snapshot)
+        : [],
+    [activeStory, snapshot],
+  );
+
+  const storyValid = useMemo(
+    () =>
+      Boolean(activeStory && snapshot) &&
+      activeStory!.scenes.length > 0 &&
+      validateStory(activeStory!, snapshot!).length === 0,
+    [activeStory, snapshot],
+  );
+
+  const storyDuration = useMemo(() => {
+    if (!activeStory) return 0;
+    try {
+      return storyDurationMs(activeStory);
+    } catch {
+      return 0;
+    }
+  }, [activeStory]);
+
+  const previewState = useMemo(() => {
+    if (!previewMode || !storyValid || !snapshot || !activeStory) return null;
+    try {
+      return renderStoryAt({ snapshot, story: activeStory, timestampMs: playheadMs });
+    } catch {
+      return null;
+    }
+  }, [previewMode, storyValid, snapshot, activeStory, playheadMs]);
+
+  const previewEntities = useMemo(() => {
+    if (!previewState) return null;
+    return new Map<EntityId, EntityRenderState>(
+      previewState.entities.map((entity) => [entity.id, entity]),
+    );
+  }, [previewState]);
+
+  useEffect(() => {
+    if (!isPlaying || storyDuration <= 0) return;
+    let frame = 0;
+    let last: number | null = null;
+    const step = (now: number) => {
+      if (last !== null) {
+        const delta = now - last;
+        setPlayheadMs((current) => {
+          const next = current + delta;
+          if (next >= storyDuration) {
+            setIsPlaying(false);
+            return storyDuration;
+          }
+          return next;
+        });
+      }
+      last = now;
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [isPlaying, storyDuration]);
+
+  const dispatchTimeline = useCallback(
+    (operation: TimelineOperation, message: string) => {
+      const targetId = activeStoryId ?? stories[0]?.id;
+      if (!targetId) return;
+      markDirty();
+      setProject((current) =>
+        current
+          ? {
+              ...current,
+              stories: current.stories.map((story) =>
+                story.id === targetId ? applyTimelineOperation(story, operation) : story,
+              ),
+            }
+          : current,
+      );
+      setAnnouncement(message);
+    },
+    [activeStoryId, markDirty, stories],
+  );
+
+  function addScene() {
+    if (!activeStory) return;
+    const id = allocateSceneId(activeStory);
+    dispatchTimeline(
+      {
+        type: "add-scene",
+        id,
+        title: `Scene ${activeStory.scenes.length + 1}`,
+        durationMs: 1200,
+        afterSceneId: selectedSceneId,
+      },
+      `Added ${id}.`,
+    );
+    setSelectedSceneId(id);
+  }
+
+  function duplicateScene(id: SceneId) {
+    if (!activeStory) return;
+    const newId = allocateSceneId(activeStory);
+    dispatchTimeline({ type: "duplicate-scene", sceneId: id, id: newId }, `Duplicated ${id}.`);
+    setSelectedSceneId(newId);
+  }
+
+  function removeScene(id: SceneId) {
+    dispatchTimeline({ type: "remove-scene", sceneId: id }, `Deleted ${id}.`);
+    if (selectedSceneId === id) setSelectedSceneId(undefined);
+  }
+
+  function moveScene(id: SceneId, toIndex: number) {
+    dispatchTimeline({ type: "move-scene", sceneId: id, toIndex }, `Reordered ${id}.`);
+  }
+
+  function repairScenes() {
+    const targetId = activeStoryId ?? stories[0]?.id;
+    if (!targetId || !snapshot) return;
+    markDirty();
+    setProject((current) =>
+      current
+        ? {
+            ...current,
+            stories: current.stories.map((story) =>
+              story.id === targetId ? repairSceneReferences(story, snapshot) : story,
+            ),
+          }
+        : current,
+    );
+    setAnnouncement("Repaired scene references against the current graph.");
+  }
+
+  function togglePreview() {
+    setPreviewMode((current) => {
+      const next = !current;
+      setIsPlaying(false);
+      if (next) setPlayheadMs(0);
+      setAnnouncement(next ? "Entered timeline preview." : "Exited timeline preview.");
+      return next;
+    });
+  }
+
+  function scrub(ms: number) {
+    setIsPlaying(false);
+    setPlayheadMs(Math.min(storyDuration, Math.max(0, ms)));
+  }
+
+  function handleTimelineKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (storyDuration <= 0) return;
+    const step = event.shiftKey ? 1000 : 100;
+    switch (event.key) {
+      case " ":
+      case "Spacebar":
+        event.preventDefault();
+        setIsPlaying((playing) => !playing);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        scrub(playheadMs - step);
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        scrub(playheadMs + step);
+        break;
+      case "Home":
+        event.preventDefault();
+        scrub(0);
+        break;
+      case "End":
+        event.preventDefault();
+        scrub(storyDuration);
+        break;
+    }
+  }
 
   function selectNode(id: EntityId, append: boolean) {
     if (!append) {
@@ -555,6 +800,47 @@ export function EditorWorkspace({
                 selectedIds={selectedIds}
                 snapshot={snapshot}
                 surface={surface}
+                timeline={{
+                  stories,
+                  story: activeStory,
+                  selectedSceneId,
+                  selectedIds,
+                  warnings: storyWarnings,
+                  playheadMs,
+                  durationMs: storyDuration,
+                  isPlaying,
+                  previewMode,
+                  storyValid,
+                  activeSceneId: previewState?.activeScene?.id,
+                  onSelectStory: setActiveStoryId,
+                  onSelectScene: setSelectedSceneId,
+                  onAddScene: addScene,
+                  onDuplicateScene: duplicateScene,
+                  onRemoveScene: removeScene,
+                  onRenameScene: (id, title) =>
+                    dispatchTimeline({ type: "rename-scene", sceneId: id, title }, `Renamed ${id}.`),
+                  onSetDuration: (id, durationMs) =>
+                    dispatchTimeline(
+                      { type: "set-duration", sceneId: id, durationMs },
+                      `Set ${id} duration to ${durationMs} ms.`,
+                    ),
+                  onMoveScene: moveScene,
+                  onSetAction: (id, action) =>
+                    dispatchTimeline(
+                      { type: "set-action", sceneId: id, action },
+                      `Updated ${action.type} in ${id}.`,
+                    ),
+                  onRemoveAction: (id, channel, target) =>
+                    dispatchTimeline(
+                      { type: "remove-action", sceneId: id, channel, target },
+                      `Removed ${channel} from ${id}.`,
+                    ),
+                  onRepair: repairScenes,
+                  onTogglePreview: togglePreview,
+                  onPlayToggle: () => setIsPlaying((playing) => !playing),
+                  onScrub: scrub,
+                  onTimelineKeyDown: handleTimelineKeyDown,
+                }}
               />
             ) : null}
             {/* Kept mounted across tab switches so a run in flight is never torn down. */}
@@ -622,6 +908,27 @@ export function EditorWorkspace({
               </button>
             </div>
 
+            {previewMode ? (
+              <div aria-live="polite" className="previewBanner" role="status">
+                {previewState?.activeScene ? (
+                  <>
+                    <strong>
+                      Scene {previewState.activeScene.index + 1}: {previewState.activeScene.title}
+                    </strong>
+                    <span>
+                      {Math.round(playheadMs)} / {storyDuration} ms
+                    </span>
+                  </>
+                ) : (
+                  <span>
+                    {storyValid
+                      ? "Scrub the timeline to preview the story."
+                      : "Fix the scene warnings to preview this story."}
+                  </span>
+                )}
+              </div>
+            ) : null}
+
             <div
               className="graphCanvas"
               onWheel={handleWheel}
@@ -645,7 +952,11 @@ export function EditorWorkspace({
                   {edges.map((edge) => {
                     const start = positions.get(edge.source);
                     const end = positions.get(edge.target);
-                    if (!start || !end || !visibleNodeIds.has(edge.source) || !visibleNodeIds.has(edge.target)) {
+                    const endpointsVisible = previewEntities
+                      ? isPreviewVisible(previewEntities, edge.source) &&
+                        isPreviewVisible(previewEntities, edge.target)
+                      : visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target);
+                    if (!start || !end || !endpointsVisible) {
                       return null;
                     }
                     const x1 = start.x + (start.width ?? 160) / 2;
@@ -667,22 +978,39 @@ export function EditorWorkspace({
                 ))}
 
                 {nodes.map((node, index) => {
-                  if (hiddenIds.has(node.id)) return null;
+                  const renderState = previewEntities?.get(node.id);
+                  if (previewEntities) {
+                    if (renderState && !renderState.visible) return null;
+                  } else if (hiddenIds.has(node.id)) {
+                    return null;
+                  }
                   const storedPosition = positions.get(node.id) ?? positionFor(snapshot, node, index);
                   const position = drag?.entityId === node.id ? drag : storedPosition;
-                  const annotation = snapshot.view?.annotations.find(
+                  const storedAnnotation = snapshot.view?.annotations.find(
                     (item) => item.entityId === node.id,
-                  );
+                  )?.text;
+                  const annotation = renderState?.annotation ?? storedAnnotation;
+                  const nodeClassName = [
+                    "graphNode",
+                    renderState && renderState.focusProgress > 0 ? "isFocused" : "",
+                    renderState?.highlightStyle ? "isHighlighted" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
                   return (
                     <div
                       className="graphNodeWrap"
                       key={node.id}
-                      style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+                      style={{
+                        opacity: renderState ? renderState.opacity : 1,
+                        transform: `translate(${position.x}px, ${position.y}px)`,
+                      }}
                     >
                       <button
                         aria-label={`${node.label}. Position ${position.x}, ${position.y}.`}
                         aria-pressed={selectedIds.includes(node.id)}
-                        className="graphNode"
+                        className={nodeClassName}
+                        disabled={previewMode}
                         onClick={(event) => selectNode(node.id, event.shiftKey)}
                         onDoubleClick={() => focusSelection(node.id)}
                         onKeyDown={(event) => handleNodeKeyDown(event, node)}
@@ -695,7 +1023,7 @@ export function EditorWorkspace({
                         <span>{node.label}</span>
                         <small>{node.id}</small>
                       </button>
-                      {annotation ? <span className="graphAnnotation">{annotation.text}</span> : null}
+                      {annotation ? <span className="graphAnnotation">{annotation}</span> : null}
                     </div>
                   );
                 })}
@@ -714,6 +1042,35 @@ export function EditorWorkspace({
   );
 }
 
+interface TimelineViewModel {
+  readonly stories: readonly Story[];
+  readonly story?: Story;
+  readonly selectedSceneId?: SceneId;
+  readonly selectedIds: readonly EntityId[];
+  readonly warnings: readonly SceneReferenceWarning[];
+  readonly playheadMs: number;
+  readonly durationMs: number;
+  readonly isPlaying: boolean;
+  readonly previewMode: boolean;
+  readonly storyValid: boolean;
+  readonly activeSceneId?: SceneId;
+  readonly onSelectStory: (id: StoryId) => void;
+  readonly onSelectScene: (id: SceneId) => void;
+  readonly onAddScene: () => void;
+  readonly onDuplicateScene: (id: SceneId) => void;
+  readonly onRemoveScene: (id: SceneId) => void;
+  readonly onRenameScene: (id: SceneId, title: string) => void;
+  readonly onSetDuration: (id: SceneId, durationMs: number) => void;
+  readonly onMoveScene: (id: SceneId, toIndex: number) => void;
+  readonly onSetAction: (id: SceneId, action: Action) => void;
+  readonly onRemoveAction: (id: SceneId, channel: ActionChannel, target?: EntityId) => void;
+  readonly onRepair: () => void;
+  readonly onTogglePreview: () => void;
+  readonly onPlayToggle: () => void;
+  readonly onScrub: (ms: number) => void;
+  readonly onTimelineKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+}
+
 interface SurfacePanelProps {
   readonly surface: Surface;
   readonly project: ProjectDocument;
@@ -722,6 +1079,7 @@ interface SurfacePanelProps {
   readonly selectedIds: readonly EntityId[];
   readonly hiddenIds: ReadonlySet<EntityId>;
   readonly annotationDraft: string;
+  readonly timeline: TimelineViewModel;
   readonly onAnnotationChange: (value: string) => void;
   readonly onSaveAnnotation: (event: FormEvent<HTMLFormElement>) => void;
   readonly onSelect: (id: EntityId) => void;
@@ -736,6 +1094,7 @@ function SurfacePanel({
   selectedIds,
   hiddenIds,
   annotationDraft,
+  timeline,
   onAnnotationChange,
   onSaveAnnotation,
   onSelect,
@@ -754,17 +1113,7 @@ function SurfacePanel({
   }
 
   if (surface === "Story") {
-    return (
-      <div>
-        <PanelHeading eyebrow={`${project.stories.length} saved`} title="Stories" />
-        {project.stories.map((story) => (
-          <article className="surfaceCard" key={story.id}>
-            <strong>{story.title}</strong>
-            <span>{story.scenes.length} scenes</span>
-          </article>
-        ))}
-      </div>
-    );
+    return <TimelineSurface {...timeline} />;
   }
 
   if (surface === "Compare") {
@@ -844,6 +1193,297 @@ function SurfacePanel({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+const ENTITY_ACTIONS = [
+  { type: "reveal", label: "Reveal" },
+  { type: "hide", label: "Hide" },
+  { type: "focus", label: "Focus" },
+  { type: "trace", label: "Trace" },
+  { type: "highlight", label: "Highlight" },
+] as const;
+
+function TimelineSurface({
+  stories,
+  story,
+  selectedSceneId,
+  selectedIds,
+  warnings,
+  playheadMs,
+  durationMs,
+  isPlaying,
+  previewMode,
+  storyValid,
+  activeSceneId,
+  onSelectStory,
+  onSelectScene,
+  onAddScene,
+  onDuplicateScene,
+  onRemoveScene,
+  onRenameScene,
+  onSetDuration,
+  onMoveScene,
+  onSetAction,
+  onRemoveAction,
+  onRepair,
+  onTogglePreview,
+  onPlayToggle,
+  onScrub,
+  onTimelineKeyDown,
+}: TimelineViewModel) {
+  const [annotationText, setAnnotationText] = useState("");
+
+  if (!story) {
+    return (
+      <div>
+        <PanelHeading eyebrow="Timeline" title="Scenes" />
+        <p className="panelEmpty">This project has no story to animate yet.</p>
+      </div>
+    );
+  }
+
+  const selectedScene = story.scenes.find((scene) => scene.id === selectedSceneId);
+  const target = selectedIds[0];
+  const warningSceneIds = new Set(warnings.map((warning) => warning.sceneId));
+
+  return (
+    <div className="timelineSurface">
+      <PanelHeading eyebrow={`${story.scenes.length} scenes`} title="Scene timeline" />
+
+      {stories.length > 1 ? (
+        <label className="timelineStoryPicker">
+          <span>Story</span>
+          <select
+            onChange={(event) => onSelectStory(event.target.value as StoryId)}
+            value={story.id}
+          >
+            {stories.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="panelNote">{story.title}</p>
+      )}
+
+      <div className="timelineActions">
+        <button onClick={onAddScene} type="button">
+          Add scene
+        </button>
+        <button disabled={!storyValid} onClick={onTogglePreview} type="button">
+          {previewMode ? "Exit preview" : "Enter preview"}
+        </button>
+      </div>
+
+      {warnings.length > 0 ? (
+        <div className="timelineWarnings" role="alert">
+          <strong>{warnings.length} scene warning{warnings.length === 1 ? "" : "s"}</strong>
+          <ul>
+            {warnings.map((warning) => (
+              <li key={warning.sceneId}>{warning.message}</li>
+            ))}
+          </ul>
+          <button onClick={onRepair} type="button">
+            Repair scenes
+          </button>
+        </div>
+      ) : null}
+
+      {previewMode ? (
+        <div
+          aria-label="Timeline playback"
+          className="timelinePlayback"
+          onKeyDown={onTimelineKeyDown}
+          role="group"
+          tabIndex={0}
+        >
+          <div className="timelineTransport">
+            <button onClick={onPlayToggle} type="button">
+              {isPlaying ? "Pause" : "Play"}
+            </button>
+            <output aria-label="Playhead position">
+              {Math.round(playheadMs)} / {durationMs} ms
+            </output>
+          </div>
+          <input
+            aria-label="Scrubber"
+            max={durationMs}
+            min={0}
+            onChange={(event) => onScrub(Number(event.target.value))}
+            step={10}
+            type="range"
+            value={Math.min(playheadMs, durationMs)}
+          />
+          <p className="panelNote">Space plays · ← → scrub · Home/End jump</p>
+        </div>
+      ) : null}
+
+      <ol className="sceneList">
+        {story.scenes.map((scene, index) => {
+          const isActive = previewMode && scene.id === activeSceneId;
+          const isSelected = scene.id === selectedSceneId;
+          return (
+            <li
+              className={[
+                "sceneCard",
+                isSelected ? "isSelected" : "",
+                isActive ? "isActive" : "",
+                warningSceneIds.has(scene.id) ? "hasWarning" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              key={scene.id}
+            >
+              <button
+                aria-pressed={isSelected}
+                className="sceneSelect"
+                onClick={() => onSelectScene(scene.id)}
+                type="button"
+              >
+                Scene {index + 1}
+              </button>
+              <label className="srOnly" htmlFor={`scene-title-${scene.id}`}>
+                Scene {index + 1} title
+              </label>
+              <input
+                id={`scene-title-${scene.id}`}
+                onChange={(event) => onRenameScene(scene.id, event.target.value)}
+                value={scene.title}
+              />
+              <div className="sceneMeta">
+                <label htmlFor={`scene-duration-${scene.id}`}>Duration (ms)</label>
+                <input
+                  id={`scene-duration-${scene.id}`}
+                  min={1}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    if (Number.isFinite(next)) onSetDuration(scene.id, next);
+                  }}
+                  step={100}
+                  type="number"
+                  value={scene.durationMs}
+                />
+              </div>
+              <div className="sceneControls">
+                <button
+                  aria-label={`Move scene ${index + 1} earlier`}
+                  disabled={index === 0}
+                  onClick={() => onMoveScene(scene.id, index - 1)}
+                  type="button"
+                >
+                  ↑
+                </button>
+                <button
+                  aria-label={`Move scene ${index + 1} later`}
+                  disabled={index === story.scenes.length - 1}
+                  onClick={() => onMoveScene(scene.id, index + 1)}
+                  type="button"
+                >
+                  ↓
+                </button>
+                <button onClick={() => onDuplicateScene(scene.id)} type="button">
+                  Duplicate
+                </button>
+                <button onClick={() => onRemoveScene(scene.id)} type="button">
+                  Delete
+                </button>
+              </div>
+              {scene.actions.length > 0 ? (
+                <ul className="sceneActionList">
+                  {scene.actions.map((action) => (
+                    <li key={`${action.type}:${actionTarget(action) ?? "camera"}`}>
+                      <span>{summarizeAction(action)}</span>
+                      <button
+                        aria-label={`Remove ${action.type} from scene ${index + 1}`}
+                        onClick={() =>
+                          onRemoveAction(scene.id, actionChannel(action), actionTarget(action))
+                        }
+                        type="button"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="panelNote">No actions yet.</p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
+      {selectedScene ? (
+        <div className="sceneAuthoring">
+          <PanelHeading eyebrow={selectedScene.title} title="Add actions" />
+          <p className="panelNote">
+            {target
+              ? `Applies to ${target}. Select a component to retarget.`
+              : "Select a component on the canvas to add entity actions."}
+          </p>
+          <div className="authoringButtons">
+            {ENTITY_ACTIONS.map((entityAction) => (
+              <button
+                disabled={!target}
+                key={entityAction.type}
+                onClick={() =>
+                  target &&
+                  onSetAction(selectedScene.id, {
+                    type: entityAction.type,
+                    target,
+                  } as Action)
+                }
+                type="button"
+              >
+                {entityAction.label}
+              </button>
+            ))}
+            <button
+              disabled={selectedIds.length === 0}
+              onClick={() => onSetAction(selectedScene.id, { type: "camera", focus: [...selectedIds] })}
+              type="button"
+            >
+              Frame selection
+            </button>
+            <button
+              onClick={() => onSetAction(selectedScene.id, { type: "camera", focus: [] })}
+              type="button"
+            >
+              Fit whole diagram
+            </button>
+          </div>
+          <div className="authoringAnnotate">
+            <label htmlFor="scene-annotation">Annotation</label>
+            <input
+              id="scene-annotation"
+              onChange={(event) => setAnnotationText(event.target.value)}
+              placeholder="Caption for the framed component"
+              value={annotationText}
+            />
+            <button
+              disabled={!target || !annotationText.trim()}
+              onClick={() => {
+                if (!target || !annotationText.trim()) return;
+                onSetAction(selectedScene.id, {
+                  type: "annotate",
+                  target,
+                  text: annotationText.trim(),
+                });
+                setAnnotationText("");
+              }}
+              type="button"
+            >
+              Annotate
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="panelEmpty">Select a scene to add camera, visibility, and focus actions.</p>
+      )}
     </div>
   );
 }
