@@ -61,7 +61,7 @@ reachable from our lockfile** do we accept it, and always with a paper trail:
 - **pnpm audit gate** — add the GHSA id to `auditConfig.ignoreGhsas` in
   `pnpm-workspace.yaml`, with an inline comment naming the package, the path
   that pulls it in, and why there is no fix yet. This is the single source of
-  truth for accepted audit exceptions; the `high` gate still fails on any *new*
+  truth for accepted audit exceptions; the `high` gate still fails on any _new_
   advisory.
 - **Dependency-review gate** — for a PR-diff exception, add the id to
   `allow-ghsas` on the `dependency-review` step in `.github/workflows/security.yml`.
