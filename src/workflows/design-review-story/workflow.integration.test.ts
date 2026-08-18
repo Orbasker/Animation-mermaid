@@ -172,16 +172,20 @@ describe("generateDesignReviewStory", () => {
     expect(await rejoined.status).toBe("running");
 
     // Replaying by id alone recovers the work already done, so a reloaded client can render
-    // where the run got to instead of starting over.
+    // where the run got to instead of starting over. The `awaiting-approval` gate phase may or
+    // may not have streamed by the instant the decision hook is waiting, so assert on the
+    // pre-gate work that must be present and that the run has not settled — not on the racy
+    // trailing event.
     const midRun = (await readProgress(runId))
       .filter((event) => event.attempt === undefined)
       .map((event) => event.phase);
-    expect(midRun).toEqual([
+    expect(midRun.slice(0, 4)).toEqual([
       "validating-context",
       "analyzing-narrative",
       "generating-scenes",
       "critiquing",
     ]);
+    expect(midRun).not.toContain("settled");
 
     await storyDecisionHook.resume(decisionToken(runId), {
       decision: "approve",
