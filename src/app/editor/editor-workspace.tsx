@@ -33,6 +33,9 @@ import {
   type SnapshotId,
 } from "@/domain/graph";
 import { applyStoryProposal } from "@/domain/apply-proposal";
+import { IMPORTER_CAPABILITIES } from "@/domain/import/capabilities";
+import type { ImporterCapabilities } from "@/domain/import/contract";
+import { FLOWCHART_DIAGRAM_TYPE } from "@/domain/mermaid/capabilities";
 import type {
   JobError,
   JobProgress,
@@ -872,16 +875,54 @@ export function EditorWorkspace({
     const previous = snapshot;
     setSaveState("Reimporting…");
     try {
-      const runner = await getImportRunner();
-      const handle = runner.run(
-        { text: source, snapshotId, importedAt: new Date().toISOString() },
-        (progress: JobProgress) =>
+      const { importerByDiagramType, detectImporter } =
+        await import("@/domain/import/registry");
+      const importer =
+        importerByDiagramType(previous.source.diagramType) ??
+        detectImporter(source);
+      if (!importer) {
+        setSaveState("Reimport failed: unsupported diagram type");
+        setAnnouncement(
+          "Reimport failed: unsupported diagram type. The source is unchanged.",
+        );
+        return;
+      }
+
+      // The flowchart importer's ELK layout is expensive, so it runs in the cancellable
+      // worker with bounded progress and resource limits. Lighter grammars (e.g. sequence)
+      // lay out deterministically without ELK, so they run inline off the hot path.
+      let reconciled;
+      if (importer.capabilities.diagramType === FLOWCHART_DIAGRAM_TYPE) {
+        const runner = await getImportRunner();
+        const handle = runner.run(
+          { text: source, snapshotId, importedAt: new Date().toISOString() },
+          (progress: JobProgress) =>
+            setSaveState(
+              `${progress.message} ${Math.round(progress.ratio * 100)}%`,
+            ),
+        );
+        const result = await handle.promise;
+        reconciled = reconcileImportedSnapshot(previous, result.snapshot);
+      } else {
+        const result = importer.import({
+          text: source,
+          snapshotId,
+          importedAt: new Date().toISOString(),
+        });
+        if (!result.snapshot) {
+          const fatal = result.diagnostics.find((d) => d.severity === "error");
           setSaveState(
-            `${progress.message} ${Math.round(progress.ratio * 100)}%`,
-          ),
-      );
-      const result = await handle.promise;
-      const reconciled = reconcileImportedSnapshot(previous, result.snapshot);
+            `Reimport failed: ${fatal?.message ?? "unsupported source"}`,
+          );
+          setAnnouncement("Reimport failed. The source is unchanged.");
+          return;
+        }
+        const computedLayout = await importer.layout(result.snapshot);
+        reconciled = reconcileImportedSnapshot(previous, {
+          ...result.snapshot,
+          layout: [...computedLayout],
+        });
+      }
       setHistory((current) =>
         current
           ? {
@@ -1554,11 +1595,17 @@ function SurfacePanel({
   );
 
   if (surface === "Source") {
+    const activeImporterId = snapshot.source.importer.importer;
     return (
       <div>
         <PanelHeading eyebrow="Read only" title="Mermaid source" />
+        <p className="panelNote">
+          Imported by <strong>{snapshot.source.diagramType}</strong> ·{" "}
+          {activeImporterId}@{snapshot.source.importer.importerVersion}
+        </p>
         <pre className="sourceCode">{snapshot.source.text}</pre>
         <p className="panelNote">Visual changes never rewrite this source.</p>
+        <ImporterCapabilityReport activeImporterId={activeImporterId} />
       </div>
     );
   }
@@ -1996,5 +2043,69 @@ function PanelHeading({
       <span>{eyebrow}</span>
       <h2>{title}</h2>
     </header>
+  );
+}
+
+const FEATURE_SUPPORT_LABEL: Readonly<
+  Record<ImporterCapabilities["features"][number]["support"], string>
+> = {
+  full: "Supported",
+  partial: "Partial",
+  none: "Not imported",
+};
+
+/**
+ * Reports which diagram grammars can be imported and what each one supports, so a user knows
+ * before pasting what will survive the import. The importer that produced the current snapshot
+ * is marked as active.
+ */
+function ImporterCapabilityReport({
+  activeImporterId,
+}: {
+  readonly activeImporterId: string;
+}) {
+  return (
+    <section
+      aria-labelledby="importer-capabilities"
+      className="capabilityReport"
+    >
+      <h3 id="importer-capabilities">Supported diagram formats</h3>
+      <ul className="capabilityList">
+        {IMPORTER_CAPABILITIES.map((capability) => {
+          const isActive = capability.importer === activeImporterId;
+          return (
+            <li className="capabilityCard" key={capability.importer}>
+              <div className="capabilityCardHead">
+                <strong>{capability.label}</strong>
+                {isActive ? (
+                  <span className="capabilityActive">Active</span>
+                ) : null}
+              </div>
+              <p className="capabilitySummary">{capability.summary}</p>
+              <ul className="capabilityFeatures">
+                {capability.features.map((feature) => (
+                  <li
+                    className={`capabilityFeature support-${feature.support}`}
+                    key={feature.name}
+                  >
+                    <span className="capabilityFeatureName">
+                      {feature.name}
+                    </span>
+                    <span className="capabilityFeatureSupport">
+                      {FEATURE_SUPPORT_LABEL[feature.support]}
+                    </span>
+                    {feature.detail ? (
+                      <span className="capabilityFeatureDetail">
+                        {feature.detail}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
