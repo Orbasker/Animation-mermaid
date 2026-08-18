@@ -58,7 +58,45 @@ export {
   comparisonId,
   compareSnapshots,
   validateComparison,
+  withIdentityMap,
 } from "@/domain/comparison";
+
+export {
+  type IdentityPair,
+  type IdentityMap,
+  EMPTY_IDENTITY_MAP,
+  confirmIdentity,
+  rejectIdentity,
+  isConfirmed,
+  isRejected,
+} from "@/domain/identity-map";
+
+export {
+  type MatchStrategy,
+  type EntityMatch,
+  type MatchSuggestion,
+  type MatchResult,
+  type ChangeCategory,
+  type ChangeRecord,
+  type ArchitectureDiff,
+  type MatchOptions,
+  type SideStatus,
+  type SideEntity,
+  type SideBySideView,
+  type OverlayEntity,
+  type OverlayView,
+  type CompareStoryInput,
+  CHANGE_CATEGORIES,
+  recordEntityId,
+  matchEntities,
+  diffArchitectures,
+  filterChanges,
+  changeCategoryLabel,
+  buildSideBySideView,
+  buildOverlayView,
+  buildCompareSnapshot,
+  changesToCompareStory,
+} from "@/domain/semantic-compare";
 
 export {
   type AgentEntity,
