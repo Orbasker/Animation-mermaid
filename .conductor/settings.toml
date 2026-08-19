@@ -1,5 +1,15 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
+[scripts]
+setup = "pnpm install"
+run_mode = "concurrent"
+
+[scripts.run.dev]
+available_in = [ "local" ]
+command = "pnpm dev --port $CONDUCTOR_PORT"
+default = true
+icon = "play"
+
 [prompts]
 general = """
 When work is associated with a Linear issue, preserve its identifier (for example, ANI-5) in the branch name and pull request. Never invent an issue identifier; derive it from the user request, Linear URL, branch, or attached task context.
