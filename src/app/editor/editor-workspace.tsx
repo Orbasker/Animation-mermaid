@@ -51,7 +51,10 @@ import {
 } from "@/domain/import-project";
 import {
   actionChannel,
+  createStory,
+  sceneId,
   storyDurationMs,
+  storyId,
   validateStory,
   type Action,
   type ActionChannel,
@@ -652,6 +655,33 @@ export function EditorWorkspace({
     setAnnouncement("Repaired scene references against the current graph.");
   }
 
+  function createFirstStory() {
+    if (!snapshot || !project) return;
+    const firstSceneId = sceneId(`scene-${crypto.randomUUID()}`);
+    const story = createStory({
+      id: storyId(`story-${crypto.randomUUID()}`),
+      title: `${project.name} walkthrough`,
+      snapshotId: snapshot.id,
+      scenes: [
+        {
+          id: firstSceneId,
+          title: "Scene 1",
+          durationMs: 1200,
+          actions: [],
+        },
+      ],
+    });
+    markDirty();
+    setProject((current) =>
+      current ? { ...current, stories: [...current.stories, story] } : current,
+    );
+    setActiveStoryId(story.id);
+    setSelectedSceneId(firstSceneId);
+    setAnnouncement(
+      "Started a story with a first scene. Select nodes and add actions to animate it.",
+    );
+  }
+
   function togglePreview() {
     setPreviewMode((current) => {
       const next = !current;
@@ -1189,6 +1219,7 @@ export function EditorWorkspace({
                   activeSceneId: previewState?.activeScene?.id,
                   onSelectStory: setActiveStoryId,
                   onSelectScene: setSelectedSceneId,
+                  onCreateStory: createFirstStory,
                   onAddScene: addScene,
                   onDuplicateScene: duplicateScene,
                   onRemoveScene: removeScene,
@@ -1355,7 +1386,9 @@ export function EditorWorkspace({
                 title={
                   storyValid
                     ? "Download a self-contained animated review"
-                    : "Fix the scene warnings to export this story"
+                    : !activeStory || activeStory.scenes.length === 0
+                      ? "Create a story with at least one scene in the Story tab to export"
+                      : "Fix the scene warnings in the Story tab to export this story"
                 }
                 type="button"
               >
@@ -1542,6 +1575,7 @@ interface TimelineViewModel {
   readonly activeSceneId?: SceneId;
   readonly onSelectStory: (id: StoryId) => void;
   readonly onSelectScene: (id: SceneId) => void;
+  readonly onCreateStory: () => void;
   readonly onAddScene: () => void;
   readonly onDuplicateScene: (id: SceneId) => void;
   readonly onRemoveScene: (id: SceneId) => void;
@@ -1733,6 +1767,7 @@ function TimelineSurface({
   activeSceneId,
   onSelectStory,
   onSelectScene,
+  onCreateStory,
   onAddScene,
   onDuplicateScene,
   onRemoveScene,
@@ -1751,9 +1786,27 @@ function TimelineSurface({
 
   if (!story) {
     return (
-      <div>
+      <div className="timelineEmpty">
         <PanelHeading eyebrow="Timeline" title="Scenes" />
-        <p className="panelEmpty">This project has no story to animate yet.</p>
+        <p className="panelEmpty">
+          No story yet. A story is a sequence of scenes that animate this
+          diagram — reveal nodes, trace flows, focus areas — which you can then
+          preview and export as a self-contained HTML file.
+        </p>
+        <ol className="timelineSteps">
+          <li>Create a story to get a first scene.</li>
+          <li>Select nodes on the canvas, then add actions to the scene.</li>
+          <li>
+            Enter preview to play it, then use <strong>Export HTML</strong>.
+          </li>
+        </ol>
+        <button
+          className="timelinePrimaryAction"
+          onClick={onCreateStory}
+          type="button"
+        >
+          Create story
+        </button>
       </div>
     );
   }
@@ -1767,7 +1820,9 @@ function TimelineSurface({
   return (
     <div className="timelineSurface">
       <PanelHeading
-        eyebrow={`${story.scenes.length} scenes`}
+        eyebrow={`${story.scenes.length} scene${
+          story.scenes.length === 1 ? "" : "s"
+        }`}
         title="Scene timeline"
       />
 

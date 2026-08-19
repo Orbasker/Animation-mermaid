@@ -1314,6 +1314,42 @@ h1 {
   gap: 4px;
 }
 
+.timelineEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timelineSteps {
+  color: #3c4a52;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.timelinePrimaryAction {
+  align-self: flex-start;
+  appearance: none;
+  background: var(--accent);
+  border: 0;
+  border-radius: 5px;
+  color: #10151b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 9px 16px;
+  text-transform: uppercase;
+}
+
+.timelinePrimaryAction:hover {
+  background: #ff8158;
+}
+
 .timelineActions,
 .timelineTransport,
 .sceneControls,

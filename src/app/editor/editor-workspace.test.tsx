@@ -268,6 +268,34 @@ describe("EditorWorkspace", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("creates a first story for a snapshot that has none and enables export", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    fireEvent.click(screen.getByRole("button", { name: "Import Mermaid" }));
+    fireEvent.change(screen.getByLabelText("Mermaid source"), {
+      target: { value: CATALOG },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: /Start a new project/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Import diagram" }));
+    await screen.findByRole("button", { name: /Payments Gateway\. Position/i });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Story" }));
+    expect(screen.getByText(/No story yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export HTML" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create story" }));
+
+    expect(screen.getByText("1 scene")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Scene 1")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Export HTML" }),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Enter preview" }),
+    ).not.toBeDisabled();
+  });
+
   it("rejects a fatal paste without committing", async () => {
     render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
     await screen.findByRole("button", { name: /Client\. Position/i });
