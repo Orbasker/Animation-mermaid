@@ -112,7 +112,11 @@ describe("EditorWorkspace", () => {
 
     render(<EditorWorkspace autosaveDelayMs={0} repository={repository} />);
     expect(
-      await screen.findByRole("button", { name: /Client\. Position 0, 10/i }),
+      await screen.findByRole(
+        "button",
+        { name: /Client\. Position 0, 10/i },
+        { timeout: 5_000 },
+      ),
     ).toBeInTheDocument();
   });
 

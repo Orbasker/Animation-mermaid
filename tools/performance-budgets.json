@@ -1,0 +1,19 @@
+{
+  "bundle": {
+    "emittedJavaScriptBytes": 2600000,
+    "largestJavaScriptChunkBytes": 1600000,
+    "editorRouteJavaScriptBytes": 2300000
+  },
+  "browser": {
+    "editorReadyMs": 4000,
+    "coldSurfaceInteractionMs": 750,
+    "warmSurfaceInteractionMs": 750,
+    "canvas200RenderMs": 3000
+  },
+  "export": {
+    "sampleHtmlBytes": 32000,
+    "denseHtmlBytes": 100000,
+    "sampleProjectJsonBytes": 6000,
+    "denseProjectJsonBytes": 80000
+  }
+}

@@ -1,13 +1,103 @@
 import { expect, test } from "@playwright/test";
 
-/**
- * The dense-graph budget. The editor ships a 200-component stress fixture precisely so this path
- * can be exercised; here we load it in a real browser and hold rendering the whole graph to a
- * wall-clock budget, so a regression that makes the canvas quadratic is caught before a reviewer
- * with a big diagram hits it.
- */
+import budgets from "../tools/performance-budgets.json";
 
-const RENDER_BUDGET_MS = 6_000;
+test("keeps editor route payload and editor-ready load within budget", async ({
+  page,
+}) => {
+  await page.goto("/editor", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("button", { name: /^Database\. Position/ }),
+  ).toBeVisible();
+
+  const measured = await page.evaluate(() => {
+    const navigation = performance.getEntriesByType(
+      "navigation",
+    )[0] as PerformanceNavigationTiming;
+    const routeJavaScriptBytes = (
+      performance.getEntriesByType("resource") as PerformanceResourceTiming[]
+    )
+      .filter((entry) => {
+        const path = new URL(entry.name).pathname;
+        return (
+          path.startsWith("/_next/static/") &&
+          path.endsWith(".js") &&
+          entry.initiatorType === "script"
+        );
+      })
+      .reduce((total, entry) => total + entry.transferSize, 0);
+    return {
+      editorReadyMs: performance.now() - navigation.startTime,
+      routeJavaScriptBytes,
+    };
+  });
+
+  expect(measured.routeJavaScriptBytes).toBeGreaterThan(0);
+  expect(measured.routeJavaScriptBytes).toBeLessThanOrEqual(
+    budgets.bundle.editorRouteJavaScriptBytes,
+  );
+  expect(measured.editorReadyMs).toBeLessThanOrEqual(
+    budgets.browser.editorReadyMs,
+  );
+});
+
+async function measuredSurfaceSwitch(
+  page: import("@playwright/test").Page,
+  tab: "Compare" | "Source",
+  heading: "Current vs proposed" | "Mermaid source",
+): Promise<number> {
+  await page.evaluate(() => performance.mark("interaction-start"));
+  await page.getByRole("tab", { name: tab }).click();
+  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  return page.evaluate(
+    () =>
+      new Promise<number>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            resolve(
+              performance.now() -
+                performance.getEntriesByName("interaction-start").at(-1)!
+                  .startTime,
+            ),
+          ),
+        ),
+      ),
+  );
+}
+
+test("keeps cold and warm editor surface interactions within budget", async ({
+  page,
+}) => {
+  await page.goto("/editor");
+  await expect(
+    page.getByRole("button", { name: /^Database\. Position/ }),
+  ).toBeVisible();
+
+  const coldCompareMs = await measuredSurfaceSwitch(
+    page,
+    "Compare",
+    "Current vs proposed",
+  );
+  expect(coldCompareMs).toBeLessThanOrEqual(
+    budgets.browser.coldSurfaceInteractionMs,
+  );
+
+  const warmCompareMeasurements: number[] = [];
+  for (let sample = 0; sample < 3; sample += 1) {
+    await page.getByRole("tab", { name: "Source" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Mermaid source" }),
+    ).toBeVisible();
+    warmCompareMeasurements.push(
+      await measuredSurfaceSwitch(page, "Compare", "Current vs proposed"),
+    );
+  }
+  warmCompareMeasurements.sort((left, right) => left - right);
+
+  expect(warmCompareMeasurements[1]).toBeLessThanOrEqual(
+    budgets.browser.warmSurfaceInteractionMs,
+  );
+});
 
 test("renders the 200-node stress fixture within budget", async ({ page }) => {
   await page.goto("/editor");
@@ -15,7 +105,7 @@ test("renders the 200-node stress fixture within budget", async ({ page }) => {
     page.getByRole("button", { name: /^Database\. Position/ }),
   ).toBeVisible();
 
-  const started = Date.now();
+  await page.evaluate(() => performance.mark("canvas-start"));
   await page
     .getByRole("button", { name: "Load 200-node stress fixture" })
     .click();
@@ -23,9 +113,20 @@ test("renders the 200-node stress fixture within budget", async ({ page }) => {
   await expect(page.locator(".documentBadge")).toHaveText("200 components");
   const nodes = page.locator(".graphNode");
   await expect(nodes).toHaveCount(200);
-  const elapsed = Date.now() - started;
+  const elapsed = await page.evaluate(
+    () =>
+      new Promise<number>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            resolve(
+              performance.now() -
+                performance.getEntriesByName("canvas-start").at(-1)!.startTime,
+            ),
+          ),
+        ),
+      ),
+  );
 
-  expect(elapsed).toBeLessThan(RENDER_BUDGET_MS);
-  // The stress preview is deliberately not autosaved, so it never overwrites the real project.
+  expect(elapsed).toBeLessThanOrEqual(budgets.browser.canvas200RenderMs);
   await expect(page.locator(".saveStatus")).toContainText("Stress preview");
 });

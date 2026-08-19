@@ -7,15 +7,7 @@ import { createStory, sceneId, storyId } from "@/domain/story";
 import type { EntityId } from "@/domain/graph";
 import { buildExportPayload } from "@/export/export-payload";
 import { buildExportHtml } from "@/export/export-html";
-
-/**
- * Size budgets for the self-contained HTML export. The whole point of the artifact is that a
- * reviewer downloads and opens one file, so its byte size is a first-class property. The
- * export is a fixed runtime + styles overhead plus the sanitized payload; these budgets sit
- * at roughly 1.5× the current sizes — tight enough to catch a regression that starts bundling
- * something it shouldn't (an external asset, the raw source text, other snapshots), loose
- * enough to absorb ordinary content growth.
- */
+import budgets from "../../tools/performance-budgets.json";
 
 function exportBytes(html: string): number {
   return Buffer.byteLength(html, "utf8");
@@ -56,13 +48,17 @@ describe("self-contained export size", () => {
     const html = buildExportHtml(
       buildExportPayload(sampleProjectDocument(), storyId("story-walkthrough")),
     );
-    expect(exportBytes(html)).toBeLessThan(32_000);
+    expect(exportBytes(html)).toBeLessThanOrEqual(
+      budgets.export.sampleHtmlBytes,
+    );
   });
 
   it("keeps a 200-node, 10-scene export within budget", () => {
     const html = buildExportHtml(
       buildExportPayload(denseStoryProject(), storyId("story-dense")),
     );
-    expect(exportBytes(html)).toBeLessThan(100_000);
+    expect(exportBytes(html)).toBeLessThanOrEqual(
+      budgets.export.denseHtmlBytes,
+    );
   });
 });
