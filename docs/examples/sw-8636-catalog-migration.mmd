@@ -1,0 +1,65 @@
+%% SW-8636 — Catalog: MongoDB to Postgres (Step 1, new models)
+%% Source: Nexsys design doc "SW-8636 Catalog - MongoDB to Postgres".
+%% A hand-written sample for trying the Mermaid importer and the story/preview flow.
+%% Uses only importer-supported syntax: flowchart, nested subgraphs, node shapes,
+%% and labeled / dotted / thick edges.
+flowchart LR
+  subgraph sources[Upstream sources]
+    catalogView[(catalog_master_v)]
+    pricesBq[(prices BQ)]
+    kpisBq[(product_id_daily_kpis)]
+    topBq[(Analytics top_products)]
+    nexsysApi[/nexsys-api branch registry/]
+  end
+
+  loader{{Scheduler loader}}
+
+  subgraph catalog[catalog Postgres schema]
+    subgraph dims[Dimensions]
+      style[style]
+      color[color]
+      collection[collection]
+      hierarchy[(hierarchy_node ltree)]
+    end
+    product[[product — thin rollup]]
+    sku[sku — base grain]
+    eans[eans]
+    price[price]
+    subgraph facts[Facts and loader state]
+      currentStock[current_stock]
+      topProduct[top_product]
+      syncState[sync_state]
+    end
+  end
+
+  subgraph consumers[Consumers]
+    search([Search + autocomplete])
+    kpis([KPI serving])
+  end
+
+  catalogView -->|SKU grain, verbatim product_id| loader
+  pricesBq -->|insert_ts watermark| loader
+  kpisBq -. search step .-> loader
+  topBq --> loader
+
+  loader --> sku
+  loader --> product
+  loader ==>|"dual-write until Step 2"| eans
+  loader --> price
+  loader -. search step .-> currentStock
+  loader -. search step .-> topProduct
+  loader --> syncState
+
+  sku -->|FK| product
+  sku -->|FK| style
+  sku -->|FK| color
+  sku -->|FK| collection
+  sku -->|FK| hierarchy
+  eans -->|one barcode, one sku| sku
+  price -->|per sku, per branch| sku
+  currentStock -->|FK| product
+  topProduct -->|FK| product
+
+  product -->|rolls up from sku| search
+  product --> kpis
+  nexsysApi -. branch joined at serve time .-> consumers

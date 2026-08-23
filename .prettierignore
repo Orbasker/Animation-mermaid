@@ -20,6 +20,7 @@ pnpm-lock.yaml
 # Generated
 next-env.d.ts
 src/app/.well-known/
+docs/examples/*.html
 
 # Whitespace-sensitive agent skill prompts and byte-exact test fixtures
 agent/skills/**
