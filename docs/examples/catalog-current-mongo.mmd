@@ -1,0 +1,42 @@
+%% catalog-current-mongo — AS-IS catalog (SW-8636 "Why": three stores, nothing joins in SQL)
+%% Sources: catalog/app/repositories/{catalog_by_sku,kpis_latest,hierarchies,historic_prices,config,in_stock_autocomplete_snapshot}.py;
+%%          catalog/app/services/{catalog_write.py loader, product_search.py Atlas $search, search_suggestions.py};
+%%          design doc SW-8636 (Confluence 3765633040) "Why".
+flowchart LR
+    bq[("BigQuery: LATEST_CATALOG_PER_SKU + prices history")]
+    loader[["catalog_write loader (BQ to Mongo)"]]
+
+    subgraph mongo[Catalog MongoDB]
+        product[("catalog_by_sku: one denormalized doc per SKU, no referential integrity")]
+        hier[("hierarchies: flat audience/category/sub_category text")]
+        price[("historic_prices")]
+        stock[("kpis_latest: stock + in-stock")]
+        config[("config: sync watermarks")]
+        snap[("in_stock_autocomplete_snapshot")]
+    end
+
+    subgraph parquet[KPI store]
+        kpi[("Parquet / DuckDB: catalog denormalized onto every KPI row")]
+    end
+
+    subgraph nexchat[NexChat Postgres]
+        nx[("NexChat app tables")]
+    end
+
+    search(["product search: Mongo Atlas $search compound"])
+    autocomplete(["autocomplete / suggestions"])
+
+    bq --> loader
+    loader --> product
+    loader --> hier
+    loader --> price
+    loader --> stock
+    product -. "Atlas index rebuilt from catalog_by_sku + kpis_latest" .-> search
+    stock -. "in-stock filter" .-> search
+    snap --> autocomplete
+    product --> autocomplete
+
+    nojoin>"NO SQL JOIN across the 3 stores"]
+    product -. isolated store .-> nojoin
+    kpi -. isolated store .-> nojoin
+    nx -. isolated store .-> nojoin

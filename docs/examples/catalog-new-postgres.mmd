@@ -1,0 +1,57 @@
+%% catalog-new-postgres — TO-BE after Step 1 (SW-8636): normalized Postgres `catalog` schema
+%% Sources: design doc SW-8636 (Confluence 3765633040) "Model" DDL + "Sources" + "Loader sync flow";
+%%          pynexite/pynexite/schemas/catalog_db.py (shipped POC schema); catalog/app/services/catalog_pg_write.py (loader);
+%%          catalog/app/postgres/pg_repository.py (reads). NOTE: shipped POC still names the rollup `style_color`/`style_color_id`,
+%%          stores hierarchy path as `>`-text (not ltree type), keeps `custom_attributes` JSONB, and has no color/collection/top_product tables yet.
+flowchart LR
+    bq[("BigQuery: catalog_master_v, grain chain,sku")]
+    pricebq[("prices BQ, insert_ts watermark")]
+    loader[["catalog_pg_write loader: BQ to Postgres, advisory-locked"]]
+
+    subgraph pg[Postgres catalog schema]
+        subgraph dims[Dimensions]
+            style["style: chain, style_id"]
+            color["color: chain, name"]
+            collection["collection: chain, name"]
+            hier["hierarchy_node: ltree path, self parent_id"]
+        end
+        product["product: chain, product_id — thin rollup"]
+        sku["sku: chain, sku — base grain"]
+        ean["eans: chain, ean"]
+        price["price: chain, sku, branch, valid_from"]
+        subgraph facts[Search-step facts]
+            stock["current_stock: chain, branch, product_id"]
+            top["top_product: chain, scope, rank"]
+            sync["sync_state: loader watermarks"]
+        end
+    end
+
+    mongo[("Mongo catalog_by_sku + kpis_latest")]
+    atlas(["Atlas search — retired in Step 2"])
+    search(["search + autocomplete: Postgres FTS tsvector/pg_trgm"])
+    kpi(["KPI serving: row keeps product_id only"])
+
+    bq --> loader
+    pricebq --> loader
+    loader --> sku
+    loader --> product
+    loader --> price
+    loader --> sync
+    loader ==>|"dual-write until Step 2"| mongo
+    mongo -. rebuild .-> atlas
+
+    sku -->|"FK product_id"| product
+    sku -->|"FK style_id"| style
+    sku -->|"FK color"| color
+    sku -->|"FK collection"| collection
+    sku -->|"FK hierarchy_node_id"| hier
+    hier -->|"parent_id"| hier
+    ean -->|"FK sku"| sku
+    price -->|"FK sku"| sku
+    stock -->|"FK product_id"| product
+    top -->|"FK product_id"| product
+
+    product --> search
+    sku -. "product search rolls up: DISTINCT product_id" .-> search
+    stock -. "in-stock filter" .-> search
+    kpi -->|"resolve product_id"| product

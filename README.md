@@ -20,6 +20,27 @@ overwriting the active project.
 The visual-edit persistence boundary is documented in
 [ADR 0001](docs/adr/0001-separate-visual-edits-from-semantic-graph.md).
 
+## Structure explorer export
+
+`pnpm explorer:build` turns one or more Mermaid flowcharts into a single, self-contained
+HTML file for exploring large architecture diagrams. Each `.mmd` file becomes a tab, and
+every `subgraph` — including nested ones — can be collapsed to a single box and expanded
+again, with the layout recomputed on each toggle so a dense diagram stays legible while you
+drill into one module at a time. An **Edit source** panel lets you rewrite the Mermaid in the
+page and re-render it live (⌘/Ctrl+Enter to apply); the exported file bundles the app's real
+importer, so edits go through exactly the same parser as the generator. The document inlines
+the ELK layout engine, the parser, styles, and runtime, so it references nothing external and
+opens offline.
+
+```bash
+pnpm explorer:build                              # builds from docs/examples/*.mmd
+pnpm explorer:build --out out.html a.mmd b.mmd   # choose inputs and output
+```
+
+The builder (`src/preview`) reuses the app's Mermaid importer and ELK layout; only pan/zoom
+and the SVG rendering live in the embedded runtime. This is the standalone precursor to an
+in-app preview surface.
+
 ## Cancellable import & layout worker
 
 Mermaid parsing and ELK layout are CPU-heavy, so they run in a dedicated, cancellable Web
