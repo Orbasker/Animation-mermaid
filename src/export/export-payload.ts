@@ -98,7 +98,7 @@ export interface ExportOutlineScene {
  * The complete, sanitized artifact embedded in an exported HTML file. It carries only the
  * data required to play one story offline: the whitelisted snapshot it animates, the story's
  * scenes, source attribution, and a static outline. Everything else in a project — other
- * snapshots, other stories, comparisons, importer source text, and any repository or hosted
+ * snapshots, other stories, importer source text, and any repository or hosted
  * AI metadata — is left behind by construction.
  */
 export interface ExportPayload {
@@ -189,7 +189,7 @@ function buildOutline(
  * The story must exist in the project, target a snapshot that exists, and validate cleanly
  * against it — otherwise an {@link ExportError} is thrown before any payload is produced, so
  * a broken story never ships as a silently-empty export. The returned payload whitelists
- * fields explicitly: nothing from the wider project (other snapshots, stories, comparisons),
+ * fields explicitly: nothing from the wider project (other snapshots, stories),
  * the importer's raw source text, or any repository/hosted-AI bookkeeping can leak into it.
  */
 export function buildExportPayload(

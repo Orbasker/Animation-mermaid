@@ -8,7 +8,6 @@ import {
   type AgentContextPackage,
   type AgentEntity,
 } from "@/domain/agent-context";
-import type { Comparison } from "@/domain/comparison";
 import type { EntityId, GraphSnapshot } from "@/domain/graph";
 import type {
   ProgressEvent,
@@ -163,7 +162,6 @@ function reducer(state: CopilotState, action: CopilotAction): CopilotState {
 export interface UseCopilotOptions {
   readonly transport: CopilotTransport;
   readonly snapshot: GraphSnapshot;
-  readonly comparison?: Comparison;
   readonly defaultTitle: string;
   readonly defaultIntent?: string;
   /** A run id to reconnect to on mount — the AC's "reload reconnects to an active run". */
@@ -225,7 +223,6 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
   const {
     transport,
     snapshot,
-    comparison,
     defaultTitle,
     defaultIntent,
     initialRunId,
@@ -250,9 +247,8 @@ export function useCopilot(options: UseCopilotOptions): CopilotController {
   });
 
   const context = useMemo(
-    () =>
-      buildAgentContextPackage({ intent: state.intent, snapshot, comparison }),
-    [state.intent, snapshot, comparison],
+    () => buildAgentContextPackage({ intent: state.intent, snapshot }),
+    [state.intent, snapshot],
   );
 
   const includedIds = useMemo(

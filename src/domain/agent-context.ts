@@ -3,7 +3,6 @@ import {
   type Versioned,
 } from "@/domain/schema-version";
 import type { EntityId, GraphSnapshot, SnapshotId } from "@/domain/graph";
-import type { Comparison, EntityChange } from "@/domain/comparison";
 
 /**
  * A single entity as the agent sees it: semantic identity and meaning only. This is
@@ -50,12 +49,6 @@ export interface AgentContextPackage extends Versioned {
   /** Free-text description of what the workflow is being asked to do. */
   readonly intent: string;
   readonly graph: AgentGraphView;
-  /** Optional semantic diff, when the task is about comparing two architectures. */
-  readonly comparison?: {
-    readonly baseSnapshotId: SnapshotId;
-    readonly targetSnapshotId: SnapshotId;
-    readonly changes: readonly EntityChange[];
-  };
 }
 
 function toAgentEntity(entity: GraphSnapshot["entities"][number]): AgentEntity {
@@ -88,7 +81,6 @@ function toAgentEntity(entity: GraphSnapshot["entities"][number]): AgentEntity {
 export interface BuildAgentContextInput {
   readonly intent: string;
   readonly snapshot: GraphSnapshot;
-  readonly comparison?: Comparison;
 }
 
 /**
@@ -103,8 +95,7 @@ export interface BuildAgentContextInput {
  *
  * - edges with a source or target that is not included;
  * - group members that are not included, and groups left with no members;
- * - a node's `groupId` when that group did not survive;
- * - comparison changes whose entity is not included.
+ * - a node's `groupId` when that group did not survive.
  *
  * The result is a smaller-but-consistent {@link AgentContextPackage}. Passing every entity id
  * returns an equivalent package; passing none yields an empty graph, which the request schema
@@ -167,17 +158,6 @@ export function redactAgentContext(
     }
   }
 
-  const comparison =
-    context.comparison !== undefined
-      ? {
-          baseSnapshotId: context.comparison.baseSnapshotId,
-          targetSnapshotId: context.comparison.targetSnapshotId,
-          changes: context.comparison.changes.filter((change) =>
-            included.has(change.entityId),
-          ),
-        }
-      : undefined;
-
   return {
     schemaVersion: context.schemaVersion,
     intent: context.intent,
@@ -186,14 +166,13 @@ export function redactAgentContext(
       diagramType: context.graph.diagramType,
       entities,
     },
-    ...(comparison !== undefined ? { comparison } : {}),
   };
 }
 
 /**
- * Projects a snapshot (and optional comparison) into an {@link AgentContextPackage},
- * dropping layout and any renderer-specific data. This is the *only* supported way to build
- * the agent boundary, so the semantic-only guarantee lives in one place.
+ * Projects a snapshot into an {@link AgentContextPackage}, dropping layout and any
+ * renderer-specific data. This is the *only* supported way to build the agent boundary, so
+ * the semantic-only guarantee lives in one place.
  */
 export function buildAgentContextPackage(
   input: BuildAgentContextInput,
@@ -206,14 +185,5 @@ export function buildAgentContextPackage(
       diagramType: input.snapshot.source.diagramType,
       entities: input.snapshot.entities.map(toAgentEntity),
     },
-    ...(input.comparison !== undefined
-      ? {
-          comparison: {
-            baseSnapshotId: input.comparison.baseSnapshotId,
-            targetSnapshotId: input.comparison.targetSnapshotId,
-            changes: input.comparison.changes,
-          },
-        }
-      : {}),
   };
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import type { Comparison } from "@/domain/comparison";
 import type { GraphSnapshot } from "@/domain/graph";
 import type { ProjectDocument } from "@/domain/project-document";
 import type { StoryProposal } from "@/workflows/design-review-story";
@@ -12,7 +11,6 @@ import { useCopilot } from "./use-copilot";
 export interface CopilotSurfaceProps {
   readonly transport: CopilotTransport;
   readonly snapshot: GraphSnapshot;
-  readonly comparison?: Comparison;
   readonly project: ProjectDocument;
   readonly defaultTitle: string;
   readonly initialRunId?: string;
@@ -32,7 +30,6 @@ export interface CopilotSurfaceProps {
 export function CopilotSurface({
   transport,
   snapshot,
-  comparison,
   project,
   defaultTitle,
   initialRunId,
@@ -45,7 +42,6 @@ export function CopilotSurface({
   const controller = useCopilot({
     transport,
     snapshot,
-    comparison,
     defaultTitle,
     initialRunId,
     onRunStarted,

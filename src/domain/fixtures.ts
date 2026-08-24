@@ -4,7 +4,6 @@ import {
   snapshotId,
   type GraphSnapshot,
 } from "@/domain/graph";
-import { compareSnapshots, comparisonId } from "@/domain/comparison";
 import {
   createProjectDocument,
   projectId,
@@ -97,8 +96,8 @@ export function currentArchitectureSnapshot(): GraphSnapshot {
 }
 
 /**
- * A "proposed" architecture that adds a cache between the service and the database — used
- * to exercise semantic comparison (one added node, one added edge, one modified edge).
+ * A "proposed" architecture that adds a cache between the service and the database — a second
+ * snapshot (one added node, one added edge, one modified edge) used as a distinct revision.
  */
 export function proposedArchitectureSnapshot(): GraphSnapshot {
   return createGraphSnapshot({
@@ -182,8 +181,8 @@ export function proposedArchitectureSnapshot(): GraphSnapshot {
 }
 
 /**
- * A representative, fully-valid project: two snapshots, a story animating the current one,
- * and a comparison between the two. Used by tests and as a reference for downstream work.
+ * A representative, fully-valid project: two snapshots and a story animating the current one.
+ * Used by tests and as a reference for downstream work.
  */
 export function sampleProjectDocument(): ProjectDocument {
   const current = currentArchitectureSnapshot();
@@ -237,17 +236,10 @@ export function sampleProjectDocument(): ProjectDocument {
     ],
   });
 
-  const comparison = compareSnapshots(
-    comparisonId("cmp-current-vs-proposed"),
-    current,
-    proposed,
-  );
-
   return createProjectDocument({
     id: projectId("proj-sample"),
     name: "Sample architecture story",
     snapshots: [current, proposed],
     stories: [story],
-    comparisons: [comparison],
   });
 }

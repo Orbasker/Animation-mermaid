@@ -58,61 +58,6 @@ const agentEntitySchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
-const graphEntitySchema = z.discriminatedUnion("kind", [
-  z
-    .object({
-      kind: z.literal("node"),
-      id: entityIdSchema,
-      label: z.string(),
-      groupId: entityIdSchema.optional(),
-      attributes: z.record(z.string(), z.string()).optional(),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal("edge"),
-      id: entityIdSchema,
-      source: entityIdSchema,
-      target: entityIdSchema,
-      label: z.string().optional(),
-      attributes: z.record(z.string(), z.string()).optional(),
-    })
-    .strict(),
-  z
-    .object({
-      kind: z.literal("group"),
-      id: entityIdSchema,
-      label: z.string(),
-      memberIds: z.array(entityIdSchema).readonly(),
-    })
-    .strict(),
-]);
-
-const entityChangeSchema = z.discriminatedUnion("op", [
-  z
-    .object({
-      op: z.literal("added"),
-      entityId: entityIdSchema,
-      after: graphEntitySchema,
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("removed"),
-      entityId: entityIdSchema,
-      before: graphEntitySchema,
-    })
-    .strict(),
-  z
-    .object({
-      op: z.literal("modified"),
-      entityId: entityIdSchema,
-      before: graphEntitySchema,
-      after: graphEntitySchema,
-    })
-    .strict(),
-]);
-
 /**
  * The serializable context package the workflow is allowed to read. It mirrors
  * {@link import("@/domain").AgentContextPackage} exactly — semantic entities and an optional
@@ -136,14 +81,6 @@ export const agentContextPackageSchema = z
           .readonly(),
       })
       .strict(),
-    comparison: z
-      .object({
-        baseSnapshotId: z.string().min(1),
-        targetSnapshotId: z.string().min(1),
-        changes: z.array(entityChangeSchema).readonly(),
-      })
-      .strict()
-      .optional(),
   })
   .strict()
   .refine(

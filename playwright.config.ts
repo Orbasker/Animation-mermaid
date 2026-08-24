@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright drives the full design-review journey in a real browser against the local Next.js
  * app. The deterministic client parts (import, edit, IndexedDB persistence across reload,
- * timeline seek, comparison) run against the app untouched; the AI approval and reconnect
+ * timeline seek) run against the app untouched; the AI approval and reconnect
  * journeys install a scripted copilot transport via `window.__E2E_COPILOT__` (see
  * `src/app/editor/ai-copilot/e2e-transport.ts`) so they never need a live workflow runtime or a
  * Gateway credential.

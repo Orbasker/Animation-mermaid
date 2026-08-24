@@ -4,12 +4,8 @@ import {
   buildAgentContextPackage,
   redactAgentContext,
 } from "@/domain/agent-context";
-import { compareSnapshots, comparisonId } from "@/domain/comparison";
 import { entityId } from "@/domain/graph";
-import {
-  currentArchitectureSnapshot,
-  proposedArchitectureSnapshot,
-} from "@/domain/fixtures";
+import { currentArchitectureSnapshot } from "@/domain/fixtures";
 
 describe("buildAgentContextPackage", () => {
   const current = currentArchitectureSnapshot();
@@ -37,17 +33,6 @@ describe("buildAgentContextPackage", () => {
       expect(entity).not.toHaveProperty("x");
       expect(entity).not.toHaveProperty("y");
     }
-  });
-
-  it("includes an optional semantic comparison", () => {
-    const proposed = proposedArchitectureSnapshot();
-    const pkg = buildAgentContextPackage({
-      intent: "Compare",
-      snapshot: current,
-      comparison: compareSnapshots(comparisonId("c"), current, proposed),
-    });
-    expect(pkg.comparison?.baseSnapshotId).toBe(current.id);
-    expect(pkg.comparison?.changes.length).toBeGreaterThan(0);
   });
 });
 
@@ -110,32 +95,5 @@ describe("redactAgentContext", () => {
     expect(group?.kind === "group" && group.memberIds).toEqual([
       entityId("api"),
     ]);
-  });
-
-  it("prunes comparison changes for entities not in the kept set", () => {
-    const proposed = proposedArchitectureSnapshot();
-    const pkg = buildAgentContextPackage({
-      intent: "Compare",
-      snapshot: current,
-      comparison: compareSnapshots(comparisonId("c"), current, proposed),
-    });
-    // The comparison references `cache`, which the proposed snapshot adds and the current
-    // graph never contained — keeping every current entity must still drop that change.
-    expect(
-      pkg.comparison?.changes.some(
-        (change) => change.entityId === entityId("cache"),
-      ),
-    ).toBe(true);
-
-    const redacted = redactAgentContext(
-      pkg,
-      pkg.graph.entities.map((entity) => entity.id),
-    );
-
-    expect(
-      redacted.comparison?.changes.some(
-        (change) => change.entityId === entityId("cache"),
-      ),
-    ).toBe(false);
   });
 });

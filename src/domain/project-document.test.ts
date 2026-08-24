@@ -120,10 +120,6 @@ describe("serialization round-trip", () => {
         ...story,
         schemaVersion: 1,
       })),
-      comparisons: current.comparisons.map((comparison) => ({
-        ...comparison,
-        schemaVersion: 1,
-      })),
     };
 
     const migrated = parseProjectDocument(JSON.stringify(legacy));
@@ -135,9 +131,6 @@ describe("serialization round-trip", () => {
       true,
     );
     expect(migrated.stories.every((item) => item.schemaVersion === 2)).toBe(
-      true,
-    );
-    expect(migrated.comparisons.every((item) => item.schemaVersion === 2)).toBe(
       true,
     );
   });
@@ -273,11 +266,10 @@ describe("serialization round-trip", () => {
   it.each([
     ["missing snapshots", { snapshots: undefined }],
     ["non-array stories", { stories: "stories" }],
-    ["non-array comparisons", { comparisons: null }],
   ])("rejects a structurally malformed project with %s", (_, replacement) => {
     const malformed = { ...sampleProjectDocument(), ...replacement };
     expect(() => parseProjectDocument(JSON.stringify(malformed))).toThrow(
-      /project\.(snapshots|stories|comparisons).*array/i,
+      /project\.(snapshots|stories).*array/i,
     );
   });
 
@@ -392,24 +384,12 @@ describe("serialization round-trip", () => {
         ],
       }),
     ],
-    [
-      "comparison change",
-      (project: ReturnType<typeof sampleProjectDocument>) => ({
-        ...project,
-        comparisons: [
-          {
-            ...project.comparisons[0],
-            changes: [{ op: "mystery", entityId: "client" }],
-          },
-        ],
-      }),
-    ],
   ] as const)("rejects a malformed nested %s", (_, malformedProject) => {
     expect(() =>
       parseProjectDocument(
         JSON.stringify(malformedProject(sampleProjectDocument())),
       ),
-    ).toThrow(/project\.(snapshots|stories|comparisons)/i);
+    ).toThrow(/project\.(snapshots|stories)/i);
   });
 
   it("rejects node groupId references to a non-group on parse and serialization", () => {
@@ -435,31 +415,6 @@ describe("serialization round-trip", () => {
     );
     expect(() => parseProjectDocument(JSON.stringify(invalid))).toThrow(
       /groupId.*api.*not a group/i,
-    );
-  });
-
-  it("rejects forged comparison payloads on parse and serialization", () => {
-    const project = sampleProjectDocument();
-    const comparison = project.comparisons[0];
-    const forged = {
-      ...project,
-      comparisons: [
-        {
-          ...comparison,
-          changes: comparison.changes.map((change, index) =>
-            index === 0 && change.op === "added" && change.after.kind === "node"
-              ? { ...change, after: { ...change.after, label: "Forged cache" } }
-              : change,
-          ),
-        },
-      ],
-    };
-
-    expect(() => serializeProjectDocument(forged)).toThrow(
-      /payload.*does not match.*canonical/i,
-    );
-    expect(() => parseProjectDocument(JSON.stringify(forged))).toThrow(
-      /payload.*does not match.*canonical/i,
     );
   });
 });

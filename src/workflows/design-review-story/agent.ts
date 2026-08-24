@@ -70,16 +70,6 @@ function describeGraph(context: ValidatedAgentContext): string {
     }
   }
 
-  if (context.comparison) {
-    lines.push(
-      "",
-      `Comparison ${context.comparison.baseSnapshotId} -> ${context.comparison.targetSnapshotId}:`,
-      ...context.comparison.changes.map(
-        (change) => `- ${change.op} ${change.entityId}`,
-      ),
-    );
-  }
-
   return lines.join("\n");
 }
 

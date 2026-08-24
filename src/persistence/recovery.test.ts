@@ -42,10 +42,6 @@ function legacyDocument() {
       schemaVersion: 1,
     })),
     stories: base.stories.map((story) => ({ ...story, schemaVersion: 1 })),
-    comparisons: base.comparisons.map((comparison) => ({
-      ...comparison,
-      schemaVersion: 1,
-    })),
   };
 }
 
@@ -136,7 +132,6 @@ describe("ProjectRepository migration recovery", () => {
         name: "Corrupt",
         snapshots: "not-an-array",
         stories: [],
-        comparisons: [],
       },
       meta: {
         createdAt: "2026-01-01T00:00:00.000Z",

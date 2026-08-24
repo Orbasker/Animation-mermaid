@@ -74,19 +74,6 @@ describe("agentContextPackageSchema", () => {
 
     expect(parsed.success).toBe(false);
   });
-
-  it("accepts a package that includes a comparison", () => {
-    const parsed = agentContextPackageSchema.safeParse({
-      ...validContext(),
-      comparison: {
-        baseSnapshotId: "snap-current",
-        targetSnapshotId: "snap-proposed",
-        changes: [],
-      },
-    });
-
-    expect(parsed.success).toBe(true);
-  });
 });
 
 describe("storyRequestSchema", () => {

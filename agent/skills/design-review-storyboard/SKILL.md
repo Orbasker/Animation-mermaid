@@ -19,9 +19,6 @@ passes: decide what the animation argues, then time it.
   names the entity ids it concerns. Prefer 3–7 beats; more than that is usually
   two stories.
 
-When a comparison is supplied, the thesis is almost always about the *change*.
-Lead with what the reviewer already knows (the base), then introduce what moved.
-
 ## Pass 2 — the scenes
 
 Each scene is one beat of playback: a title, a duration, and the actions applied

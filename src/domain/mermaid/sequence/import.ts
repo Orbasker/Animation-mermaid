@@ -71,7 +71,7 @@ function messageKey(message: ParsedMessage, seen: Map<string, number>): string {
  * graph boundary as the flowchart importer: participants become {@link NodeEntity}s (their
  * source id is the stable key; actors carry a `role` attribute), and messages become
  * {@link EdgeEntity}s keyed `source->target` in source order. Re-importing unchanged source
- * reconnects every entity by key, so a downstream comparison reports no change. The original
+ * reconnects every entity by key. The original
  * source is stored verbatim, layout is left to a separate deterministic pass, and every
  * unsupported or unsafe construct surfaces as a diagnostic rather than a thrown error. A fatal
  * diagnostic (bad header / empty source) yields `snapshot: null`.

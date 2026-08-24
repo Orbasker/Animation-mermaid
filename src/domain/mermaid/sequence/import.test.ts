@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { compareSnapshots, comparisonId } from "@/domain/comparison";
 import { snapshotId, validateGraphSnapshot } from "@/domain/graph";
 import {
   ACCEPTANCE_SEQUENCE,
@@ -78,8 +77,7 @@ describe("importMermaidSequence", () => {
   it("reimports unchanged source to an identical model (stable identity)", () => {
     const first = importText(ACCEPTANCE_SEQUENCE, "snap-seq").snapshot!;
     const second = importText(ACCEPTANCE_SEQUENCE, "snap-seq").snapshot!;
-    const diff = compareSnapshots(comparisonId("c"), first, second);
-    expect(diff.changes).toEqual([]);
+    expect(second.entities).toEqual(first.entities);
   });
 
   it("keeps a fatal error from producing a snapshot", () => {
