@@ -79,12 +79,20 @@ import {
   type RecoveryEntry,
   type StorageHealth,
 } from "@/persistence";
+import { ExplorerSurface } from "./explorer/explorer-surface";
 import { ImportDialog, type ImportDialogSubmit } from "./import/import-dialog";
 import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
 import { recordProjectBackup } from "./project-backup";
 import { useConnectivity } from "./use-connectivity";
 
-const SURFACES = ["Source", "Story", "Compare", "Layers", "Inspector"] as const;
+const SURFACES = [
+  "Source",
+  "Story",
+  "Explore",
+  "Compare",
+  "Layers",
+  "Inspector",
+] as const;
 type Surface = (typeof SURFACES)[number];
 
 interface Point {
@@ -227,6 +235,7 @@ export function EditorWorkspace({
   const [surface, setSurface] = useState<Surface>("Layers");
   const [selectedIds, setSelectedIds] = useState<readonly EntityId[]>([]);
   const [annotationDraft, setAnnotationDraft] = useState("");
+  const [renameDraft, setRenameDraft] = useState("");
   const [loadError, setLoadError] = useState<string>();
   const [saveState, setSaveState] = useState("Loading project…");
   const [announcement, setAnnouncement] = useState("");
@@ -764,6 +773,8 @@ export function EditorWorkspace({
         (item) => item.entityId === id,
       );
       setAnnotationDraft(annotation?.text ?? "");
+      const node = nodes.find((item) => item.id === id);
+      setRenameDraft(node?.label ?? "");
     }
     setSelectedIds((current) => {
       if (!append) return [id];
@@ -809,6 +820,17 @@ export function EditorWorkspace({
     } else if (event.key.toLowerCase() === "f") {
       event.preventDefault();
       focusSelection(node.id);
+    } else if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      const targets = selectedIds.includes(node.id) ? selectedIds : [node.id];
+      const count = targets.length;
+      transact(
+        { type: "delete", entityIds: targets },
+        `Deleted ${count} component${count === 1 ? "" : "s"}.`,
+      );
+      setSelectedIds([]);
+      setRenameDraft("");
+      setAnnotationDraft("");
     }
   }
 
@@ -893,6 +915,37 @@ export function EditorWorkspace({
         ? `Annotated ${selectedEntity.label}.`
         : `Removed annotation from ${selectedEntity.label}.`,
     );
+  }
+
+  function saveRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedEntity) return;
+    const label = renameDraft.trim();
+    if (label.length === 0 || label === selectedEntity.label) return;
+    transact(
+      { type: "rename", entityId: selectedEntity.id, label },
+      `Renamed ${selectedEntity.label} to ${label}.`,
+    );
+  }
+
+  function restyleSelected(attributes: Record<string, string>) {
+    if (!selectedEntity) return;
+    transact(
+      { type: "restyle", entityId: selectedEntity.id, attributes },
+      `Restyled ${selectedEntity.label}.`,
+    );
+  }
+
+  function deleteSelection() {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    transact(
+      { type: "delete", entityIds: selectedIds },
+      `Deleted ${count} component${count === 1 ? "" : "s"}.`,
+    );
+    setSelectedIds([]);
+    setRenameDraft("");
+    setAnnotationDraft("");
   }
 
   function undo() {
@@ -1334,14 +1387,21 @@ export function EditorWorkspace({
           <span />
           <span />
         </div>
+      ) : surface === "Explore" ? (
+        <ExplorerSurface snapshot={snapshot} />
       ) : (
         <div className="workspaceGrid">
           <aside className="workspacePanel" role="tabpanel">
             <SurfacePanel
               annotationDraft={annotationDraft}
+              renameDraft={renameDraft}
               hiddenIds={hiddenIds}
               onAnnotationChange={setAnnotationDraft}
               onSaveAnnotation={saveAnnotation}
+              onRenameChange={setRenameDraft}
+              onSaveRename={saveRename}
+              onRestyle={restyleSelected}
+              onDelete={deleteSelection}
               onSelect={(id) => selectNode(id, false)}
               onShow={(id) =>
                 transact(
@@ -1441,6 +1501,13 @@ export function EditorWorkspace({
                 type="button"
               >
                 Hide selected
+              </button>
+              <button
+                disabled={selectedIds.length === 0}
+                onClick={deleteSelection}
+                type="button"
+              >
+                Delete selected
               </button>
               <button
                 disabled={!selectedId}
@@ -1654,6 +1721,15 @@ export function EditorWorkspace({
                         aria-label={`${node.label}. Position ${position.x}, ${position.y}.`}
                         aria-pressed={selectedIds.includes(node.id)}
                         className={nodeClassName}
+                        data-shape={node.attributes?.shape}
+                        style={
+                          node.attributes?.color
+                            ? {
+                                borderColor: node.attributes.color,
+                                boxShadow: `4px 4px 0 ${node.attributes.color}`,
+                              }
+                            : undefined
+                        }
                         disabled={previewMode}
                         onClick={(event) => selectNode(node.id, event.shiftKey)}
                         onDoubleClick={() => focusSelection(node.id)}
@@ -1730,9 +1806,14 @@ interface SurfacePanelProps {
   readonly selectedIds: readonly EntityId[];
   readonly hiddenIds: ReadonlySet<EntityId>;
   readonly annotationDraft: string;
+  readonly renameDraft: string;
   readonly timeline: TimelineViewModel;
   readonly onAnnotationChange: (value: string) => void;
   readonly onSaveAnnotation: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onRenameChange: (value: string) => void;
+  readonly onSaveRename: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onRestyle: (attributes: Record<string, string>) => void;
+  readonly onDelete: () => void;
   readonly onSelect: (id: EntityId) => void;
   readonly onShow: (id: EntityId) => void;
 }
@@ -1745,9 +1826,14 @@ function SurfacePanel({
   selectedIds,
   hiddenIds,
   annotationDraft,
+  renameDraft,
   timeline,
   onAnnotationChange,
   onSaveAnnotation,
+  onRenameChange,
+  onSaveRename,
+  onRestyle,
+  onDelete,
   onSelect,
   onShow,
 }: SurfacePanelProps) {
@@ -1803,14 +1889,50 @@ function SurfacePanel({
           <>
             <dl className="inspectorDetails">
               <div>
-                <dt>Component</dt>
-                <dd>{selectedEntity.label}</dd>
-              </div>
-              <div>
                 <dt>Semantic ID</dt>
                 <dd>{selectedEntity.id}</dd>
               </div>
             </dl>
+            <form className="annotationForm" onSubmit={onSaveRename}>
+              <label htmlFor="rename-label">Label</label>
+              <input
+                id="rename-label"
+                onChange={(event) => onRenameChange(event.target.value)}
+                type="text"
+                value={renameDraft}
+              />
+              <button type="submit">Rename</button>
+            </form>
+            <div className="restyleControls">
+              <label htmlFor="restyle-shape">Shape</label>
+              <select
+                id="restyle-shape"
+                onChange={(event) => onRestyle({ shape: event.target.value })}
+                value={selectedEntity.attributes?.shape ?? "rectangle"}
+              >
+                {NODE_SHAPES.map((shape) => (
+                  <option key={shape} value={shape}>
+                    {shape}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="restyle-color">Color</label>
+              <input
+                id="restyle-color"
+                onChange={(event) => onRestyle({ color: event.target.value })}
+                placeholder="#3b82f6 or blank"
+                type="text"
+                value={selectedEntity.attributes?.color ?? ""}
+              />
+              <label htmlFor="restyle-role">Role</label>
+              <input
+                id="restyle-role"
+                onChange={(event) => onRestyle({ role: event.target.value })}
+                placeholder="e.g. service, datastore"
+                type="text"
+                value={selectedEntity.attributes?.role ?? ""}
+              />
+            </div>
             <form className="annotationForm" onSubmit={onSaveAnnotation}>
               <label htmlFor="annotation-text">
                 Annotation for {selectedEntity.label}
@@ -1824,6 +1946,13 @@ function SurfacePanel({
               />
               <button type="submit">Save annotation</button>
             </form>
+            <button
+              className="inspectorDelete"
+              onClick={onDelete}
+              type="button"
+            >
+              Delete component
+            </button>
           </>
         ) : (
           <p className="panelEmpty">
@@ -1871,6 +2000,22 @@ function SurfacePanel({
     </div>
   );
 }
+
+const NODE_SHAPES = [
+  "rectangle",
+  "round",
+  "stadium",
+  "subroutine",
+  "cylinder",
+  "circle",
+  "diamond",
+  "hexagon",
+  "parallelogram",
+  "parallelogram-alt",
+  "trapezoid",
+  "trapezoid-alt",
+  "asymmetric",
+] as const;
 
 const ENTITY_ACTIONS = [
   { type: "reveal", label: "Reveal" },
