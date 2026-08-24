@@ -296,6 +296,73 @@ describe("EditorWorkspace", () => {
     ).not.toBeDisabled();
   });
 
+  it("shows a storage-health banner with a backup action for constrained storage", async () => {
+    const repository = await openRepository();
+    render(
+      <EditorWorkspace
+        autosaveDelayMs={0}
+        initialProject={sampleProjectDocument()}
+        repository={repository}
+        storageHealth={{
+          status: "degraded",
+          available: true,
+          persistent: false,
+          usageBytes: 1,
+          quotaBytes: 1_000_000,
+          title: "Saved locally, but data can be cleared",
+          detail: "Your work autosaves to this browser.",
+          recommendBackup: true,
+        }}
+      />,
+    );
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    expect(
+      screen.getByText("Saved locally, but data can be cleared"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Export a backup" }),
+    ).toBeInTheDocument();
+  });
+
+  it("backs up all projects and restores them into the editor", async () => {
+    const source = await openRepository();
+    const saved = await source.save(sampleProjectDocument());
+    const backupJson = await source.exportAllProjects();
+
+    const target = await openRepository();
+    render(
+      <EditorWorkspace
+        autosaveDelayMs={0}
+        initialProject={createProjectDocument({
+          id: projectId("blank-target"),
+          name: "Blank",
+        })}
+        repository={target}
+      />,
+    );
+    await screen.findByRole("button", { name: /Client\. Position/i });
+
+    const file = new File([backupJson], "backup.json", {
+      type: "application/json",
+    });
+    const input = screen.getByLabelText(
+      "Restore projects from a backup file",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(await screen.findByText(/Restored 1/)).toBeInTheDocument();
+    const copy = (await target.list()).find(
+      (entry) => entry.name === saved.document.name,
+    );
+    expect(copy).toBeDefined();
+    const restored = await target.get(copy!.id);
+    // Restored as a copy: identical content under a fresh id.
+    expect({ ...restored!.document, id: saved.document.id }).toEqual(
+      saved.document,
+    );
+  });
+
   it("rejects a fatal paste without committing", async () => {
     render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
     await screen.findByRole("button", { name: /Client\. Position/i });

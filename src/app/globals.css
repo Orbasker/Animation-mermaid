@@ -336,6 +336,97 @@ h1 {
   color: #b9c4ca;
 }
 
+.lastSavedAt {
+  color: #8895a0;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.storageActions {
+  display: flex;
+  gap: 6px;
+}
+
+.storageActionButton {
+  appearance: none;
+  background: #24303f;
+  border: 1px solid #3a4a5e;
+  border-radius: 6px;
+  color: #d6dee4;
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+
+.storageActionButton:hover {
+  background: #2d3b4d;
+  color: #ffffff;
+}
+
+.storageBanner,
+.recoveryBanner,
+.backupNotice {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding: 10px 14px;
+}
+
+.storageBanner strong {
+  font-weight: 800;
+}
+
+.storageBanner.status-degraded {
+  background: #3a3320;
+  color: #f4e4b6;
+}
+
+.storageBanner.status-blocked,
+.storageBanner.status-unsupported {
+  background: #3d2422;
+  color: #f6cfc7;
+}
+
+.recoveryBanner {
+  background: #1f3330;
+  color: #c5ece0;
+}
+
+.backupNotice {
+  background: #22303f;
+  color: #cfe0ec;
+}
+
+.storageBannerAction,
+.recoveryBannerDismiss,
+.backupNoticeDismiss {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+
+.storageBannerAction:hover,
+.recoveryBannerDismiss:hover,
+.backupNoticeDismiss:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .surfaceTabs {
   display: flex;
   gap: 2px;
