@@ -7,6 +7,7 @@ import type {
 import { firstSignificantLine } from "@/domain/import/source";
 import { flowchartImporter } from "@/domain/mermaid/importer";
 import { sequenceImporter } from "@/domain/mermaid/sequence";
+import { plantumlImporter } from "@/domain/plantuml";
 
 /**
  * Every registered importer, in detection priority order. Adding a diagram grammar is a matter
@@ -16,6 +17,7 @@ import { sequenceImporter } from "@/domain/mermaid/sequence";
 export const IMPORTERS: readonly DiagramImporter[] = [
   flowchartImporter,
   sequenceImporter,
+  plantumlImporter,
 ];
 
 /** The capability report for every registered importer, for UI surfaces. */
