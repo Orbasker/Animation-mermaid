@@ -88,11 +88,10 @@ jobs:
       # `npm audit signatures` verifies the installed tree, so a metadata-only
       # `--package-lock-only` lockfile leaves it nothing to check. Do a real
       # install from the public registry (npm can't read pnpm's lockfile).
-      # --ignore-scripts avoids lifecycle execution, --legacy-peer-deps keeps
-      # peer-range conflicts in the eve / workflow stack from failing
-      # resolution, and --no-audit/--no-fund keep the output focused.
+      # --ignore-scripts avoids lifecycle execution and --no-audit/--no-fund
+      # keep the output focused.
       - name: Install dependencies from the public registry
-        run: npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Verify registry signatures and provenance attestations
         run: npm audit signatures
