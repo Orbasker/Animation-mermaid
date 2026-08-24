@@ -1,4 +1,5 @@
 import type { ImporterCapabilities } from "@/domain/import/contract";
+import { GRAPHVIZ_CAPABILITIES } from "@/domain/graphviz/capabilities";
 import { FLOWCHART_CAPABILITIES } from "@/domain/mermaid/capabilities";
 import { SEQUENCE_CAPABILITIES } from "@/domain/mermaid/sequence/import";
 
@@ -9,6 +10,7 @@ import { SEQUENCE_CAPABILITIES } from "@/domain/mermaid/sequence/import";
  * in the same order.
  */
 export const IMPORTER_CAPABILITIES: readonly ImporterCapabilities[] = [
+  GRAPHVIZ_CAPABILITIES,
   FLOWCHART_CAPABILITIES,
   SEQUENCE_CAPABILITIES,
 ];
