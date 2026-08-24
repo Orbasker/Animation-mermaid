@@ -73,7 +73,13 @@ import {
 } from "@/domain/timeline";
 import { projectId, type ProjectDocument } from "@/domain/project-document";
 import { buildExportHtml, buildExportPayload, ExportError } from "@/export";
-import { ProjectRepository } from "@/persistence";
+import {
+  probeStorageHealth,
+  ProjectRepository,
+  RepositoryError,
+  type RecoveryEntry,
+  type StorageHealth,
+} from "@/persistence";
 import type { StoryProposal } from "@/workflows/design-review-story";
 
 import { CopilotSurface } from "./ai-copilot/copilot-surface";
@@ -123,6 +129,8 @@ export interface EditorWorkspaceProps {
   readonly copilotTransport?: CopilotTransport;
   /** Import runner seam; a synchronous stand-in lets tests skip ELK layout. */
   readonly runImport?: RunMermaidImport;
+  /** Pre-resolved storage health; injectable so tests can render a given banner state. */
+  readonly storageHealth?: StorageHealth;
 }
 
 function positionFor(
@@ -223,8 +231,17 @@ export function EditorWorkspace({
   autosaveDelayMs = 220,
   copilotTransport,
   runImport = runMermaidImport,
+  storageHealth: suppliedStorageHealth,
 }: EditorWorkspaceProps) {
   const [repository, setRepository] = useState(suppliedRepository);
+  const [storageHealth, setStorageHealth] = useState(suppliedStorageHealth);
+  const [recoveryNotice, setRecoveryNotice] = useState<{
+    readonly migrated: number;
+    readonly quarantined: readonly RecoveryEntry[];
+  }>();
+  const [lastSavedAt, setLastSavedAt] = useState<string>();
+  const [backupNotice, setBackupNotice] = useState<string>();
+  const restoreInputRef = useRef<HTMLInputElement>(null);
   const [project, setProject] = useState<ProjectDocument>();
   const [history, setHistory] = useState<EditorHistory>();
   const [activeSnapshotId, setActiveSnapshotId] = useState<SnapshotId>();
@@ -280,6 +297,36 @@ export function EditorWorkspace({
         }
         setRepository(activeRepository);
 
+        // Before reading anything back, run the startup recovery pass: it migrates older rows
+        // forward (preserving a snapshot first) and quarantines corrupt ones, so the load below
+        // never trips over a bad record and a failed migration stays recoverable.
+        if (activeRepository) {
+          try {
+            const report = await activeRepository.recoverStoredProjects();
+            if (
+              !cancelled &&
+              (report.migrated.length > 0 || report.quarantined.length > 0)
+            ) {
+              setRecoveryNotice({
+                migrated: report.migrated.length,
+                quarantined: report.quarantined,
+              });
+            }
+          } catch {
+            // Recovery is best-effort; a failure here must not block opening the editor.
+          }
+        }
+
+        // Probe storage health off the critical path. Skipped when a caller injects a result
+        // (tests) or when the environment has no IndexedDB to probe.
+        if (!suppliedStorageHealth && typeof indexedDB !== "undefined") {
+          void probeStorageHealth()
+            .then((health) => {
+              if (!cancelled) setStorageHealth(health);
+            })
+            .catch(() => {});
+        }
+
         let document = initialProject;
         if (!document && activeRepository) {
           const [first] = await activeRepository.list();
@@ -330,7 +377,7 @@ export function EditorWorkspace({
       cancelled = true;
       if (ownsRepository.current) openedRepository?.close();
     };
-  }, [initialProject, suppliedRepository]);
+  }, [initialProject, suppliedRepository, suppliedStorageHealth]);
 
   useEffect(
     () => () => {
@@ -347,14 +394,19 @@ export function EditorWorkspace({
       setSaveState("Saving…");
       void repository
         .save(nextProject)
-        .then(() => {
+        .then((stored) => {
+          // Only a committed write reaches here, so "Saved locally" is never shown for a
+          // write that actually failed.
           setSaveState("Saved locally");
+          setLastSavedAt(stored.meta.updatedAt);
         })
         .catch((error: unknown) => {
           setSaveState(
-            error instanceof Error
-              ? `Save failed: ${error.message}`
-              : "Save failed",
+            error instanceof RepositoryError && error.code === "quota-exceeded"
+              ? "Save failed: local storage is full — export a backup and free space"
+              : error instanceof Error
+                ? `Save failed: ${error.message}`
+                : "Save failed",
           );
         });
     }, autosaveDelayMs);
@@ -552,6 +604,80 @@ export function EditorWorkspace({
       setAnnouncement(message);
     }
   }, [project, snapshot, activeStory]);
+
+  const hydrateProject = useCallback((document: ProjectDocument) => {
+    const seeded =
+      document.snapshots.length > 0 ? document : sampleProjectDocument();
+    setProject(seeded);
+    setHistory(createEditorHistory(seeded.snapshots[0]));
+    setActiveSnapshotId(seeded.snapshots[0].id);
+    const firstStory = seeded.stories.find(
+      (story) => story.snapshotId === seeded.snapshots[0].id,
+    );
+    setActiveStoryId(firstStory?.id);
+    setSelectedSceneId(firstStory?.scenes[0]?.id);
+    setSelectedIds([]);
+    setStressPreview(false);
+    setPreviewMode(false);
+  }, []);
+
+  const downloadBackup = useCallback(async () => {
+    if (!repository) return;
+    try {
+      const json = await repository.exportAllProjects();
+      const count =
+        (JSON.parse(json) as { projects?: unknown[] }).projects?.length ?? 0;
+      const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "animation-mermaid-backup.json";
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setBackupNotice(
+        `Backed up ${count} project${count === 1 ? "" : "s"} to animation-mermaid-backup.json.`,
+      );
+    } catch (error) {
+      setBackupNotice(
+        error instanceof Error
+          ? `Backup failed: ${error.message}`
+          : "Backup failed.",
+      );
+    }
+  }, [repository]);
+
+  const handleRestoreFile = useCallback(
+    async (file: File) => {
+      if (!repository) return;
+      try {
+        const json = await file.text();
+        const report = await repository.restoreBackup(json, { asCopy: true });
+        const restoredId = report.restored[0];
+        if (restoredId) {
+          const stored = await repository.get(restoredId);
+          if (stored) hydrateProject(stored.document);
+        }
+        const parts = [`Restored ${report.restored.length}`];
+        if (report.skipped.length > 0)
+          parts.push(`skipped ${report.skipped.length} already present`);
+        if (report.failed.length > 0)
+          parts.push(`${report.failed.length} could not be read`);
+        setBackupNotice(`${parts.join(", ")}.`);
+      } catch (error) {
+        setBackupNotice(
+          error instanceof RepositoryError && error.code === "invalid-backup"
+            ? "Restore failed: that file isn't an Animation Mermaid backup."
+            : error instanceof Error
+              ? `Restore failed: ${error.message}`
+              : "Restore failed.",
+        );
+      }
+    },
+    [repository, hydrateProject],
+  );
 
   useEffect(() => {
     if (!isPlaying || storyDuration <= 0) return;
@@ -1137,7 +1263,100 @@ export function EditorWorkspace({
         <span aria-live="polite" className="saveStatus">
           {saveState}
         </span>
+        {lastSavedAt ? (
+          <span className="lastSavedAt">
+            Last saved {new Date(lastSavedAt).toLocaleTimeString()}
+          </span>
+        ) : null}
+        {repository ? (
+          <span className="storageActions">
+            <button
+              className="storageActionButton"
+              onClick={() => void downloadBackup()}
+              type="button"
+            >
+              Back up
+            </button>
+            <button
+              className="storageActionButton"
+              onClick={() => restoreInputRef.current?.click()}
+              type="button"
+            >
+              Restore…
+            </button>
+            <input
+              accept="application/json,.json"
+              aria-label="Restore projects from a backup file"
+              className="srOnly"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (file) void handleRestoreFile(file);
+              }}
+              ref={restoreInputRef}
+              type="file"
+            />
+          </span>
+        ) : null}
       </div>
+
+      {storageHealth && storageHealth.status !== "ok" ? (
+        <div
+          className={`storageBanner status-${storageHealth.status}`}
+          role="status"
+        >
+          <strong>{storageHealth.title}</strong>
+          <span>{storageHealth.detail}</span>
+          {storageHealth.recommendBackup && repository ? (
+            <button
+              className="storageBannerAction"
+              onClick={() => void downloadBackup()}
+              type="button"
+            >
+              Export a backup
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {recoveryNotice ? (
+        <div className="recoveryBanner" role="status">
+          {recoveryNotice.migrated > 0 ? (
+            <span>
+              Upgraded {recoveryNotice.migrated} project
+              {recoveryNotice.migrated === 1 ? "" : "s"} to the latest format; a
+              pre-upgrade copy is kept in case anything looks off.
+            </span>
+          ) : null}
+          {recoveryNotice.quarantined.length > 0 ? (
+            <span>
+              {recoveryNotice.quarantined.length} unreadable record
+              {recoveryNotice.quarantined.length === 1 ? "" : "s"} were set
+              aside so the rest of your work opens normally.
+            </span>
+          ) : null}
+          <button
+            className="recoveryBannerDismiss"
+            onClick={() => setRecoveryNotice(undefined)}
+            type="button"
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
+      {backupNotice ? (
+        <div aria-live="polite" className="backupNotice" role="status">
+          <span>{backupNotice}</span>
+          <button
+            className="backupNoticeDismiss"
+            onClick={() => setBackupNotice(undefined)}
+            type="button"
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {importOpen ? (
         <ImportDialog
