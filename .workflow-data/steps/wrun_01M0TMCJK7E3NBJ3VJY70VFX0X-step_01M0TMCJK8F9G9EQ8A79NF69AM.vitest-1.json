@@ -1,0 +1,20 @@
+{
+  "runId": "wrun_01M0TMCJK7E3NBJ3VJY70VFX0X",
+  "stepId": "step_01M0TMCJK8F9G9EQ8A79NF69AM",
+  "stepName": "step//./src/workflows/design-review-story/steps//analyzeNarrativeStep",
+  "status": "failed",
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InRpdGxlIjozLCJjb250ZXh0Ijo0fSwiUmVxdWVzdCBwYXRoIHRvZGF5Iix7InNjaGVtYVZlcnNpb24iOjUsImludGVudCI6NiwiZ3JhcGgiOjd9LDIsIkV4cGxhaW4gdGhlIGN1cnJlbnQgcmVxdWVzdCBwYXRoIHRvIGEgbmV3IHJldmlld2VyLiIseyJzbmFwc2hvdElkIjo4LCJkaWFncmFtVHlwZSI6OSwiZW50aXRpZXMiOjEwfSwic25hcC1jdXJyZW50IiwiZmxvd2NoYXJ0IixbMTEsMTUsMTksMjIsMjUsMjksMzIsMzRdLHsia2luZCI6MTIsImlkIjoxMywibGFiZWwiOjE0fSwibm9kZSIsImNsaWVudCIsIkNsaWVudCIseyJraW5kIjoxMiwiaWQiOjE2LCJsYWJlbCI6MTcsImdyb3VwSWQiOjE4fSwiYXBpIiwiQVBJIEdhdGV3YXkiLCJiYWNrZW5kIix7ImtpbmQiOjEyLCJpZCI6MjAsImxhYmVsIjoyMSwiZ3JvdXBJZCI6MTh9LCJzZXJ2aWNlIiwiT3JkZXJzIFNlcnZpY2UiLHsia2luZCI6MTIsImlkIjoyMywibGFiZWwiOjI0fSwiZGIiLCJEYXRhYmFzZSIseyJraW5kIjoyNiwiaWQiOjE4LCJsYWJlbCI6MjcsIm1lbWJlcklkcyI6Mjh9LCJncm91cCIsIkJhY2tlbmQiLFsxNiwyMF0seyJraW5kIjozMCwiaWQiOjMxLCJzb3VyY2UiOjEzLCJ0YXJnZXQiOjE2fSwiZWRnZSIsImNsaWVudC0+YXBpIix7ImtpbmQiOjMwLCJpZCI6MzMsInNvdXJjZSI6MTYsInRhcmdldCI6MjB9LCJhcGktPnNlcnZpY2UiLHsia2luZCI6MzAsImlkIjozNSwic291cmNlIjoyMCwidGFyZ2V0IjoyM30sInNlcnZpY2UtPmRiIl0="
+  },
+  "error": {
+    "message": "Step \"step//./src/workflows/design-review-story/steps//analyzeNarrativeStep\" failed after 3 retries: The agent returned 503.",
+    "stack": "RetryableError: The agent returned 503.\n    at classifyAgentError (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:516:13)\n    at withAgentErrors (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:887:5)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:379:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:378:26\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:50:60\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:87:12\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+world-local@4.2.4_@opentelemetry+api@1.9.1/node_modules/@workflow/world-local/dist/queue.js:252:32\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/helpers.js:520:16"
+  },
+  "attempt": 4,
+  "startedAt": "2026-08-24T19:36:34.692Z",
+  "createdAt": "2026-08-24T19:36:34.634Z",
+  "updatedAt": "2026-08-24T19:36:37.966Z",
+  "specVersion": 3,
+  "completedAt": "2026-08-24T19:36:37.966Z"
+}

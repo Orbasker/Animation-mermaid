@@ -1,0 +1,20 @@
+{
+  "runId": "wrun_01M0TMCQGNF1Y1FX8HYWC184Y6",
+  "stepId": "step_01M0TMCQGQCW33Y2WC9CES6W7Q",
+  "stepName": "step//./src/workflows/design-review-story/steps//analyzeNarrativeStep",
+  "status": "completed",
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InRpdGxlIjozLCJjb250ZXh0Ijo0fSwiUmVxdWVzdCBwYXRoIHRvZGF5Iix7InNjaGVtYVZlcnNpb24iOjUsImludGVudCI6NiwiZ3JhcGgiOjd9LDIsIkV4cGxhaW4gdGhlIGN1cnJlbnQgcmVxdWVzdCBwYXRoIHRvIGEgbmV3IHJldmlld2VyLiIseyJzbmFwc2hvdElkIjo4LCJkaWFncmFtVHlwZSI6OSwiZW50aXRpZXMiOjEwfSwic25hcC1jdXJyZW50IiwiZmxvd2NoYXJ0IixbMTEsMTUsMTksMjIsMjUsMjksMzIsMzRdLHsia2luZCI6MTIsImlkIjoxMywibGFiZWwiOjE0fSwibm9kZSIsImNsaWVudCIsIkNsaWVudCIseyJraW5kIjoxMiwiaWQiOjE2LCJsYWJlbCI6MTcsImdyb3VwSWQiOjE4fSwiYXBpIiwiQVBJIEdhdGV3YXkiLCJiYWNrZW5kIix7ImtpbmQiOjEyLCJpZCI6MjAsImxhYmVsIjoyMSwiZ3JvdXBJZCI6MTh9LCJzZXJ2aWNlIiwiT3JkZXJzIFNlcnZpY2UiLHsia2luZCI6MTIsImlkIjoyMywibGFiZWwiOjI0fSwiZGIiLCJEYXRhYmFzZSIseyJraW5kIjoyNiwiaWQiOjE4LCJsYWJlbCI6MjcsIm1lbWJlcklkcyI6Mjh9LCJncm91cCIsIkJhY2tlbmQiLFsxNiwyMF0seyJraW5kIjozMCwiaWQiOjMxLCJzb3VyY2UiOjEzLCJ0YXJnZXQiOjE2fSwiZWRnZSIsImNsaWVudC0+YXBpIix7ImtpbmQiOjMwLCJpZCI6MzMsInNvdXJjZSI6MTYsInRhcmdldCI6MjB9LCJhcGktPnNlcnZpY2UiLHsia2luZCI6MzAsImlkIjozNSwic291cmNlIjoyMCwidGFyZ2V0IjoyM30sInNlcnZpY2UtPmRiIl0="
+  },
+  "attempt": 1,
+  "startedAt": "2026-08-24T19:36:39.752Z",
+  "createdAt": "2026-08-24T19:36:39.691Z",
+  "updatedAt": "2026-08-24T19:36:39.755Z",
+  "specVersion": 3,
+  "output": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImRhdGEiOjEsInNlc3Npb25JZCI6MTd9LHsidGhlc2lzIjoyLCJhdWRpZW5jZSI6MywiYmVhdHMiOjR9LCJUaGUgcHJvcG9zZWQgYXJjaGl0ZWN0dXJlIG1vdmVzIHJlcXVlc3QgZmFuLW91dCBiZWhpbmQgb25lIGdhdGV3YXkuIiwiRW5naW5lZXJzIHJldmlld2luZyB0aGUgbWlncmF0aW9uLiIsWzUsOSwxM10seyJzdW1tYXJ5Ijo2LCJlbnRpdHlJZHMiOjd9LCJCZWF0IDEgY29uY2VybnMgY2xpZW50LiIsWzhdLCJjbGllbnQiLHsic3VtbWFyeSI6MTAsImVudGl0eUlkcyI6MTF9LCJCZWF0IDIgY29uY2VybnMgYXBpLiIsWzEyXSwiYXBpIix7InN1bW1hcnkiOjE0LCJlbnRpdHlJZHMiOjE1fSwiQmVhdCAzIGNvbmNlcm5zIHNlcnZpY2UuIixbMTZdLCJzZXJ2aWNlIiwiZml4dHVyZS1zZXNzaW9uIl0="
+  },
+  "completedAt": "2026-08-24T19:36:39.755Z"
+}

@@ -83,18 +83,6 @@ export {
 } from "@/domain/story-engine";
 
 export {
-  type ComparisonId,
-  type EntityChange,
-  type Comparison,
-  type ComparisonValidationCode,
-  type ComparisonValidationError,
-  comparisonId,
-  compareSnapshots,
-  validateComparison,
-  withIdentityMap,
-} from "@/domain/comparison";
-
-export {
   type IdentityPair,
   type IdentityMap,
   EMPTY_IDENTITY_MAP,
@@ -132,24 +120,6 @@ export {
 } from "@/domain/semantic-compare";
 
 export {
-  type AgentEntity,
-  type AgentGraphView,
-  type AgentContextPackage,
-  type BuildAgentContextInput,
-  buildAgentContextPackage,
-  redactAgentContext,
-} from "@/domain/agent-context";
-
-export {
-  type StoryApplicationMode,
-  type SceneApplication,
-  type StoryApplicationPlan,
-  StoryNotApplicableError,
-  planStoryApplication,
-  applyStoryProposal,
-} from "@/domain/apply-proposal";
-
-export {
   type ProjectId,
   type ProjectDocument,
   type CreateProjectDocumentInput,
@@ -171,7 +141,6 @@ export {
   decodeGraphSnapshot,
   decodeAction,
   decodeStory,
-  decodeComparison,
   decodeProjectDocument,
 } from "@/domain/runtime-decoder";
 

@@ -9,22 +9,19 @@ describe("useConnectivity", () => {
     vi.restoreAllMocks();
   });
 
-  it("tracks online/offline transitions and pauses AI when offline", () => {
+  it("tracks online/offline transitions", () => {
     const { result } = renderHook(() => useConnectivity());
     expect(result.current.online).toBe(true);
-    expect(result.current.aiAvailable).toBe(true);
 
     act(() => {
       window.dispatchEvent(new Event("offline"));
     });
     expect(result.current.online).toBe(false);
-    expect(result.current.aiAvailable).toBe(false);
 
     act(() => {
       window.dispatchEvent(new Event("online"));
     });
     expect(result.current.online).toBe(true);
-    expect(result.current.aiAvailable).toBe(true);
   });
 
   it("flags an unsupported browser when a critical capability is missing", () => {

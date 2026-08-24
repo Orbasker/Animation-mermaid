@@ -35,7 +35,7 @@ describe("buildExportPayload", () => {
     expect(payload.meta.importedAt).toBe("2026-08-18T00:00:00.000Z");
   });
 
-  it("excludes other snapshots, stories, comparisons, and the raw source text", () => {
+  it("excludes other snapshots, stories, and the raw source text", () => {
     const serialized = JSON.stringify(
       buildExportPayload(sampleProjectDocument(), SAMPLE_STORY),
     );
@@ -43,8 +43,6 @@ describe("buildExportPayload", () => {
     // The proposed snapshot (and its unique `cache` node) must not leak.
     expect(serialized).not.toContain("snap-proposed");
     expect(serialized).not.toContain("cache");
-    // No comparison payload.
-    expect(serialized).not.toContain("cmp-current-vs-proposed");
     // No importer source text embedded (would carry the raw authored diagram).
     expect(serialized).not.toContain("flowchart TD");
     // No schema-version bookkeeping inside the embedded documents.

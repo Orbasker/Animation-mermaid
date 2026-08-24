@@ -1,0 +1,12 @@
+{
+  "eventType": "hook_created",
+  "specVersion": 3,
+  "correlationId": "hook_01M0TMC4W9F7FW761GYDAA126Z",
+  "eventData": {
+    "token": "design-review-story:decision:wrun_01M0TMC4W8HAGSQTKVFG948CQX",
+    "isWebhook": false
+  },
+  "runId": "wrun_01M0TMC4W8HAGSQTKVFG948CQX",
+  "eventId": "evnt_01M0TMC67N1KBWV4CJX9P1AZJ1",
+  "createdAt": "2026-08-24T19:36:21.493Z"
+}

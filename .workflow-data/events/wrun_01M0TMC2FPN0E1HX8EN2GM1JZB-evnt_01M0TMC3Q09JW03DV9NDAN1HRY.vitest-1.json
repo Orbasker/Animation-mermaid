@@ -1,0 +1,11 @@
+{
+  "eventType": "step_started",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMC2FPJ5HPS4EAPQ0HZGSW",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//buildProposalStep"
+  },
+  "runId": "wrun_01M0TMC2FPN0E1HX8EN2GM1JZB",
+  "eventId": "evnt_01M0TMC3Q09JW03DV9NDAN1HRY",
+  "createdAt": "2026-08-24T19:36:18.912Z"
+}

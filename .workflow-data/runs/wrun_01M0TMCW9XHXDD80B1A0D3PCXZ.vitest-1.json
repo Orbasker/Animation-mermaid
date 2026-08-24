@@ -1,0 +1,27 @@
+{
+  "runId": "wrun_01M0TMCW9XHXDD80B1A0D3PCXZ",
+  "deploymentId": "dpl_local@4.2.4",
+  "workflowName": "workflow//./src/workflows/design-review-story/workflow//generateDesignReviewStory",
+  "specVersion": 3,
+  "executionContext": {
+    "traceCarrier": {},
+    "workflowCoreVersion": "4.8.3",
+    "features": {
+      "encryption": false
+    }
+  },
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFtbMV0seyJ0aXRsZSI6MiwiY29udGV4dCI6Mywic2NlbmVDb3VudCI6MzV9LCJSZXF1ZXN0IHBhdGggdG9kYXkiLHsic2NoZW1hVmVyc2lvbiI6NCwiaW50ZW50Ijo1LCJncmFwaCI6Nn0sMiwiRXhwbGFpbiB0aGUgY3VycmVudCByZXF1ZXN0IHBhdGggdG8gYSBuZXcgcmV2aWV3ZXIuIix7InNuYXBzaG90SWQiOjcsImRpYWdyYW1UeXBlIjo4LCJlbnRpdGllcyI6OX0sInNuYXAtY3VycmVudCIsImZsb3djaGFydCIsWzEwLDE0LDE4LDIxLDI0LDI4LDMxLDMzXSx7ImtpbmQiOjExLCJpZCI6MTIsImxhYmVsIjoxM30sIm5vZGUiLCJjbGllbnQiLCJDbGllbnQiLHsia2luZCI6MTEsImlkIjoxNSwibGFiZWwiOjE2LCJncm91cElkIjoxN30sImFwaSIsIkFQSSBHYXRld2F5IiwiYmFja2VuZCIseyJraW5kIjoxMSwiaWQiOjE5LCJsYWJlbCI6MjAsImdyb3VwSWQiOjE3fSwic2VydmljZSIsIk9yZGVycyBTZXJ2aWNlIix7ImtpbmQiOjExLCJpZCI6MjIsImxhYmVsIjoyM30sImRiIiwiRGF0YWJhc2UiLHsia2luZCI6MjUsImlkIjoxNywibGFiZWwiOjI2LCJtZW1iZXJJZHMiOjI3fSwiZ3JvdXAiLCJCYWNrZW5kIixbMTUsMTldLHsia2luZCI6MjksImlkIjozMCwic291cmNlIjoxMiwidGFyZ2V0IjoxNX0sImVkZ2UiLCJjbGllbnQtPmFwaSIseyJraW5kIjoyOSwiaWQiOjMyLCJzb3VyY2UiOjE1LCJ0YXJnZXQiOjE5fSwiYXBpLT5zZXJ2aWNlIix7ImtpbmQiOjI5LCJpZCI6MzQsInNvdXJjZSI6MTksInRhcmdldCI6MjJ9LCJzZXJ2aWNlLT5kYiIsM10="
+  },
+  "createdAt": "2026-08-24T19:36:44.094Z",
+  "startedAt": "2026-08-24T19:36:44.094Z",
+  "status": "failed",
+  "error": {
+    "message": "The generated story failed 2 schema check(s): Scene \"scene-1\" reveal references unknown entity \"entity-that-does-not-exist\". (unknown-entity-reference)",
+    "stack": "FatalError: The generated story failed 2 schema check(s): Scene \"scene-1\" reveal references unknown entity \"entity-that-does-not-exist\". (unknown-entity-reference)\n    at buildProposalStep (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:927:13)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:400:37\n    at AsyncLocalStorage.run (node:internal/async_local_storage/async_context_frame:63:14)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:379:49\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:34\n    at NoopContextManager.with (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:14:19)\n    at ContextAPI.with (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/api/context.js:51:46)\n    at NoopTracer.startActiveSpan (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:54:31)\n    at ProxyTracer.startActiveSpan (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:27:24)\n    at trace (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:77:19)",
+    "code": "USER_ERROR"
+  },
+  "completedAt": "2026-08-24T19:36:45.377Z",
+  "updatedAt": "2026-08-24T19:36:45.377Z"
+}

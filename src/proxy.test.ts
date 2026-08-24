@@ -47,7 +47,7 @@ describe("proxy security headers", () => {
 
     expect(pattern.test("/editor")).toBe(true);
     expect(pattern.test("/")).toBe(true);
-    expect(pattern.test("/api/design-review-story")).toBe(false);
+    expect(pattern.test("/api/observability")).toBe(false);
     expect(pattern.test("/_next/static/chunk.js")).toBe(false);
     expect(pattern.test("/favicon.ico")).toBe(false);
   });

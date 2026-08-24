@@ -1,0 +1,16 @@
+{
+  "eventType": "step_created",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMD33CVGC3ZW2MP9JET3YY",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//validateContext",
+    "workflowName": "workflow//./src/workflows/design-review-story/workflow//generateDesignReviewStory",
+    "input": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InRpdGxlIjozLCJjb250ZXh0Ijo0LCJzY2VuZUNvdW50IjozNn0sIlJlcXVlc3QgcGF0aCB0b2RheSIseyJzY2hlbWFWZXJzaW9uIjo1LCJpbnRlbnQiOjYsImdyYXBoIjo3fSwyLCJFeHBsYWluIHRoZSBjdXJyZW50IHJlcXVlc3QgcGF0aCB0byBhIG5ldyByZXZpZXdlci4iLHsic25hcHNob3RJZCI6OCwiZGlhZ3JhbVR5cGUiOjksImVudGl0aWVzIjoxMH0sInNuYXAtY3VycmVudCIsImZsb3djaGFydCIsWzExLDE1LDE5LDIyLDI1LDI5LDMyLDM0XSx7ImtpbmQiOjEyLCJpZCI6MTMsImxhYmVsIjoxNH0sIm5vZGUiLCJjbGllbnQiLCJDbGllbnQiLHsia2luZCI6MTIsImlkIjoxNiwibGFiZWwiOjE3LCJncm91cElkIjoxOH0sImFwaSIsIkFQSSBHYXRld2F5IiwiYmFja2VuZCIseyJraW5kIjoxMiwiaWQiOjIwLCJsYWJlbCI6MjEsImdyb3VwSWQiOjE4fSwic2VydmljZSIsIk9yZGVycyBTZXJ2aWNlIix7ImtpbmQiOjEyLCJpZCI6MjMsImxhYmVsIjoyNH0sImRiIiwiRGF0YWJhc2UiLHsia2luZCI6MjYsImlkIjoxOCwibGFiZWwiOjI3LCJtZW1iZXJJZHMiOjI4fSwiZ3JvdXAiLCJCYWNrZW5kIixbMTYsMjBdLHsia2luZCI6MzAsImlkIjozMSwic291cmNlIjoxMywidGFyZ2V0IjoxNn0sImVkZ2UiLCJjbGllbnQtPmFwaSIseyJraW5kIjozMCwiaWQiOjMzLCJzb3VyY2UiOjE2LCJ0YXJnZXQiOjIwfSwiYXBpLT5zZXJ2aWNlIix7ImtpbmQiOjMwLCJpZCI6MzUsInNvdXJjZSI6MjAsInRhcmdldCI6MjN9LCJzZXJ2aWNlLT5kYiIsM10="
+    }
+  },
+  "runId": "wrun_01M0TMD33B5D56S725338R2J6X",
+  "eventId": "evnt_01M0TMD3AFSH1M1RPZFZ6EJWVH",
+  "createdAt": "2026-08-24T19:36:51.279Z"
+}

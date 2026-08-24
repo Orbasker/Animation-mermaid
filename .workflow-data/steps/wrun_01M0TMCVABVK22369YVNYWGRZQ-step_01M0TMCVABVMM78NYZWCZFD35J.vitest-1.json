@@ -1,0 +1,20 @@
+{
+  "runId": "wrun_01M0TMCVABVK22369YVNYWGRZQ",
+  "stepId": "step_01M0TMCVABVMM78NYZWCZFD35J",
+  "stepName": "step//./src/workflows/design-review-story/steps//validateContext",
+  "status": "failed",
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InRpdGxlIjozLCJjb250ZXh0Ijo0LCJzY2VuZUNvdW50IjozOX0sIlJlcXVlc3QgcGF0aCB0b2RheSIseyJzY2hlbWFWZXJzaW9uIjo1LCJpbnRlbnQiOjYsImdyYXBoIjo3LCJsYXlvdXQiOjM2fSwyLCJFeHBsYWluIHRoZSBjdXJyZW50IHJlcXVlc3QgcGF0aCB0byBhIG5ldyByZXZpZXdlci4iLHsic25hcHNob3RJZCI6OCwiZGlhZ3JhbVR5cGUiOjksImVudGl0aWVzIjoxMH0sInNuYXAtY3VycmVudCIsImZsb3djaGFydCIsWzExLDE1LDE5LDIyLDI1LDI5LDMyLDM0XSx7ImtpbmQiOjEyLCJpZCI6MTMsImxhYmVsIjoxNH0sIm5vZGUiLCJjbGllbnQiLCJDbGllbnQiLHsia2luZCI6MTIsImlkIjoxNiwibGFiZWwiOjE3LCJncm91cElkIjoxOH0sImFwaSIsIkFQSSBHYXRld2F5IiwiYmFja2VuZCIseyJraW5kIjoxMiwiaWQiOjIwLCJsYWJlbCI6MjEsImdyb3VwSWQiOjE4fSwic2VydmljZSIsIk9yZGVycyBTZXJ2aWNlIix7ImtpbmQiOjEyLCJpZCI6MjMsImxhYmVsIjoyNH0sImRiIiwiRGF0YWJhc2UiLHsia2luZCI6MjYsImlkIjoxOCwibGFiZWwiOjI3LCJtZW1iZXJJZHMiOjI4fSwiZ3JvdXAiLCJCYWNrZW5kIixbMTYsMjBdLHsia2luZCI6MzAsImlkIjozMSwic291cmNlIjoxMywidGFyZ2V0IjoxNn0sImVkZ2UiLCJjbGllbnQtPmFwaSIseyJraW5kIjozMCwiaWQiOjMzLCJzb3VyY2UiOjE2LCJ0YXJnZXQiOjIwfSwiYXBpLT5zZXJ2aWNlIix7ImtpbmQiOjMwLCJpZCI6MzUsInNvdXJjZSI6MjAsInRhcmdldCI6MjN9LCJzZXJ2aWNlLT5kYiIsWzM3XSx7ImVudGl0eUlkIjoxNiwieCI6MzgsInkiOjV9LDEsM10="
+  },
+  "attempt": 1,
+  "startedAt": "2026-08-24T19:36:43.298Z",
+  "createdAt": "2026-08-24T19:36:43.239Z",
+  "updatedAt": "2026-08-24T19:36:43.302Z",
+  "specVersion": 3,
+  "error": {
+    "message": "The agent context package is not valid: (root): Unrecognized key: \"layout\"",
+    "stack": "FatalError: The agent context package is not valid: (root): Unrecognized key: \"layout\"\n    at validateContext (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:876:11)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:400:37\n    at AsyncLocalStorage.run (node:internal/async_local_storage/async_context_frame:63:14)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:379:49\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:34\n    at NoopContextManager.with (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:14:19)\n    at ContextAPI.with (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/api/context.js:51:46)\n    at NoopTracer.startActiveSpan (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:54:31)\n    at ProxyTracer.startActiveSpan (/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:27:24)\n    at trace (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:77:19)"
+  },
+  "completedAt": "2026-08-24T19:36:43.302Z"
+}

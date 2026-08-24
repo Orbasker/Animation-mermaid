@@ -1,0 +1,14 @@
+{
+  "eventType": "step_retrying",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMC9M4NRW32T9Z6GMEH72X",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//draftScenesStep",
+    "error": "The agent returned 503.",
+    "stack": "RetryableError: The agent returned 503.\n    at classifyAgentError (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:516:13)\n    at withAgentErrors (file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/.workflow-vitest/steps.mjs:887:5)\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:379:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:378:26\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:79:28\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/telemetry.js:50:60\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/step-handler.js:87:12\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+world-local@4.2.4_@opentelemetry+api@1.9.1/node_modules/@workflow/world-local/dist/queue.js:252:32\n    at file:///Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+core@4.8.3_@opentelemetry+api@1.9.1_ws@8.21.3/node_modules/@workflow/core/dist/runtime/helpers.js:520:16",
+    "retryAfter": "2026-08-24T19:36:27.856Z"
+  },
+  "runId": "wrun_01M0TMC9M4NSBBZ2HV2HMCR2JA",
+  "eventId": "evnt_01M0TMCBF92J13981VPMKEXDXJ",
+  "createdAt": "2026-08-24T19:36:26.857Z"
+}

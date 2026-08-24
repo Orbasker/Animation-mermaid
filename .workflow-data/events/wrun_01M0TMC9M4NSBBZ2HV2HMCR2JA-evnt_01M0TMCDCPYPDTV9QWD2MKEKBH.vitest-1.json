@@ -1,0 +1,16 @@
+{
+  "eventType": "step_completed",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMC9M4NRW32T9Z6GMEH734",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//emitProgress",
+    "workflowName": "workflow//./src/workflows/design-review-story/workflow//generateDesignReviewStory",
+    "result": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bC0x"
+    }
+  },
+  "runId": "wrun_01M0TMC9M4NSBBZ2HV2HMCR2JA",
+  "eventId": "evnt_01M0TMCDCPYPDTV9QWD2MKEKBH",
+  "createdAt": "2026-08-24T19:36:28.822Z"
+}

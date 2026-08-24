@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 /**
  * The resilient app states, driven in a real browser: a not-found route, and the editor going
- * offline. Offline is a first-class state here — local editing has to keep working while the
- * hosted AI copilot pauses — so it is exercised against the real online/offline events.
+ * offline. Offline is a first-class state here — local editing has to keep working while
+ * disconnected — so it is exercised against the real online/offline events.
  */
 
 test("an unknown route lands in an actionable not-found state", async ({
@@ -19,7 +19,7 @@ test("an unknown route lands in an actionable not-found state", async ({
   ).toBeVisible();
 });
 
-test("going offline pauses the AI copilot but keeps local editing", async ({
+test("going offline keeps local editing available", async ({
   page,
   context,
 }) => {
@@ -33,14 +33,6 @@ test("going offline pauses the AI copilot but keeps local editing", async ({
   await expect(
     page.getByText("You’re offline — local editing still works"),
   ).toBeVisible();
-
-  await page.getByRole("tab", { name: "Copilot" }).click();
-  await expect(
-    page.getByText("AI copilot paused — you’re offline"),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Preview request" }),
-  ).toBeDisabled();
 
   // Local editing controls remain available while offline.
   await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();

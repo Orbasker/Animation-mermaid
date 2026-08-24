@@ -1,0 +1,20 @@
+{
+  "runId": "wrun_01M0TMD0QYXZG4TPVT1CKHTFMR",
+  "stepId": "step_01M0TMD0QZFWQDN6B5GHJ147JW",
+  "stepName": "step//./src/workflows/design-review-story/steps//emitProgress",
+  "status": "completed",
+  "input": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bFt7ImFyZ3MiOjEsImNsb3N1cmVWYXJzIjotMSwidGhpc1ZhbCI6LTF9LFsyXSx7InBoYXNlIjozLCJtZXNzYWdlIjo0fSwiZ2VuZXJhdGluZy1zY2VuZXMiLCJEcmFmdGluZyBhYm91dCAzIHNjZW5lcy4iXQ=="
+  },
+  "attempt": 1,
+  "startedAt": "2026-08-24T19:36:49.305Z",
+  "createdAt": "2026-08-24T19:36:49.244Z",
+  "updatedAt": "2026-08-24T19:36:49.308Z",
+  "specVersion": 3,
+  "output": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bC0x"
+  },
+  "completedAt": "2026-08-24T19:36:49.308Z"
+}

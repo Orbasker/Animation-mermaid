@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { snapshotId, validateGraphSnapshot } from "@/domain/graph";
-import { compareSnapshots, comparisonId } from "@/domain/comparison";
+import { reconnectedEntityIds } from "@/domain/mermaid/import";
 import { importGraphvizDot } from "@/domain/graphviz/import";
 import {
   ACCEPTANCE_DOT,
@@ -97,12 +97,16 @@ describe("importGraphvizDot reimport", () => {
       "snap-edited",
     ).snapshot!;
 
-    const diff = compareSnapshots(comparisonId("c"), original, edited);
-    expect(diff.changes).toHaveLength(1);
-    expect(diff.changes[0]).toMatchObject({
-      op: "modified",
-      entityId: "service",
-    });
+    const reconnected = reconnectedEntityIds(
+      original.entities,
+      edited.entities,
+    );
+    expect(reconnected).toContain("service");
+    expect(reconnected).toContain("client");
+    expect(reconnected.length).toBe(original.entities.length);
+
+    const editedService = edited.entities.find((e) => e.id === "service");
+    expect(editedService).toMatchObject({ kind: "node", label: "Fulfilment" });
   });
 });
 

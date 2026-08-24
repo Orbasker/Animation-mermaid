@@ -32,7 +32,6 @@ import {
   type NodeEntity,
   type SnapshotId,
 } from "@/domain/graph";
-import { applyStoryProposal } from "@/domain/apply-proposal";
 import { IMPORTER_CAPABILITIES } from "@/domain/import/capabilities";
 import type { ImporterCapabilities } from "@/domain/import/contract";
 import { FLOWCHART_DIAGRAM_TYPE } from "@/domain/mermaid/capabilities";
@@ -80,35 +79,14 @@ import {
   type RecoveryEntry,
   type StorageHealth,
 } from "@/persistence";
-import type { StoryProposal } from "@/workflows/design-review-story";
-
-import { CopilotSurface } from "./ai-copilot/copilot-surface";
-import {
-  createHttpCopilotTransport,
-  type CopilotTransport,
-} from "./ai-copilot/copilot-transport";
-import { e2eCopilotTransportFromWindow } from "./ai-copilot/e2e-transport";
+import { ExplorerSurface } from "./explorer/explorer-surface";
 import { ImportDialog, type ImportDialogSubmit } from "./import/import-dialog";
 import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
 import { recordProjectBackup } from "./project-backup";
 import { useConnectivity } from "./use-connectivity";
 
-const SURFACES = [
-  "Source",
-  "Story",
-  "Compare",
-  "Layers",
-  "Inspector",
-  "Copilot",
-] as const;
+const SURFACES = ["Source", "Story", "Explore", "Layers", "Inspector"] as const;
 type Surface = (typeof SURFACES)[number];
-
-/** The before/after pair of applying one proposal, so the apply is a reversible transaction. */
-interface ApplyRecord {
-  readonly before: ProjectDocument;
-  readonly after: ProjectDocument;
-  readonly undone: boolean;
-}
 
 interface Point {
   readonly x: number;
@@ -127,8 +105,6 @@ export interface EditorWorkspaceProps {
   readonly repository?: ProjectRepository;
   readonly initialProject?: ProjectDocument;
   readonly autosaveDelayMs?: number;
-  /** The AI copilot transport; defaults to the HTTP transport against this app's API. */
-  readonly copilotTransport?: CopilotTransport;
   /** Import runner seam; a synchronous stand-in lets tests skip ELK layout. */
   readonly runImport?: RunMermaidImport;
   /** Pre-resolved storage health; injectable so tests can render a given banner state. */
@@ -231,7 +207,6 @@ export function EditorWorkspace({
   repository: suppliedRepository,
   initialProject,
   autosaveDelayMs = 220,
-  copilotTransport,
   runImport = runMermaidImport,
   storageHealth: suppliedStorageHealth,
 }: EditorWorkspaceProps) {
@@ -251,17 +226,9 @@ export function EditorWorkspace({
   const [importBusy, setImportBusy] = useState(false);
   const [importError, setImportError] = useState<string>();
   const [surface, setSurface] = useState<Surface>("Layers");
-  const [initialRunId, setInitialRunId] = useState<string>();
-  const [applyRecord, setApplyRecord] = useState<ApplyRecord>();
-  const transport = useMemo(
-    () =>
-      copilotTransport ??
-      e2eCopilotTransportFromWindow() ??
-      createHttpCopilotTransport(),
-    [copilotTransport],
-  );
   const [selectedIds, setSelectedIds] = useState<readonly EntityId[]>([]);
   const [annotationDraft, setAnnotationDraft] = useState("");
+  const [renameDraft, setRenameDraft] = useState("");
   const [loadError, setLoadError] = useState<string>();
   const [saveState, setSaveState] = useState("Loading project…");
   const [announcement, setAnnouncement] = useState("");
@@ -343,7 +310,6 @@ export function EditorWorkspace({
             ...document,
             snapshots: seed.snapshots,
             stories: seed.stories,
-            comparisons: seed.comparisons,
           };
         }
         setProject(document);
@@ -355,15 +321,6 @@ export function EditorWorkspace({
         setActiveStoryId(firstStory?.id);
         setSelectedSceneId(firstStory?.scenes[0]?.id);
         setSaveState(activeRepository ? "Ready to save" : "Preview mode");
-
-        // Reconnect to the most recently linked run, if any — a reload rejoins an active run
-        // rather than starting a second one.
-        if (activeRepository) {
-          const runs = await activeRepository.aiRuns(document.id);
-          if (!cancelled && runs.length > 0) {
-            setInitialRunId(runs[runs.length - 1].runId);
-          }
-        }
       } catch (error) {
         if (!cancelled) {
           setLoadError(
@@ -468,69 +425,6 @@ export function EditorWorkspace({
     },
     [markDirty],
   );
-
-  const handleRunStarted = useCallback(
-    (runId: string) => {
-      if (!repository || !project) return;
-      void (async () => {
-        try {
-          // Ensure the project row exists before linking the run to it, then record the run id
-          // in the separate store the repository keeps for hosted runs.
-          await repository.save(project);
-          await repository.linkAiRun(project.id, {
-            runId,
-            provider: "vercel-workflow",
-            createdAt: new Date().toISOString(),
-          });
-        } catch {
-          // Linking is best-effort local bookkeeping; a failure must not break the run.
-        }
-      })();
-    },
-    [repository, project],
-  );
-
-  const applyProposal = useCallback(
-    (proposal: StoryProposal) => {
-      if (!project) return;
-      let next: ProjectDocument;
-      try {
-        next = applyStoryProposal(project, proposal.story);
-      } catch (error) {
-        setAnnouncement(
-          error instanceof Error
-            ? error.message
-            : "The proposal could not be applied.",
-        );
-        return;
-      }
-      // Applying is one transaction: keep the before/after pair so it reverts byte-for-byte.
-      setApplyRecord({ before: project, after: next, undone: false });
-      if (next !== project) {
-        setProject(next);
-        setAnnouncement(`Applied "${proposal.story.title}" as a new story.`);
-      } else {
-        setAnnouncement(
-          `"${proposal.story.title}" is already in this project.`,
-        );
-      }
-    },
-    [project],
-  );
-
-  const undoApply = useCallback(() => {
-    if (!applyRecord || applyRecord.undone) return;
-    setProject(applyRecord.before);
-    setApplyRecord({ ...applyRecord, undone: true });
-    setAnnouncement("Reverted the applied story.");
-  }, [applyRecord]);
-
-  const redoApply = useCallback(() => {
-    if (!applyRecord || !applyRecord.undone) return;
-    setProject(applyRecord.after);
-    setApplyRecord({ ...applyRecord, undone: false });
-    setAnnouncement("Reapplied the story.");
-  }, [applyRecord]);
 
   const stories = useMemo(
     () =>
@@ -871,6 +765,8 @@ export function EditorWorkspace({
         (item) => item.entityId === id,
       );
       setAnnotationDraft(annotation?.text ?? "");
+      const node = nodes.find((item) => item.id === id);
+      setRenameDraft(node?.label ?? "");
     }
     setSelectedIds((current) => {
       if (!append) return [id];
@@ -916,6 +812,17 @@ export function EditorWorkspace({
     } else if (event.key.toLowerCase() === "f") {
       event.preventDefault();
       focusSelection(node.id);
+    } else if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      const targets = selectedIds.includes(node.id) ? selectedIds : [node.id];
+      const count = targets.length;
+      transact(
+        { type: "delete", entityIds: targets },
+        `Deleted ${count} component${count === 1 ? "" : "s"}.`,
+      );
+      setSelectedIds([]);
+      setRenameDraft("");
+      setAnnotationDraft("");
     }
   }
 
@@ -1000,6 +907,37 @@ export function EditorWorkspace({
         ? `Annotated ${selectedEntity.label}.`
         : `Removed annotation from ${selectedEntity.label}.`,
     );
+  }
+
+  function saveRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedEntity) return;
+    const label = renameDraft.trim();
+    if (label.length === 0 || label === selectedEntity.label) return;
+    transact(
+      { type: "rename", entityId: selectedEntity.id, label },
+      `Renamed ${selectedEntity.label} to ${label}.`,
+    );
+  }
+
+  function restyleSelected(attributes: Record<string, string>) {
+    if (!selectedEntity) return;
+    transact(
+      { type: "restyle", entityId: selectedEntity.id, attributes },
+      `Restyled ${selectedEntity.label}.`,
+    );
+  }
+
+  function deleteSelection() {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    transact(
+      { type: "delete", entityIds: selectedIds },
+      `Deleted ${count} component${count === 1 ? "" : "s"}.`,
+    );
+    setSelectedIds([]);
+    setRenameDraft("");
+    setAnnotationDraft("");
   }
 
   function undo() {
@@ -1324,8 +1262,8 @@ export function EditorWorkspace({
         <div className="editorNotice editorNotice-warning" role="status">
           <strong>You’re offline — local editing still works</strong>
           <span>
-            Your changes save to this browser. The AI copilot is paused and
-            resumes automatically when you reconnect.
+            Your changes save to this browser, so you can keep editing while
+            you’re disconnected.
           </span>
         </div>
       ) : !connectivity.capabilities.indexedDB ? (
@@ -1441,96 +1379,78 @@ export function EditorWorkspace({
           <span />
           <span />
         </div>
+      ) : surface === "Explore" ? (
+        <ExplorerSurface snapshot={snapshot} />
       ) : (
         <div className="workspaceGrid">
           <aside className="workspacePanel" role="tabpanel">
-            {surface !== "Copilot" ? (
-              <SurfacePanel
-                annotationDraft={annotationDraft}
-                hiddenIds={hiddenIds}
-                onAnnotationChange={setAnnotationDraft}
-                onSaveAnnotation={saveAnnotation}
-                onSelect={(id) => selectNode(id, false)}
-                onShow={(id) =>
-                  transact(
-                    { type: "set-hidden", entityIds: [id], hidden: false },
-                    `Shown ${id}.`,
-                  )
-                }
-                project={project}
-                selectedEntity={selectedEntity}
-                selectedIds={selectedIds}
-                snapshot={snapshot}
-                surface={surface}
-                timeline={{
-                  stories,
-                  story: activeStory,
-                  selectedSceneId,
-                  selectedIds,
-                  warnings: storyWarnings,
-                  playheadMs,
-                  durationMs: storyDuration,
-                  isPlaying,
-                  previewMode,
-                  storyValid,
-                  activeSceneId: previewState?.activeScene?.id,
-                  onSelectStory: setActiveStoryId,
-                  onSelectScene: setSelectedSceneId,
-                  onCreateStory: createFirstStory,
-                  onAddScene: addScene,
-                  onDuplicateScene: duplicateScene,
-                  onRemoveScene: removeScene,
-                  onRenameScene: (id, title) =>
-                    dispatchTimeline(
-                      { type: "rename-scene", sceneId: id, title },
-                      `Renamed ${id}.`,
-                    ),
-                  onSetDuration: (id, durationMs) =>
-                    dispatchTimeline(
-                      { type: "set-duration", sceneId: id, durationMs },
-                      `Set ${id} duration to ${durationMs} ms.`,
-                    ),
-                  onMoveScene: moveScene,
-                  onSetAction: (id, action) =>
-                    dispatchTimeline(
-                      { type: "set-action", sceneId: id, action },
-                      `Updated ${action.type} in ${id}.`,
-                    ),
-                  onRemoveAction: (id, channel, target) =>
-                    dispatchTimeline(
-                      { type: "remove-action", sceneId: id, channel, target },
-                      `Removed ${channel} from ${id}.`,
-                    ),
-                  onRepair: repairScenes,
-                  onTogglePreview: togglePreview,
-                  onPlayToggle: () => setIsPlaying((playing) => !playing),
-                  onScrub: scrub,
-                  onTimelineKeyDown: handleTimelineKeyDown,
-                }}
-              />
-            ) : null}
-            {/* Kept mounted across tab switches so a run in flight is never torn down. */}
-            <div className="copilotMount" hidden={surface !== "Copilot"}>
-              <CopilotSurface
-                applyControls={
-                  applyRecord && applyRecord.before !== applyRecord.after
-                    ? {
-                        undone: applyRecord.undone,
-                        onUndo: undoApply,
-                        onRedo: redoApply,
-                      }
-                    : undefined
-                }
-                defaultTitle={`${project.name} review`}
-                initialRunId={initialRunId}
-                aiAvailable={connectivity.aiAvailable}
-                onApplied={applyProposal}
-                onRunStarted={handleRunStarted}
-                project={project}
-                snapshot={snapshot}
-                transport={transport}
-              />
-            </div>
+            <SurfacePanel
+              annotationDraft={annotationDraft}
+              renameDraft={renameDraft}
+              hiddenIds={hiddenIds}
+              onAnnotationChange={setAnnotationDraft}
+              onSaveAnnotation={saveAnnotation}
+              onRenameChange={setRenameDraft}
+              onSaveRename={saveRename}
+              onRestyle={restyleSelected}
+              onDelete={deleteSelection}
+              onSelect={(id) => selectNode(id, false)}
+              onShow={(id) =>
+                transact(
+                  { type: "set-hidden", entityIds: [id], hidden: false },
+                  `Shown ${id}.`,
+                )
+              }
+              selectedEntity={selectedEntity}
+              selectedIds={selectedIds}
+              snapshot={snapshot}
+              surface={surface}
+              timeline={{
+                stories,
+                story: activeStory,
+                selectedSceneId,
+                selectedIds,
+                warnings: storyWarnings,
+                playheadMs,
+                durationMs: storyDuration,
+                isPlaying,
+                previewMode,
+                storyValid,
+                activeSceneId: previewState?.activeScene?.id,
+                onSelectStory: setActiveStoryId,
+                onSelectScene: setSelectedSceneId,
+                onCreateStory: createFirstStory,
+                onAddScene: addScene,
+                onDuplicateScene: duplicateScene,
+                onRemoveScene: removeScene,
+                onRenameScene: (id, title) =>
+                  dispatchTimeline(
+                    { type: "rename-scene", sceneId: id, title },
+                    `Renamed ${id}.`,
+                  ),
+                onSetDuration: (id, durationMs) =>
+                  dispatchTimeline(
+                    { type: "set-duration", sceneId: id, durationMs },
+                    `Set ${id} duration to ${durationMs} ms.`,
+                  ),
+                onMoveScene: moveScene,
+                onSetAction: (id, action) =>
+                  dispatchTimeline(
+                    { type: "set-action", sceneId: id, action },
+                    `Updated ${action.type} in ${id}.`,
+                  ),
+                onRemoveAction: (id, channel, target) =>
+                  dispatchTimeline(
+                    { type: "remove-action", sceneId: id, channel, target },
+                    `Removed ${channel} from ${id}.`,
+                  ),
+                onRepair: repairScenes,
+                onTogglePreview: togglePreview,
+                onPlayToggle: () => setIsPlaying((playing) => !playing),
+                onScrub: scrub,
+                onTimelineKeyDown: handleTimelineKeyDown,
+              }}
+            />
           </aside>
 
           <section
@@ -1572,6 +1492,13 @@ export function EditorWorkspace({
                 type="button"
               >
                 Hide selected
+              </button>
+              <button
+                disabled={selectedIds.length === 0}
+                onClick={deleteSelection}
+                type="button"
+              >
+                Delete selected
               </button>
               <button
                 disabled={!selectedId}
@@ -1785,6 +1712,15 @@ export function EditorWorkspace({
                         aria-label={`${node.label}. Position ${position.x}, ${position.y}.`}
                         aria-pressed={selectedIds.includes(node.id)}
                         className={nodeClassName}
+                        data-shape={node.attributes?.shape}
+                        style={
+                          node.attributes?.color
+                            ? {
+                                borderColor: node.attributes.color,
+                                boxShadow: `4px 4px 0 ${node.attributes.color}`,
+                              }
+                            : undefined
+                        }
                         disabled={previewMode}
                         onClick={(event) => selectNode(node.id, event.shiftKey)}
                         onDoubleClick={() => focusSelection(node.id)}
@@ -1855,30 +1791,38 @@ interface TimelineViewModel {
 
 interface SurfacePanelProps {
   readonly surface: Surface;
-  readonly project: ProjectDocument;
   readonly snapshot: GraphSnapshot;
   readonly selectedEntity?: NodeEntity;
   readonly selectedIds: readonly EntityId[];
   readonly hiddenIds: ReadonlySet<EntityId>;
   readonly annotationDraft: string;
+  readonly renameDraft: string;
   readonly timeline: TimelineViewModel;
   readonly onAnnotationChange: (value: string) => void;
   readonly onSaveAnnotation: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onRenameChange: (value: string) => void;
+  readonly onSaveRename: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onRestyle: (attributes: Record<string, string>) => void;
+  readonly onDelete: () => void;
   readonly onSelect: (id: EntityId) => void;
   readonly onShow: (id: EntityId) => void;
 }
 
 function SurfacePanel({
   surface,
-  project,
   snapshot,
   selectedEntity,
   selectedIds,
   hiddenIds,
   annotationDraft,
+  renameDraft,
   timeline,
   onAnnotationChange,
   onSaveAnnotation,
+  onRenameChange,
+  onSaveRename,
+  onRestyle,
+  onDelete,
   onSelect,
   onShow,
 }: SurfacePanelProps) {
@@ -1906,23 +1850,6 @@ function SurfacePanel({
     return <TimelineSurface {...timeline} />;
   }
 
-  if (surface === "Compare") {
-    return (
-      <div>
-        <PanelHeading
-          eyebrow={`${project.comparisons.length} comparison`}
-          title="Current vs proposed"
-        />
-        {project.comparisons.map((comparison) => (
-          <article className="surfaceCard" key={comparison.id}>
-            <strong>{comparison.changes.length} semantic changes</strong>
-            <span>Identity-based diff</span>
-          </article>
-        ))}
-      </div>
-    );
-  }
-
   if (surface === "Inspector") {
     return (
       <div>
@@ -1934,14 +1861,50 @@ function SurfacePanel({
           <>
             <dl className="inspectorDetails">
               <div>
-                <dt>Component</dt>
-                <dd>{selectedEntity.label}</dd>
-              </div>
-              <div>
                 <dt>Semantic ID</dt>
                 <dd>{selectedEntity.id}</dd>
               </div>
             </dl>
+            <form className="annotationForm" onSubmit={onSaveRename}>
+              <label htmlFor="rename-label">Label</label>
+              <input
+                id="rename-label"
+                onChange={(event) => onRenameChange(event.target.value)}
+                type="text"
+                value={renameDraft}
+              />
+              <button type="submit">Rename</button>
+            </form>
+            <div className="restyleControls">
+              <label htmlFor="restyle-shape">Shape</label>
+              <select
+                id="restyle-shape"
+                onChange={(event) => onRestyle({ shape: event.target.value })}
+                value={selectedEntity.attributes?.shape ?? "rectangle"}
+              >
+                {NODE_SHAPES.map((shape) => (
+                  <option key={shape} value={shape}>
+                    {shape}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="restyle-color">Color</label>
+              <input
+                id="restyle-color"
+                onChange={(event) => onRestyle({ color: event.target.value })}
+                placeholder="#3b82f6 or blank"
+                type="text"
+                value={selectedEntity.attributes?.color ?? ""}
+              />
+              <label htmlFor="restyle-role">Role</label>
+              <input
+                id="restyle-role"
+                onChange={(event) => onRestyle({ role: event.target.value })}
+                placeholder="e.g. service, datastore"
+                type="text"
+                value={selectedEntity.attributes?.role ?? ""}
+              />
+            </div>
             <form className="annotationForm" onSubmit={onSaveAnnotation}>
               <label htmlFor="annotation-text">
                 Annotation for {selectedEntity.label}
@@ -1955,6 +1918,13 @@ function SurfacePanel({
               />
               <button type="submit">Save annotation</button>
             </form>
+            <button
+              className="inspectorDelete"
+              onClick={onDelete}
+              type="button"
+            >
+              Delete component
+            </button>
           </>
         ) : (
           <p className="panelEmpty">
@@ -2002,6 +1972,22 @@ function SurfacePanel({
     </div>
   );
 }
+
+const NODE_SHAPES = [
+  "rectangle",
+  "round",
+  "stadium",
+  "subroutine",
+  "cylinder",
+  "circle",
+  "diamond",
+  "hexagon",
+  "parallelogram",
+  "parallelogram-alt",
+  "trapezoid",
+  "trapezoid-alt",
+  "asymmetric",
+] as const;
 
 const ENTITY_ACTIONS = [
   { type: "reveal", label: "Reveal" },

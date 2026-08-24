@@ -13,7 +13,6 @@ describe("server observability", () => {
   it.each([
     ["/page", "site"],
     ["/editor/page", "editor"],
-    ["/api/design-review-story/[runId]/proposal/route", "design-review"],
     ["/api/observability/route", "observability"],
     ["/concrete/private/path", "unmapped"],
   ])("maps the allowlisted route template %s to %s", (routePath, feature) => {

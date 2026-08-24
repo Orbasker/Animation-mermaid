@@ -80,6 +80,91 @@ describe("graph editor transactions", () => {
     });
   });
 
+  it("renames an entity without touching layout or other entities", () => {
+    const original = currentArchitectureSnapshot();
+    const renamed = applyEditorTransaction(original, {
+      type: "rename",
+      entityId: entityId("client"),
+      label: "Web Client",
+    });
+
+    expect(
+      renamed.entities.find((entity) => entity.id === "client"),
+    ).toMatchObject({ label: "Web Client" });
+    expect(renamed.layout).toEqual(original.layout);
+    expect(renamed.entities.find((entity) => entity.id === "api")).toEqual(
+      original.entities.find((entity) => entity.id === "api"),
+    );
+    expect(validateGraphSnapshot(renamed)).toEqual([]);
+  });
+
+  it("merges restyle attributes and clears them with empty values", () => {
+    const styled = applyEditorTransaction(currentArchitectureSnapshot(), {
+      type: "restyle",
+      entityId: entityId("db"),
+      attributes: { shape: "cylinder", color: "#3b82f6", role: "datastore" },
+    });
+    const dbStyled = styled.entities.find((entity) => entity.id === "db");
+    expect(dbStyled).toMatchObject({
+      attributes: { shape: "cylinder", color: "#3b82f6", role: "datastore" },
+    });
+
+    const cleared = applyEditorTransaction(styled, {
+      type: "restyle",
+      entityId: entityId("db"),
+      attributes: { color: "" },
+    });
+    const dbCleared = cleared.entities.find((entity) => entity.id === "db");
+    expect(dbCleared).toMatchObject({
+      attributes: { shape: "cylinder", role: "datastore" },
+    });
+    expect(
+      (dbCleared as { attributes?: Record<string, string> }).attributes,
+    ).not.toHaveProperty("color");
+  });
+
+  it("deletes an entity and cascades to its edges, groups, and view state", () => {
+    const original = applyEditorTransaction(currentArchitectureSnapshot(), {
+      type: "annotate",
+      id: "note-service",
+      entityId: entityId("service"),
+      text: "Owns order state",
+    });
+    const deleted = applyEditorTransaction(original, {
+      type: "delete",
+      entityIds: [entityId("service")],
+    });
+
+    const ids = deleted.entities.map((entity) => entity.id);
+    expect(ids).not.toContain("service");
+    expect(ids).not.toContain("api->service");
+    expect(ids).not.toContain("service->db");
+    expect(ids).toContain("client->api");
+
+    const backend = deleted.entities.find((entity) => entity.id === "backend");
+    expect(backend).toMatchObject({ memberIds: ["api"] });
+
+    expect(deleted.layout?.some((hint) => hint.entityId === "service")).toBe(
+      false,
+    );
+    expect(
+      deleted.view?.annotations.some(
+        (annotation) => annotation.entityId === "service",
+      ),
+    ).toBe(false);
+    expect(validateGraphSnapshot(deleted)).toEqual([]);
+  });
+
+  it("clears a node's dangling groupId when its group is deleted", () => {
+    const deleted = applyEditorTransaction(currentArchitectureSnapshot(), {
+      type: "delete",
+      entityIds: [entityId("backend")],
+    });
+    const api = deleted.entities.find((entity) => entity.id === "api");
+    expect(api).not.toHaveProperty("groupId");
+    expect(validateGraphSnapshot(deleted)).toEqual([]);
+  });
+
   it("undoes and redoes complete document mutations", () => {
     const history = createEditorHistory(currentArchitectureSnapshot());
     const changed = commitEditorTransaction(history, {

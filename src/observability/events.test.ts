@@ -97,14 +97,14 @@ describe("privacy-safe observability events", () => {
     expect(
       createServerErrorEvent(new Error("private input"), {
         routerKind: "App Router",
-        routePath: "/api/design-review-story/[runId]",
+        routePath: "/api/observability",
         routeType: "route",
       }),
     ).toEqual({
       type: "server_error",
       errorClass: "Error",
       routerKind: "App Router",
-      routePath: "/api/design-review-story/[runId]",
+      routePath: "/api/observability",
       routeType: "route",
     });
   });

@@ -42,10 +42,6 @@ function legacyDocument() {
       schemaVersion: 1,
     })),
     stories: base.stories.map((story) => ({ ...story, schemaVersion: 1 })),
-    comparisons: base.comparisons.map((comparison) => ({
-      ...comparison,
-      schemaVersion: 1,
-    })),
   };
 }
 
@@ -54,9 +50,6 @@ async function seedRawRow(factory: IDBFactory, row: unknown): Promise<void> {
   const db = await openDatabase(factory, DATABASE_NAME, 2, (database) => {
     if (!database.objectStoreNames.contains("projects")) {
       database.createObjectStore("projects", { keyPath: "id" });
-    }
-    if (!database.objectStoreNames.contains("aiRuns")) {
-      database.createObjectStore("aiRuns", { keyPath: "projectId" });
     }
     if (!database.objectStoreNames.contains("recovery")) {
       database.createObjectStore("recovery", { keyPath: "id" });
@@ -136,7 +129,6 @@ describe("ProjectRepository migration recovery", () => {
         name: "Corrupt",
         snapshots: "not-an-array",
         stories: [],
-        comparisons: [],
       },
       meta: {
         createdAt: "2026-01-01T00:00:00.000Z",

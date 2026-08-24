@@ -43,8 +43,8 @@ test("keeps editor route payload and editor-ready load within budget", async ({
 
 async function measuredSurfaceSwitch(
   page: import("@playwright/test").Page,
-  tab: "Compare" | "Source",
-  heading: "Current vs proposed" | "Mermaid source",
+  tab: "Layers" | "Source",
+  heading: "Layers" | "Mermaid source",
 ): Promise<number> {
   await page.evaluate(() => performance.mark("interaction-start"));
   await page.getByRole("tab", { name: tab }).click();
@@ -73,28 +73,24 @@ test("keeps cold and warm editor surface interactions within budget", async ({
     page.getByRole("button", { name: /^Database\. Position/ }),
   ).toBeVisible();
 
-  const coldCompareMs = await measuredSurfaceSwitch(
-    page,
-    "Compare",
-    "Current vs proposed",
-  );
-  expect(coldCompareMs).toBeLessThanOrEqual(
+  const coldSwitchMs = await measuredSurfaceSwitch(page, "Layers", "Layers");
+  expect(coldSwitchMs).toBeLessThanOrEqual(
     budgets.browser.coldSurfaceInteractionMs,
   );
 
-  const warmCompareMeasurements: number[] = [];
+  const warmSwitchMeasurements: number[] = [];
   for (let sample = 0; sample < 3; sample += 1) {
     await page.getByRole("tab", { name: "Source" }).click();
     await expect(
       page.getByRole("heading", { name: "Mermaid source" }),
     ).toBeVisible();
-    warmCompareMeasurements.push(
-      await measuredSurfaceSwitch(page, "Compare", "Current vs proposed"),
+    warmSwitchMeasurements.push(
+      await measuredSurfaceSwitch(page, "Layers", "Layers"),
     );
   }
-  warmCompareMeasurements.sort((left, right) => left - right);
+  warmSwitchMeasurements.sort((left, right) => left - right);
 
-  expect(warmCompareMeasurements[1]).toBeLessThanOrEqual(
+  expect(warmSwitchMeasurements[1]).toBeLessThanOrEqual(
     budgets.browser.warmSurfaceInteractionMs,
   );
 });

@@ -1,0 +1,16 @@
+{
+  "eventType": "step_completed",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMC4W9F7FW761GYDAA126S",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//analyzeNarrativeStep",
+    "workflowName": "workflow//./src/workflows/design-review-story/workflow//generateDesignReviewStory",
+    "result": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImRhdGEiOjEsInNlc3Npb25JZCI6MTd9LHsidGhlc2lzIjoyLCJhdWRpZW5jZSI6MywiYmVhdHMiOjR9LCJUaGUgcHJvcG9zZWQgYXJjaGl0ZWN0dXJlIG1vdmVzIHJlcXVlc3QgZmFuLW91dCBiZWhpbmQgb25lIGdhdGV3YXkuIiwiRW5naW5lZXJzIHJldmlld2luZyB0aGUgbWlncmF0aW9uLiIsWzUsOSwxM10seyJzdW1tYXJ5Ijo2LCJlbnRpdHlJZHMiOjd9LCJCZWF0IDEgY29uY2VybnMgY2xpZW50LiIsWzhdLCJjbGllbnQiLHsic3VtbWFyeSI6MTAsImVudGl0eUlkcyI6MTF9LCJCZWF0IDIgY29uY2VybnMgYXBpLiIsWzEyXSwiYXBpIix7InN1bW1hcnkiOjE0LCJlbnRpdHlJZHMiOjE1fSwiQmVhdCAzIGNvbmNlcm5zIHNlcnZpY2UuIixbMTZdLCJzZXJ2aWNlIiwiZml4dHVyZS1zZXNzaW9uIl0="
+    }
+  },
+  "runId": "wrun_01M0TMC4W8HAGSQTKVFG948CQX",
+  "eventId": "evnt_01M0TMC5DMAWSKR1P9MQS5733E",
+  "createdAt": "2026-08-24T19:36:20.660Z"
+}

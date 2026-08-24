@@ -1,0 +1,16 @@
+{
+  "eventType": "step_completed",
+  "specVersion": 3,
+  "correlationId": "step_01M0TMCW9YGJHFMESP5BFX0AG9",
+  "eventData": {
+    "stepName": "step//./src/workflows/design-review-story/steps//draftScenesStep",
+    "workflowName": "workflow//./src/workflows/design-review-story/workflow//generateDesignReviewStory",
+    "result": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImRhdGEiOjEsInNlc3Npb25JZCI6Mjd9LHsic2NlbmVzIjoyfSxbMywxMywyMF0seyJ0aXRsZSI6NCwiZHVyYXRpb25NcyI6NSwiYWN0aW9ucyI6Nn0sIlNjZW5lIDEiLDIwMDAsWzcsMTBdLHsidHlwZSI6OCwidGFyZ2V0Ijo5fSwicmV2ZWFsIiwiZW50aXR5LXRoYXQtZG9lcy1ub3QtZXhpc3QiLHsidHlwZSI6MTEsInRhcmdldCI6OSwidGV4dCI6MTJ9LCJhbm5vdGF0ZSIsIlN0ZXAgMS4iLHsidGl0bGUiOjE0LCJkdXJhdGlvbk1zIjo1LCJhY3Rpb25zIjoxNX0sIlNjZW5lIDIiLFsxNiwxOF0seyJ0eXBlIjo4LCJ0YXJnZXQiOjE3fSwiYXBpIix7InR5cGUiOjExLCJ0YXJnZXQiOjE3LCJ0ZXh0IjoxOX0sIlN0ZXAgMi4iLHsidGl0bGUiOjIxLCJkdXJhdGlvbk1zIjo1LCJhY3Rpb25zIjoyMn0sIlNjZW5lIDMiLFsyMywyNV0seyJ0eXBlIjo4LCJ0YXJnZXQiOjI0fSwic2VydmljZSIseyJ0eXBlIjoxMSwidGFyZ2V0IjoyNCwidGV4dCI6MjZ9LCJTdGVwIDMuIiwiZml4dHVyZS1zZXNzaW9uIl0="
+    }
+  },
+  "runId": "wrun_01M0TMCW9XHXDD80B1A0D3PCXZ",
+  "eventId": "evnt_01M0TMCX3HHCC9WC615TPNMPDW",
+  "createdAt": "2026-08-24T19:36:44.913Z"
+}

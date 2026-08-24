@@ -1,0 +1,15 @@
+{
+  "eventType": "hook_received",
+  "specVersion": 3,
+  "correlationId": "hook_01M0TMC4W9F7FW761GYDAA126Z",
+  "eventData": {
+    "token": "design-review-story:decision:wrun_01M0TMC4W8HAGSQTKVFG948CQX",
+    "payload": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bFt7ImRlY2lzaW9uIjoxfSwiYXBwcm92ZSJd"
+    }
+  },
+  "runId": "wrun_01M0TMC4W8HAGSQTKVFG948CQX",
+  "eventId": "evnt_01M0TMC6CGAB31ZC4AVC00VG4F",
+  "createdAt": "2026-08-24T19:36:21.648Z"
+}
