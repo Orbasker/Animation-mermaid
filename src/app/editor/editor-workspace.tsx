@@ -85,13 +85,7 @@ import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
 import { recordProjectBackup } from "./project-backup";
 import { useConnectivity } from "./use-connectivity";
 
-const SURFACES = [
-  "Source",
-  "Story",
-  "Explore",
-  "Layers",
-  "Inspector",
-] as const;
+const SURFACES = ["Source", "Story", "Explore", "Layers", "Inspector"] as const;
 type Surface = (typeof SURFACES)[number];
 
 interface Point {
