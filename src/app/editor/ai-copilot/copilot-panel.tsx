@@ -26,6 +26,11 @@ export interface CopilotPanelProps {
   readonly project: ProjectDocument;
   /** Present once a proposal has been applied, to undo/redo that single transaction. */
   readonly applyControls?: ApplyControls;
+  /**
+   * Whether the hosted AI copilot can be reached. When false the panel degrades: composing stays
+   * available so a draft is not lost, but starting a run is paused until connectivity returns.
+   */
+  readonly aiAvailable?: boolean;
 }
 
 /**
@@ -39,6 +44,7 @@ export function CopilotPanel({
   controller,
   project,
   applyControls,
+  aiAvailable = true,
 }: CopilotPanelProps) {
   const { state } = controller;
 
@@ -57,8 +63,18 @@ export function CopilotPanel({
         <h2>Design-review scenes</h2>
       </header>
 
+      {!aiAvailable ? (
+        <div className="copilotDegraded" role="status">
+          <strong>AI copilot paused — you’re offline</strong>
+          <p>
+            Editing, previewing, and exporting all keep working locally. The
+            copilot resumes automatically when your connection returns.
+          </p>
+        </div>
+      ) : null}
+
       {state.phase === "composing" || state.phase === "previewing" ? (
-        <ComposeSection controller={controller} />
+        <ComposeSection aiAvailable={aiAvailable} controller={controller} />
       ) : null}
 
       {RUNNING_PHASES.has(state.phase) ? (
@@ -134,8 +150,10 @@ export function CopilotPanel({
 
 function ComposeSection({
   controller,
+  aiAvailable,
 }: {
   readonly controller: CopilotController;
+  readonly aiAvailable: boolean;
 }) {
   const { state, context, redactedContext } = controller;
   const previewing = state.phase === "previewing";
@@ -189,7 +207,10 @@ function ComposeSection({
         />
 
         {!previewing ? (
-          <button disabled={!controller.canPreview} type="submit">
+          <button
+            disabled={!controller.canPreview || !aiAvailable}
+            type="submit"
+          >
             Preview request
           </button>
         ) : null}
@@ -261,7 +282,7 @@ function ComposeSection({
             </button>
             <button
               className="copilotPrimary"
-              disabled={!controller.canStart}
+              disabled={!controller.canStart || !aiAvailable}
               onClick={controller.confirmAndStart}
               type="button"
             >

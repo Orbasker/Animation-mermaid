@@ -90,6 +90,8 @@ import {
 import { e2eCopilotTransportFromWindow } from "./ai-copilot/e2e-transport";
 import { ImportDialog, type ImportDialogSubmit } from "./import/import-dialog";
 import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
+import { recordProjectBackup } from "./project-backup";
+import { useConnectivity } from "./use-connectivity";
 
 const SURFACES = [
   "Source",
@@ -275,6 +277,7 @@ export function EditorWorkspace({
   const ownsRepository = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const importRunnerRef = useRef<MermaidImportRunner | null>(null);
+  const connectivity = useConnectivity();
 
   useEffect(() => {
     let cancelled = false;
@@ -412,6 +415,15 @@ export function EditorWorkspace({
     }, autosaveDelayMs);
     return () => window.clearTimeout(timer);
   }, [autosaveDelayMs, history, project, repository, stressPreview]);
+
+  useEffect(() => {
+    if (!project) return;
+    const current =
+      history && !stressPreview
+        ? replaceProjectSnapshot(project, history.present)
+        : project;
+    recordProjectBackup(current);
+  }, [project, history, stressPreview]);
 
   const snapshot = history?.present;
   const nodes = useMemo(
@@ -1300,6 +1312,32 @@ export function EditorWorkspace({
         ) : null}
       </div>
 
+      {connectivity.unsupportedBrowser ? (
+        <div className="editorNotice editorNotice-error" role="alert">
+          <strong>This browser is missing features the editor needs</strong>
+          <span>
+            Some tools may not work here. For the full experience, use a current
+            version of Chrome, Edge, Firefox, or Safari.
+          </span>
+        </div>
+      ) : !connectivity.online ? (
+        <div className="editorNotice editorNotice-warning" role="status">
+          <strong>You’re offline — local editing still works</strong>
+          <span>
+            Your changes save to this browser. The AI copilot is paused and
+            resumes automatically when you reconnect.
+          </span>
+        </div>
+      ) : !connectivity.capabilities.indexedDB ? (
+        <div className="editorNotice editorNotice-info" role="status">
+          <strong>Preview mode — changes won’t be saved</strong>
+          <span>
+            This browser blocks local storage, so edits live only in this tab.
+            Use <strong>Export HTML</strong> to keep your work.
+          </span>
+        </div>
+      ) : null}
+
       {storageHealth && storageHealth.status !== "ok" ? (
         <div
           className={`storageBanner status-${storageHealth.status}`}
@@ -1485,6 +1523,7 @@ export function EditorWorkspace({
                 }
                 defaultTitle={`${project.name} review`}
                 initialRunId={initialRunId}
+                aiAvailable={connectivity.aiAvailable}
                 onApplied={applyProposal}
                 onRunStarted={handleRunStarted}
                 project={project}

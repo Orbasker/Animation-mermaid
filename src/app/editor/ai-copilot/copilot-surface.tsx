@@ -20,6 +20,8 @@ export interface CopilotSurfaceProps {
   readonly onRunSettled?: (runId: string) => void;
   readonly onApplied?: (proposal: StoryProposal) => void;
   readonly applyControls?: ApplyControls;
+  /** Whether the hosted AI copilot is reachable; when false the panel degrades gracefully. */
+  readonly aiAvailable?: boolean;
 }
 
 /**
@@ -38,6 +40,7 @@ export function CopilotSurface({
   onRunSettled,
   onApplied,
   applyControls,
+  aiAvailable,
 }: CopilotSurfaceProps) {
   const controller = useCopilot({
     transport,
@@ -52,6 +55,7 @@ export function CopilotSurface({
 
   return (
     <CopilotPanel
+      aiAvailable={aiAvailable}
       applyControls={applyControls}
       controller={controller}
       project={project}
