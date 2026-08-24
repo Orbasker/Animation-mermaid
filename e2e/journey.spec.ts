@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * The deterministic half of the design-review journey, driven in a real browser against the app
- * untouched: import → edit → persistence across reload → timeline seek. No workflow
- * runtime is involved; the AI half lives in `ai-copilot.spec.ts`.
+ * The core editor journey, driven in a real browser against the app untouched:
+ * import → edit → persistence across reload → timeline seek.
  */
 
 test("home links into the editor", async ({ page }) => {

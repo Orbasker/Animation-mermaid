@@ -92,6 +92,44 @@ describe("EditorWorkspace", () => {
     expect(screen.getAllByText("Public entry point")).toHaveLength(2);
   });
 
+  it("renames, restyles, and deletes a component in-view with undo", async () => {
+    render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
+    const client = await screen.findByRole("button", {
+      name: /Client\. Position/i,
+    });
+
+    fireEvent.click(client);
+    fireEvent.click(screen.getByRole("tab", { name: "Inspector" }));
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Label" }), {
+      target: { value: "Web Client" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(
+      screen.getByRole("button", { name: /Web Client\. Position/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Shape" }), {
+      target: { value: "stadium" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Color" }), {
+      target: { value: "#3b82f6" },
+    });
+    expect(
+      screen.getByRole("button", { name: /Web Client\. Position/i }),
+    ).toHaveStyle({ borderColor: "#3b82f6" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete component" }));
+    expect(
+      screen.queryByRole("button", { name: /Web Client\. Position/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(
+      screen.getByRole("button", { name: /Web Client\. Position/i }),
+    ).toBeInTheDocument();
+  });
+
   it("autosaves document transactions and restores them on reload", async () => {
     const repository = await openRepository();
     const first = render(

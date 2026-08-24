@@ -12,7 +12,6 @@ export {
   type ProjectMeta,
   type StoredProject,
   type ProjectListEntry,
-  type AiRunReference,
   type RepositoryErrorCode,
   type ProjectRepositoryOptions,
   type RecoveryReason,

@@ -42,9 +42,6 @@ jobs:
       - name: Unit tests
         run: pnpm test:unit
 
-      - name: Workflow integration tests
-        run: pnpm test:integration
-
   build:
     name: Production build
     runs-on: ubuntu-latest
@@ -118,7 +115,7 @@ jobs:
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Playwright journey (import, edit, timeline, compare, AI consent, approval, reconnect, a11y)
+      - name: Playwright journey (import, edit, timeline, compare, export, a11y)
         run: pnpm test:e2e
 
       - name: Upload Playwright report

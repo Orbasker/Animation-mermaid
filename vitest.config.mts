@@ -12,14 +12,10 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     exclude: [
       ...configDefaults.exclude,
-      ".eve/**",
       ".output/**",
       ".vercel/**",
       // Playwright browser specs; they run from playwright.config.ts.
       "e2e/**",
-      // Workflow integration tests need the DevKit's Vitest plugin and its own runtime;
-      // they run from vitest.integration.config.mts.
-      "**/*.integration.test.ts",
     ],
   },
 });

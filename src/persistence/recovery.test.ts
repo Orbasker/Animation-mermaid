@@ -51,9 +51,6 @@ async function seedRawRow(factory: IDBFactory, row: unknown): Promise<void> {
     if (!database.objectStoreNames.contains("projects")) {
       database.createObjectStore("projects", { keyPath: "id" });
     }
-    if (!database.objectStoreNames.contains("aiRuns")) {
-      database.createObjectStore("aiRuns", { keyPath: "projectId" });
-    }
     if (!database.objectStoreNames.contains("recovery")) {
       database.createObjectStore("recovery", { keyPath: "id" });
     }
