@@ -5,7 +5,6 @@
 /coverage
 /.vercel
 /.cc10x
-/.eve/
 /.output/
 
 .DS_Store
@@ -18,8 +17,6 @@ next-env.d.ts
 !.env.example
 .vercel
 /.swc
-/.workflow-data/
-/.workflow-vitest/
 /playwright-report/
 /test-results/
 /.playwright/

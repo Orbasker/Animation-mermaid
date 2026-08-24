@@ -10,8 +10,6 @@ import {
 export interface Connectivity {
   /** Whether the browser currently reports a network connection. */
   readonly online: boolean;
-  /** Whether the hosted AI copilot can be reached (network up). */
-  readonly aiAvailable: boolean;
   /** The browser features the editor depends on. */
   readonly capabilities: BrowserCapabilities;
   /**
@@ -32,7 +30,6 @@ function missingCriticalCapability(capabilities: BrowserCapabilities): boolean {
  */
 const SERVER_SNAPSHOT: Connectivity = {
   online: true,
-  aiAvailable: true,
   capabilities: {
     indexedDB: true,
     webWorker: true,
@@ -82,7 +79,6 @@ function getSnapshot(): Connectivity {
   }
   snapshotCache = {
     online: onlineState,
-    aiAvailable: onlineState,
     capabilities,
     unsupportedBrowser: missingCriticalCapability(capabilities),
   };
@@ -111,10 +107,9 @@ function subscribe(onChange: () => void): () => void {
 }
 
 /**
- * Tracks the two availability axes the editor keeps separate: local editing (which needs only
- * core browser APIs) and the optional hosted AI copilot (which needs the network). It subscribes
- * to the browser's online/offline events so a dropped connection pauses AI without disturbing the
- * local session.
+ * Tracks the browser conditions the editor cares about: whether it's online and whether the
+ * core browser APIs local editing depends on are present. It subscribes to the browser's
+ * online/offline events so a dropped connection is reflected without disturbing the session.
  */
 export function useConnectivity(): Connectivity {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

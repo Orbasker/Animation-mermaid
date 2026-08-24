@@ -1,6 +1,4 @@
 import type { NextConfig } from "next";
-import { withEve } from "eve/next";
-import { withWorkflow } from "workflow/next";
 
 import {
   API_CONTENT_SECURITY_POLICY,
@@ -41,4 +39,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withEve(withWorkflow(nextConfig));
+export default nextConfig;

@@ -1,11 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  ProjectRepository,
-  RepositoryError,
-  type AiRunReference,
-} from "@/persistence";
+import { ProjectRepository, RepositoryError } from "@/persistence";
 import { createProjectDocument, projectId } from "@/domain/project-document";
 import { createStory, storyId } from "@/domain/story";
 import { snapshotId } from "@/domain/graph";
@@ -34,13 +30,6 @@ function openRepository(factory: IDBFactory): Promise<ProjectRepository> {
     newId: makeIds(),
   });
 }
-
-const SAMPLE_RUN: AiRunReference = {
-  runId: "run-abc",
-  provider: "hosted-agent",
-  createdAt: "2026-01-01T00:00:00.000Z",
-  status: "queued",
-};
 
 describe("ProjectRepository lifecycle", () => {
   let factory: IDBFactory;
@@ -88,14 +77,12 @@ describe("ProjectRepository lifecycle", () => {
     expect(await repo.list()).toHaveLength(1);
   });
 
-  it("deletes a project and its linked AI runs", async () => {
+  it("deletes a project", async () => {
     const created = await repo.create({ name: "Doomed" });
-    await repo.linkAiRun(created.document.id, SAMPLE_RUN);
 
     await repo.delete(created.document.id);
 
     expect(await repo.get(created.document.id)).toBeUndefined();
-    expect(await repo.aiRuns(created.document.id)).toEqual([]);
   });
 
   it("reports missing projects with typed errors", async () => {
@@ -149,15 +136,13 @@ describe("ProjectRepository portable JSON", () => {
     expect(imported.document).toEqual(sample);
   });
 
-  it("export contains only canonical content — no metadata or AI runs", async () => {
+  it("export contains only canonical content — no repository metadata", async () => {
     const sample = sampleProjectDocument();
     const repo = await openRepository(new IDBFactory());
     await repo.save(sample);
-    await repo.linkAiRun(sample.id, SAMPLE_RUN);
 
     const json = await repo.export(sample.id);
 
-    expect(json).not.toContain("run-abc");
     expect(json).not.toContain("revision");
     expect(json).not.toContain("archivedAt");
     expect(JSON.parse(json)).toEqual(sample);
@@ -217,30 +202,5 @@ describe("ProjectRepository portable JSON", () => {
     await expect(repo.import("[]")).rejects.toMatchObject({
       code: "invalid-import",
     });
-  });
-});
-
-describe("ProjectRepository AI run separation", () => {
-  it("keeps hosted run identifiers out of the canonical document", async () => {
-    const sample = sampleProjectDocument();
-    const repo = await openRepository(new IDBFactory());
-    await repo.save(sample);
-
-    await repo.linkAiRun(sample.id, SAMPLE_RUN);
-    await repo.linkAiRun(sample.id, { ...SAMPLE_RUN, runId: "run-def" });
-
-    const runs = await repo.aiRuns(sample.id);
-    expect(runs.map((run) => run.runId)).toEqual(["run-abc", "run-def"]);
-
-    const stored = await repo.get(sample.id);
-    expect(stored?.document).toEqual(sample);
-    expect(JSON.stringify(stored?.document)).not.toContain("run-abc");
-  });
-
-  it("refuses to link a run to a project that does not exist", async () => {
-    const repo = await openRepository(new IDBFactory());
-    await expect(
-      repo.linkAiRun(projectId("missing"), SAMPLE_RUN),
-    ).rejects.toMatchObject({ code: "not-found" });
   });
 });

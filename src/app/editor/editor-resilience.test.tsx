@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { EditorWorkspace } from "@/app/editor/editor-workspace";
@@ -19,7 +13,7 @@ afterEach(() => {
 });
 
 describe("editor resilience states", () => {
-  it("keeps local editing available and pauses AI when offline", async () => {
+  it("keeps local editing available when offline", async () => {
     render(<EditorWorkspace initialProject={sampleProjectDocument()} />);
     await screen.findByRole("button", { name: /Client\. Position 0, 0/i });
 
@@ -30,14 +24,6 @@ describe("editor resilience states", () => {
     expect(
       await screen.findByText("You’re offline — local editing still works"),
     ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "Copilot" }));
-    expect(
-      screen.getByText("AI copilot paused — you’re offline"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Preview request" }),
-    ).toBeDisabled();
 
     // Local editing controls stay usable.
     expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
