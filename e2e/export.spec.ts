@@ -37,8 +37,15 @@ async function seriousViolations(page: Page) {
 
 test("exports a self-contained review that plays offline with keyboard control", async ({
   page,
+  browser,
 }) => {
   const filePath = await exportArtifact(page);
+
+  // Open the artifact in a fresh context so nothing the live editor did (e.g. a Web Vitals
+  // beacon flushed on navigation) can be mistaken for the export fetching something. Any
+  // request seen here originates from the file itself.
+  const context = await browser.newContext();
+  page = await context.newPage();
 
   const externalRequests: string[] = [];
   page.on("request", (request) => {
