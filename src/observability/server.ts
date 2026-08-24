@@ -19,11 +19,6 @@ type ServerObservabilityEvent = {
 const serverRouteFeatures = new Map<string, ObservabilityFeature>([
   ["/", "site"],
   ["/editor", "editor"],
-  ["/api/design-review-story", "design-review"],
-  ["/api/design-review-story/[runId]", "design-review"],
-  ["/api/design-review-story/[runId]/decision", "design-review"],
-  ["/api/design-review-story/[runId]/progress", "design-review"],
-  ["/api/design-review-story/[runId]/proposal", "design-review"],
   ["/api/observability", "observability"],
 ]);
 

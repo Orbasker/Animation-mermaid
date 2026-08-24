@@ -5,7 +5,7 @@ import {
 
 /**
  * Stable semantic identifier for a graph entity. An id is assigned once, when an entity is
- * first imported, and is never reused. Every downstream layer — stories, comparisons, the
+ * first imported, and is never reused. Every downstream layer — stories, the
  * agent context — refers to entities by this id, so identity survives re-imports and
  * re-layouts. IDs are semantic; they carry no positional meaning.
  */

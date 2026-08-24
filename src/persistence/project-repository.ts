@@ -19,7 +19,6 @@ import {
 const DATABASE_NAME = "animation-mermaid";
 const DATABASE_VERSION = 2;
 const PROJECTS_STORE = "projects";
-const AI_RUNS_STORE = "aiRuns";
 const RECOVERY_STORE = "recovery";
 
 /** Marker identifying a full multi-project backup bundle. */
@@ -56,31 +55,11 @@ export interface ProjectListEntry {
   readonly meta: ProjectMeta;
 }
 
-/**
- * A reference to a hosted AI run. These identifiers are produced by hosted services and are
- * kept in a separate object store, never merged into the {@link ProjectDocument}, so that
- * canonical project content stays local-first and portable — exporting a project never
- * leaks a run id, and importing one never carries hosted state.
- */
-export interface AiRunReference {
-  readonly runId: string;
-  readonly provider: string;
-  /** ISO-8601 timestamp of when the run was linked. */
-  readonly createdAt: string;
-  readonly status?: string;
-}
-
 /** The row shape persisted in the `projects` object store (keyed by top-level `id`). */
 interface ProjectRow {
   readonly id: ProjectId;
   readonly document: ProjectDocument;
   readonly meta: ProjectMeta;
-}
-
-/** The row shape persisted in the `aiRuns` object store (keyed by `projectId`). */
-interface AiRunsRow {
-  readonly projectId: ProjectId;
-  readonly runs: readonly AiRunReference[];
 }
 
 export type RepositoryErrorCode =
@@ -197,8 +176,7 @@ export interface ProjectRepositoryOptions {
  * Local-first project store backed by IndexedDB. All persistence happens on the device: no
  * project document is ever uploaded during ordinary editing. Writes go through
  * {@link runTransaction}, so an interrupted write is rolled back and the store recovers to
- * the last complete transaction. Hosted AI run identifiers live in a separate object store
- * and are excluded from the canonical document, keeping exports clean and portable.
+ * the last complete transaction.
  */
 export class ProjectRepository {
   private constructor(
@@ -230,9 +208,6 @@ export class ProjectRepository {
         (db) => {
           if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
             db.createObjectStore(PROJECTS_STORE, { keyPath: "id" });
-          }
-          if (!db.objectStoreNames.contains(AI_RUNS_STORE)) {
-            db.createObjectStore(AI_RUNS_STORE, { keyPath: "projectId" });
           }
           if (!db.objectStoreNames.contains(RECOVERY_STORE)) {
             db.createObjectStore(RECOVERY_STORE, { keyPath: "id" });
@@ -353,7 +328,7 @@ export class ProjectRepository {
 
   /**
    * Duplicates a project into a new one with a fresh project id and a "Copy of …" name. The
-   * document's internal ids (snapshots, stories, comparisons) are preserved because they are
+   * document's internal ids (snapshots, stories) are preserved because they are
    * internal references within the copy; only the top-level project identity is new.
    */
   async duplicate(id: ProjectId): Promise<StoredProject> {
@@ -386,29 +361,22 @@ export class ProjectRepository {
     }));
   }
 
-  /** Permanently deletes a project and any AI run references linked to it. */
+  /** Permanently deletes a project. */
   async delete(id: ProjectId): Promise<void> {
     await this.guardWrite(() =>
       runTransaction(
         this.database,
-        [PROJECTS_STORE, AI_RUNS_STORE],
+        PROJECTS_STORE,
         "readwrite",
-        async (transaction) => {
-          await promisifyRequest(
-            transaction.objectStore(PROJECTS_STORE).delete(id),
-          );
-          await promisifyRequest(
-            transaction.objectStore(AI_RUNS_STORE).delete(id),
-          );
-        },
+        (transaction) =>
+          promisifyRequest(transaction.objectStore(PROJECTS_STORE).delete(id)),
       ),
     );
   }
 
   /**
    * Serializes a project to portable JSON. The output is the canonical document only —
-   * repository metadata and hosted AI run identifiers are excluded — so it imports cleanly
-   * into a fresh browser profile.
+   * repository metadata is excluded — so it imports cleanly into a fresh browser profile.
    */
   async export(id: ProjectId): Promise<string> {
     const row = await this.readRow(id);
@@ -461,48 +429,6 @@ export class ProjectRepository {
       );
     }
     return this.insert(target);
-  }
-
-  /**
-   * Links a hosted AI run identifier to a project without touching the project document.
-   * Run references are stored separately, so ordinary editing never uploads or embeds them.
-   */
-  async linkAiRun(id: ProjectId, run: AiRunReference): Promise<void> {
-    const project = await this.readRow(id);
-    if (!project) {
-      throw new RepositoryError("not-found", `No project with id "${id}".`);
-    }
-    await this.guardWrite(() =>
-      runTransaction(
-        this.database,
-        AI_RUNS_STORE,
-        "readwrite",
-        async (transaction) => {
-          const store = transaction.objectStore(AI_RUNS_STORE);
-          const current = await promisifyRequest(
-            store.get(id) as IDBRequest<AiRunsRow | undefined>,
-          );
-          const runs = [...(current?.runs ?? []), run];
-          await promisifyRequest(store.put({ projectId: id, runs }));
-        },
-      ),
-    );
-  }
-
-  /** Returns the hosted AI run references linked to a project, in link order. */
-  async aiRuns(id: ProjectId): Promise<readonly AiRunReference[]> {
-    const row = await runTransaction(
-      this.database,
-      AI_RUNS_STORE,
-      "readonly",
-      (transaction) =>
-        promisifyRequest(
-          transaction.objectStore(AI_RUNS_STORE).get(id) as IDBRequest<
-            AiRunsRow | undefined
-          >,
-        ),
-    );
-    return row?.runs ?? [];
   }
 
   /**
@@ -638,8 +564,8 @@ export class ProjectRepository {
 
   /**
    * Serializes every stored project into a single portable backup bundle. Like {@link export},
-   * the bundle carries only canonical documents — no repository metadata or hosted AI run
-   * identifiers — so it restores cleanly into a fresh browser profile.
+   * the bundle carries only canonical documents — no repository metadata — so it restores
+   * cleanly into a fresh browser profile.
    */
   async exportAllProjects(
     options: { readonly includeArchived?: boolean } = {},

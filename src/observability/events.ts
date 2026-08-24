@@ -90,7 +90,7 @@ export function createWebVitalEvent(
 }
 
 export type ObservabilityFeature =
-  "editor" | "design-review" | "observability" | "site" | "unmapped";
+  "editor" | "observability" | "site" | "unmapped";
 
 export type ObservabilityTrust = "anonymous-client" | "server";
 

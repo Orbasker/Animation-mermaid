@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { compareSnapshots, comparisonId } from "@/domain/comparison";
 import { snapshotId, validateGraphSnapshot } from "@/domain/graph";
 import {
   importPlantuml,
@@ -134,8 +133,7 @@ describe("importPlantuml", () => {
   it("reimports unchanged source to an identical model (stable identity)", () => {
     const first = importText(ACCEPTANCE_PLANTUML, "snap-uml").snapshot!;
     const second = importText(ACCEPTANCE_PLANTUML, "snap-uml").snapshot!;
-    const diff = compareSnapshots(comparisonId("c"), first, second);
-    expect(diff.changes).toEqual([]);
+    expect(second.entities).toEqual(first.entities);
   });
 
   it("keeps a fatal error (missing @startuml) from producing a snapshot", () => {

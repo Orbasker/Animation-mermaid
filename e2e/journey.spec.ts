@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * The deterministic half of the design-review journey, driven in a real browser against the app
- * untouched: import → edit → persistence across reload → timeline seek → comparison. No workflow
- * runtime is involved; the AI half lives in `ai-copilot.spec.ts`.
+ * The core editor journey, driven in a real browser against the app untouched:
+ * import → edit → persistence across reload → timeline seek.
  */
 
 test("home links into the editor", async ({ page }) => {
@@ -72,14 +71,4 @@ test("the timeline previews and seeks to an arbitrary position", async ({
 
   await page.getByLabel("Scrubber").fill("2000");
   await expect(page.getByText(/^2000 \/ 3700 ms$/).first()).toBeVisible();
-});
-
-test("the comparison surface reports the semantic diff", async ({ page }) => {
-  await page.goto("/editor");
-  await page.getByRole("tab", { name: "Compare" }).click();
-
-  await expect(
-    page.getByRole("heading", { name: "Current vs proposed" }),
-  ).toBeVisible();
-  await expect(page.getByText(/\d+ semantic changes/)).toBeVisible();
 });

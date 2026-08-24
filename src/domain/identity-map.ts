@@ -11,12 +11,12 @@ export interface IdentityPair {
 }
 
 /**
- * The user's confirmed answers about cross-snapshot identity, persisted alongside the
- * {@link Comparison} it belongs to. `confirmed` pairs are treated as ground truth by the
- * matcher (they outrank semantic-key and similarity matches); `rejected` pairs are the ones
- * the user has ruled out, so a rejected pair is never re-offered as a suggestion. Keeping
- * both means a comparison can be recomputed deterministically from the snapshots plus this
- * map, and the user never has to answer the same question twice.
+ * The user's confirmed answers about cross-snapshot identity, consumed by the semantic
+ * matcher. `confirmed` pairs are treated as ground truth (they outrank semantic-key and
+ * similarity matches); `rejected` pairs are the ones the user has ruled out, so a rejected
+ * pair is never re-offered as a suggestion. Keeping both means a match can be recomputed
+ * deterministically from the snapshots plus this map, and the user never has to answer the
+ * same question twice.
  */
 export interface IdentityMap {
   readonly confirmed: readonly IdentityPair[];

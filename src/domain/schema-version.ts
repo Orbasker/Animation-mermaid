@@ -66,8 +66,7 @@ export interface Migration {
   ) => Record<string, unknown>;
 }
 
-type PersistedArtifactKind =
-  "ProjectDocument" | "GraphSnapshot" | "Story" | "Comparison";
+type PersistedArtifactKind = "ProjectDocument" | "GraphSnapshot" | "Story";
 
 function migrationError(path: string, expectation: string): never {
   throw new Error(`Cannot migrate ${path}: ${expectation}.`);
@@ -257,54 +256,10 @@ function validateV1Story(
   return story;
 }
 
-function validateV1Change(value: unknown, path: string): void {
-  const change = migrationRecord(value, path);
-  migrationString(change.op, `${path}.op`);
-  migrationString(change.entityId, `${path}.entityId`);
-  switch (change.op) {
-    case "added":
-      validateV1GraphEntity(change.after, `${path}.after`);
-      break;
-    case "removed":
-      validateV1GraphEntity(change.before, `${path}.before`);
-      break;
-    case "modified":
-      validateV1GraphEntity(change.before, `${path}.before`);
-      validateV1GraphEntity(change.after, `${path}.after`);
-      break;
-    default:
-      migrationError(
-        `${path}.op`,
-        `unsupported change operation "${String(change.op)}"`,
-      );
-  }
-}
-
-function validateV1Comparison(
-  value: unknown,
-  path: string,
-): Record<string, unknown> {
-  const comparison = migrationRecord(value, path);
-  if (comparison.schemaVersion !== 1) {
-    migrationError(path, "expected nested schemaVersion 1");
-  }
-  migrationString(comparison.id, `${path}.id`);
-  migrationString(comparison.baseSnapshotId, `${path}.baseSnapshotId`);
-  migrationString(comparison.targetSnapshotId, `${path}.targetSnapshotId`);
-  migrationArray(comparison.changes, `${path}.changes`).forEach(
-    (change, index) => validateV1Change(change, `${path}.changes[${index}]`),
-  );
-  return comparison;
-}
-
 function detectV1Artifact(
   document: Record<string, unknown>,
 ): PersistedArtifactKind {
-  if (
-    "snapshots" in document ||
-    "stories" in document ||
-    "comparisons" in document
-  ) {
+  if ("snapshots" in document || "stories" in document) {
     return "ProjectDocument";
   }
   if ("source" in document || "entities" in document) {
@@ -312,13 +267,6 @@ function detectV1Artifact(
   }
   if ("snapshotId" in document || "scenes" in document) {
     return "Story";
-  }
-  if (
-    "baseSnapshotId" in document ||
-    "targetSnapshotId" in document ||
-    "changes" in document
-  ) {
-    return "Comparison";
   }
   return migrationError("schemaVersion 1 document", "unknown artifact shape");
 }
@@ -334,9 +282,6 @@ function migrateV1Artifact(
     case "Story":
       validateV1Story(document, "Story");
       return { ...document, schemaVersion: 2 };
-    case "Comparison":
-      validateV1Comparison(document, "Comparison");
-      return { ...document, schemaVersion: 2 };
     case "ProjectDocument": {
       migrationString(document.id, "ProjectDocument.id");
       migrationString(document.name, "ProjectDocument.name");
@@ -348,10 +293,6 @@ function migrateV1Artifact(
         document.stories,
         "ProjectDocument.stories",
       );
-      const comparisons = migrationArray(
-        document.comparisons,
-        "ProjectDocument.comparisons",
-      );
       return {
         ...document,
         schemaVersion: 2,
@@ -361,10 +302,6 @@ function migrateV1Artifact(
         })),
         stories: stories.map((story, index) => ({
           ...validateV1Story(story, `stories[${index}]`),
-          schemaVersion: 2,
-        })),
-        comparisons: comparisons.map((comparison, index) => ({
-          ...validateV1Comparison(comparison, `comparisons[${index}]`),
           schemaVersion: 2,
         })),
       };

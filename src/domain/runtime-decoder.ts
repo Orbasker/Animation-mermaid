@@ -19,12 +19,6 @@ import {
   type Story,
   type StoryTransform,
 } from "@/domain/story";
-import {
-  comparisonId,
-  type Comparison,
-  type EntityChange,
-} from "@/domain/comparison";
-import type { IdentityMap, IdentityPair } from "@/domain/identity-map";
 import { projectId, type ProjectDocument } from "@/domain/project-document";
 import { CURRENT_SCHEMA_VERSION } from "@/domain/schema-version";
 
@@ -359,89 +353,6 @@ export function decodeStory(value: unknown, path = "story"): Story {
   };
 }
 
-function decodeEntityChange(value: unknown, path: string): EntityChange {
-  const record = decodeRecord(value, path);
-  const op = decodeString(record.op, `${path}.op`);
-  const changeEntityId = decodeEntityId(record.entityId, `${path}.entityId`);
-  switch (op) {
-    case "added":
-      return {
-        op,
-        entityId: changeEntityId,
-        after: decodeGraphEntity(record.after, `${path}.after`),
-      };
-    case "removed":
-      return {
-        op,
-        entityId: changeEntityId,
-        before: decodeGraphEntity(record.before, `${path}.before`),
-      };
-    case "modified":
-      return {
-        op,
-        entityId: changeEntityId,
-        before: decodeGraphEntity(record.before, `${path}.before`),
-        after: decodeGraphEntity(record.after, `${path}.after`),
-      };
-    default:
-      throw new DomainDecodeError(
-        `${path}.op`,
-        `unsupported change operation "${op}"`,
-      );
-  }
-}
-
-function decodeIdentityPair(value: unknown, path: string): IdentityPair {
-  const record = decodeRecord(value, path);
-  return {
-    base: decodeEntityId(record.base, `${path}.base`),
-    target: decodeEntityId(record.target, `${path}.target`),
-  };
-}
-
-function decodeIdentityMap(value: unknown, path: string): IdentityMap {
-  const record = decodeRecord(value, path);
-  return {
-    confirmed: decodeArray(
-      record.confirmed,
-      `${path}.confirmed`,
-      decodeIdentityPair,
-    ),
-    rejected: decodeArray(
-      record.rejected,
-      `${path}.rejected`,
-      decodeIdentityPair,
-    ),
-  };
-}
-
-export function decodeComparison(
-  value: unknown,
-  path = "comparison",
-): Comparison {
-  const record = decodeRecord(value, path);
-  decodeCurrentVersion(record, path);
-  return {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    id: comparisonId(decodeString(record.id, `${path}.id`)),
-    baseSnapshotId: snapshotId(
-      decodeString(record.baseSnapshotId, `${path}.baseSnapshotId`),
-    ),
-    targetSnapshotId: snapshotId(
-      decodeString(record.targetSnapshotId, `${path}.targetSnapshotId`),
-    ),
-    changes: decodeArray(record.changes, `${path}.changes`, decodeEntityChange),
-    ...(record.identityMap !== undefined
-      ? {
-          identityMap: decodeIdentityMap(
-            record.identityMap,
-            `${path}.identityMap`,
-          ),
-        }
-      : {}),
-  };
-}
-
 export function decodeProjectDocument(value: unknown): ProjectDocument {
   const record = decodeRecord(value, "project");
   decodeCurrentVersion(record, "project");
@@ -455,10 +366,5 @@ export function decodeProjectDocument(value: unknown): ProjectDocument {
       decodeGraphSnapshot,
     ),
     stories: decodeArray(record.stories, "project.stories", decodeStory),
-    comparisons: decodeArray(
-      record.comparisons,
-      "project.comparisons",
-      decodeComparison,
-    ),
   };
 }
