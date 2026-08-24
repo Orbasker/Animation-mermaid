@@ -650,6 +650,14 @@ export const PLAYER_APP_SOURCE = String.raw`
 })();
 `;
 
+/**
+ * The exact executable script embedded in every export, in the order it appears in the
+ * document. Concatenated here so the export can advertise a Content Security Policy hash over
+ * this precise text: a reviewer's browser will run the player only if the inline script matches
+ * the hash, and no injected script can substitute for it.
+ */
+export const PLAYER_SCRIPT_SOURCE = `${RENDER_FUNCTION_SOURCE}\n${PLAYER_APP_SOURCE}`;
+
 /** Styles for the exported player. Honours reduced motion and provides a static view. */
 export const PLAYER_STYLES = String.raw`
 :root {

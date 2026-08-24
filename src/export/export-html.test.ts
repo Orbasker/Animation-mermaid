@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it, beforeEach } from "vitest";
 
 import { createProjectDocument, projectId } from "@/domain/project-document";
@@ -8,13 +10,21 @@ import { buildExportPayload } from "@/export/export-payload";
 import {
   buildExportHtml,
   escapeHtml,
+  EXPORT_CONTENT_SECURITY_POLICY,
+  PLAYER_SCRIPT_CSP_HASH,
+  PLAYER_STYLE_CSP_HASH,
   serializeEmbeddedPayload,
 } from "@/export/export-html";
 import {
   PLAYER_APP_SOURCE,
+  PLAYER_SCRIPT_SOURCE,
   PLAYER_STYLES,
   RENDER_FUNCTION_SOURCE,
 } from "@/export/player-runtime";
+
+function sha256(source: string): string {
+  return `sha256-${createHash("sha256").update(source, "utf8").digest("base64")}`;
+}
 
 const HOSTILE_LABEL = "<script>window.__xss=1</script>Login";
 const HOSTILE_ANNOTATION = '</script><img src=x onerror="window.__xss=1">';
@@ -158,6 +168,35 @@ describe("buildExportHtml", () => {
       `<title>${escapeHtml(`${HOSTILE_TITLE} — ${HOSTILE_TITLE}`)}</title>`,
     );
     expect(html).not.toContain('<title>Break "out"');
+  });
+});
+
+describe("export content security policy", () => {
+  it("advertises hashes that match the exact embedded script and style", () => {
+    // If the runtime or styles change, regenerate the constants in export-html.ts.
+    expect(PLAYER_SCRIPT_CSP_HASH).toBe(sha256(PLAYER_SCRIPT_SOURCE));
+    expect(PLAYER_STYLE_CSP_HASH).toBe(sha256(PLAYER_STYLES));
+  });
+
+  it("locks the document to the hashed assets and denies everything else", () => {
+    expect(EXPORT_CONTENT_SECURITY_POLICY).toContain("default-src 'none'");
+    expect(EXPORT_CONTENT_SECURITY_POLICY).toContain(
+      `script-src '${PLAYER_SCRIPT_CSP_HASH}'`,
+    );
+    expect(EXPORT_CONTENT_SECURITY_POLICY).toContain(
+      `style-src '${PLAYER_STYLE_CSP_HASH}'`,
+    );
+    expect(EXPORT_CONTENT_SECURITY_POLICY).not.toContain("'unsafe-inline'");
+  });
+
+  it("carries the policy in the exported document's meta tag", () => {
+    const html = buildExportHtml(
+      buildExportPayload(hostileProject(), storyId("story-hostile")),
+    );
+
+    expect(html).toContain(
+      `<meta http-equiv="Content-Security-Policy" content="${EXPORT_CONTENT_SECURITY_POLICY}" />`,
+    );
   });
 });
 
