@@ -1,6 +1,7 @@
 import type { ImporterCapabilities } from "@/domain/import/contract";
 import { FLOWCHART_CAPABILITIES } from "@/domain/mermaid/capabilities";
 import { SEQUENCE_CAPABILITIES } from "@/domain/mermaid/sequence/import";
+import { PLANTUML_CAPABILITIES } from "@/domain/plantuml/import";
 
 /**
  * The capability report for every registered importer. Defined here — free of the ELK layout
@@ -11,4 +12,5 @@ import { SEQUENCE_CAPABILITIES } from "@/domain/mermaid/sequence/import";
 export const IMPORTER_CAPABILITIES: readonly ImporterCapabilities[] = [
   FLOWCHART_CAPABILITIES,
   SEQUENCE_CAPABILITIES,
+  PLANTUML_CAPABILITIES,
 ];
