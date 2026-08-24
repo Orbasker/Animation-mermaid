@@ -1,8 +1,0 @@
-{
-  "workflowFiles": [
-    "/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/src/workflows/design-review-story/workflow.ts"
-  ],
-  "serdeOnlyFiles": [
-    "/Users/orb/conductor/workspaces/Animation-mermaid/sacramento-v2/node_modules/.pnpm/@workflow+builders@4.1.8_@opentelemetry+api@1.9.1_@swc+helpers@0.5.23_ws@8.21.3/node_modules/@workflow/builders/dist/serde-checker.js"
-  ]
-}
