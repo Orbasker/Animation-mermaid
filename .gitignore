@@ -20,3 +20,7 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /.playwright/
+
+# Workflow / vitest harness runtime artifacts
+.workflow-data/
+.workflow-vitest/

@@ -5,6 +5,7 @@ import type {
   ImporterCapabilities,
 } from "@/domain/import/contract";
 import { firstSignificantLine } from "@/domain/import/source";
+import { graphvizImporter } from "@/domain/graphviz/importer";
 import { flowchartImporter } from "@/domain/mermaid/importer";
 import { sequenceImporter } from "@/domain/mermaid/sequence";
 import { plantumlImporter } from "@/domain/plantuml";
@@ -12,9 +13,11 @@ import { plantumlImporter } from "@/domain/plantuml";
 /**
  * Every registered importer, in detection priority order. Adding a diagram grammar is a matter
  * of implementing {@link DiagramImporter} and adding it here — nothing downstream of the graph
- * boundary (stories, the agent context) changes.
+ * boundary (stories, the agent context) changes. Graphviz is checked before the flowchart
+ * importer so DOT's `graph … { … }` is claimed by DOT rather than by Mermaid `graph`.
  */
 export const IMPORTERS: readonly DiagramImporter[] = [
+  graphvizImporter,
   flowchartImporter,
   sequenceImporter,
   plantumlImporter,

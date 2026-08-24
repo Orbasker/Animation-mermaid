@@ -8,6 +8,7 @@ import {
   importerByDiagramType,
   listImporterCapabilities,
 } from "@/domain/import/registry";
+import { ACCEPTANCE_DOT } from "@/domain/graphviz/fixtures";
 import { ACCEPTANCE_FLOWCHART } from "@/domain/mermaid/fixtures";
 import { ACCEPTANCE_SEQUENCE } from "@/domain/mermaid/sequence/fixtures";
 import { createStory, sceneId, storyId } from "@/domain/story";
@@ -23,7 +24,19 @@ describe("importer registry", () => {
     expect(detectImporter(ACCEPTANCE_SEQUENCE)?.capabilities.importer).toBe(
       "mermaid-sequence",
     );
+    expect(detectImporter(ACCEPTANCE_DOT)?.capabilities.importer).toBe(
+      "graphviz-dot",
+    );
     expect(detectImporter("erDiagram\n A ||--o{ B : has")).toBeNull();
+  });
+
+  it("routes DOT `graph { … }` to graphviz but Mermaid `graph LR` to the flowchart importer", () => {
+    expect(detectImporter("graph G { a -- b }")?.capabilities.importer).toBe(
+      "graphviz-dot",
+    );
+    expect(detectImporter("graph LR\n a --> b")?.capabilities.importer).toBe(
+      "mermaid-flowchart",
+    );
   });
 
   it("dispatches an import through the matching importer", () => {
@@ -40,6 +53,13 @@ describe("importer registry", () => {
       importedAt: IMPORTED_AT,
     });
     expect(seq.snapshot?.source.diagramType).toBe("sequenceDiagram");
+
+    const dot = importDiagram({
+      text: ACCEPTANCE_DOT,
+      snapshotId: snapshotId("d"),
+      importedAt: IMPORTED_AT,
+    });
+    expect(dot.snapshot?.source.diagramType).toBe("graphviz");
   });
 
   it("never corrupts on unrecognized source: no snapshot, error diagnostic, no importer", () => {
@@ -58,6 +78,7 @@ describe("importer registry", () => {
     const ids = listImporterCapabilities().map((c) => c.importer);
     expect(ids).toContain("mermaid-flowchart");
     expect(ids).toContain("mermaid-sequence");
+    expect(ids).toContain("graphviz-dot");
     // The elk-free capability list stays in sync with the runtime registry.
     expect(IMPORTER_CAPABILITIES.map((c) => c.importer)).toEqual(ids);
     for (const capability of IMPORTER_CAPABILITIES) {

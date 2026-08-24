@@ -212,6 +212,31 @@ export {
 } from "@/domain/mermaid";
 
 export {
+  type GraphvizDirection,
+  type GraphvizDiagnosticCode,
+  type GraphvizDiagnostic,
+  type GraphvizImportResult,
+  type ParsedNode as ParsedGraphvizNode,
+  type ParsedEdge as ParsedGraphvizEdge,
+  type ParsedGroup as ParsedGraphvizGroup,
+  type ParsedGraphviz,
+  GRAPHVIZ_DIRECTIONS,
+  DEFAULT_GRAPHVIZ_DIRECTION,
+  GRAPHVIZ_IMPORTER,
+  GRAPHVIZ_IMPORTER_VERSION,
+  GRAPHVIZ_DIAGRAM_TYPE,
+  GRAPHVIZ_CAPABILITIES,
+  parseGraphviz,
+  graphvizEdgeKey,
+  importGraphvizDot,
+  layoutGraphviz,
+  graphvizImporter,
+  ACCEPTANCE_DOT,
+  RICH_DOT,
+  HOSTILE_DOT,
+} from "@/domain/graphviz";
+
+export {
   type DiagnosticSeverity as ImportDiagnosticSeverity,
   type ImportDiagnostic,
   type FeatureSupport,
