@@ -764,6 +764,59 @@ h1 {
   padding: 0 14px;
 }
 
+.annotationForm input[type="text"] {
+  background: #ffffff;
+  border: 1px solid #aab6bc;
+  border-radius: 4px;
+  color: #162432;
+  font: inherit;
+  font-size: 0.82rem;
+  min-height: 44px;
+  padding: 0 10px;
+}
+
+.restyleControls {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 18px;
+}
+
+.restyleControls label {
+  color: #64727a;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.restyleControls select,
+.restyleControls input[type="text"] {
+  background: #ffffff;
+  border: 1px solid #aab6bc;
+  border-radius: 4px;
+  color: #162432;
+  font: inherit;
+  font-size: 0.82rem;
+  min-height: 44px;
+  padding: 0 10px;
+}
+
+.inspectorDelete {
+  background: #ffffff;
+  border: 1px solid #c74720;
+  border-radius: 4px;
+  color: #c74720;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-top: 18px;
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.inspectorDelete:hover {
+  background: #fff1eb;
+}
+
 .canvasColumn {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;

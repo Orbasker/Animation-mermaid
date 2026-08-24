@@ -3,6 +3,7 @@ import {
   entityId,
   snapshotId,
   type EntityId,
+  type GraphEntity,
   type GraphSnapshot,
   type GraphViewState,
   type LayoutHint,
@@ -31,6 +32,21 @@ export type EditorTransaction =
       readonly id: string;
       readonly text: string;
       readonly entityId?: EntityId;
+    }
+  | {
+      readonly type: "rename";
+      readonly entityId: EntityId;
+      readonly label: string;
+    }
+  | {
+      readonly type: "restyle";
+      readonly entityId: EntityId;
+      /** Attribute overrides to merge in; an empty-string value removes that attribute. */
+      readonly attributes: Readonly<Record<string, string>>;
+    }
+  | {
+      readonly type: "delete";
+      readonly entityIds: readonly EntityId[];
     };
 
 export interface EditorHistory {
@@ -112,7 +128,138 @@ export function applyEditorTransaction(
         : withoutCurrent;
       return { ...snapshot, view: { ...view, annotations } };
     }
+    case "rename": {
+      const entities = snapshot.entities.map((entity) =>
+        entity.id === transaction.entityId
+          ? renameEntity(entity, transaction.label)
+          : entity,
+      );
+      return { ...snapshot, entities };
+    }
+    case "restyle": {
+      const entities = snapshot.entities.map((entity) =>
+        entity.id === transaction.entityId
+          ? restyleEntity(entity, transaction.attributes)
+          : entity,
+      );
+      return { ...snapshot, entities };
+    }
+    case "delete":
+      return deleteEntities(snapshot, transaction.entityIds);
   }
+}
+
+/** Distributes {@link Omit} across a union so discriminated members keep their shape. */
+type DistributiveOmit<T, K extends keyof T> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
+/** Returns a shallow copy of `value` without `key`, preserving readonly fields. */
+function omit<T extends object, K extends keyof T>(
+  value: T,
+  key: K,
+): DistributiveOmit<T, K> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { [key]: _dropped, ...rest } = value;
+  return rest as DistributiveOmit<T, K>;
+}
+
+/** Applies a new label to a node/group, or an edge's optional label (empty clears it). */
+function renameEntity(entity: GraphEntity, label: string): GraphEntity {
+  switch (entity.kind) {
+    case "node":
+    case "group":
+      return { ...entity, label };
+    case "edge":
+      return label.length === 0 ? omit(entity, "label") : { ...entity, label };
+  }
+}
+
+/** Merges attribute overrides into a node/edge; an empty value removes that attribute. */
+function restyleEntity(
+  entity: GraphEntity,
+  overrides: Readonly<Record<string, string>>,
+): GraphEntity {
+  if (entity.kind === "group") return entity;
+  const attributes: Record<string, string> = { ...entity.attributes };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === "") delete attributes[key];
+    else attributes[key] = value;
+  }
+  if (Object.keys(attributes).length === 0) {
+    return omit(entity, "attributes");
+  }
+  return { ...entity, attributes };
+}
+
+/**
+ * Removes entities and everything that can no longer stand without them: edges touching a
+ * deleted endpoint, layout hints, visibility/annotation state keyed by a removed id, group
+ * memberships (dropping now-empty visual groups), and dangling `groupId` back-references.
+ */
+function deleteEntities(
+  snapshot: GraphSnapshot,
+  entityIds: readonly EntityId[],
+): GraphSnapshot {
+  const removed = new Set(entityIds);
+  for (const entity of snapshot.entities) {
+    if (
+      entity.kind === "edge" &&
+      (removed.has(entity.source) || removed.has(entity.target))
+    ) {
+      removed.add(entity.id);
+    }
+  }
+  if (removed.size === 0) return snapshot;
+
+  const entities = snapshot.entities
+    .filter((entity) => !removed.has(entity.id))
+    .map((entity) => {
+      if (entity.kind === "group") {
+        return {
+          ...entity,
+          memberIds: entity.memberIds.filter((id) => !removed.has(id)),
+        };
+      }
+      if (
+        entity.kind === "node" &&
+        entity.groupId &&
+        removed.has(entity.groupId)
+      ) {
+        return omit(entity, "groupId");
+      }
+      return entity;
+    });
+
+  const layout = (snapshot.layout ?? []).filter(
+    (hint) => !removed.has(hint.entityId),
+  );
+
+  const view = snapshot.view
+    ? {
+        hiddenEntityIds: snapshot.view.hiddenEntityIds.filter(
+          (id) => !removed.has(id),
+        ),
+        groups: snapshot.view.groups
+          .map((group) => ({
+            ...group,
+            memberIds: group.memberIds.filter((id) => !removed.has(id)),
+          }))
+          .filter((group) => group.memberIds.length > 0),
+        annotations: snapshot.view.annotations.filter(
+          (annotation) =>
+            annotation.entityId === undefined ||
+            !removed.has(annotation.entityId),
+        ),
+      }
+    : undefined;
+
+  return {
+    ...snapshot,
+    entities,
+    ...(snapshot.layout !== undefined ? { layout } : {}),
+    ...(view !== undefined ? { view } : {}),
+  };
 }
 
 export function createEditorHistory(snapshot: GraphSnapshot): EditorHistory {
