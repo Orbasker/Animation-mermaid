@@ -83,6 +83,7 @@ import {
 import type { StoryProposal } from "@/workflows/design-review-story";
 
 import { CopilotSurface } from "./ai-copilot/copilot-surface";
+import { ExplorerSurface } from "./explorer/explorer-surface";
 import {
   createHttpCopilotTransport,
   type CopilotTransport,
@@ -96,6 +97,7 @@ import { useConnectivity } from "./use-connectivity";
 const SURFACES = [
   "Source",
   "Story",
+  "Explore",
   "Compare",
   "Layers",
   "Inspector",
@@ -1486,6 +1488,8 @@ export function EditorWorkspace({
           <span />
           <span />
         </div>
+      ) : surface === "Explore" ? (
+        <ExplorerSurface snapshot={snapshot} />
       ) : (
         <div className="workspaceGrid">
           <aside className="workspacePanel" role="tabpanel">
