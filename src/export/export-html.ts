@@ -1,9 +1,33 @@
 import type { ExportPayload } from "@/export/export-payload";
-import {
-  PLAYER_APP_SOURCE,
-  PLAYER_STYLES,
-  RENDER_FUNCTION_SOURCE,
-} from "@/export/player-runtime";
+import { PLAYER_SCRIPT_SOURCE, PLAYER_STYLES } from "@/export/player-runtime";
+
+/**
+ * Base64 SHA-256 hashes of the exact inline script and style the export embeds. They lock the
+ * standalone document's Content Security Policy to this precise runtime: the browser executes
+ * the player only when the inline `<script>`/`<style>` match, and no script injected through a
+ * label, title, or link can run. `export-html.test.ts` recomputes both from the source and
+ * fails if the runtime changes without these being regenerated.
+ */
+export const PLAYER_SCRIPT_CSP_HASH =
+  "sha256-aJ6UhkaZCXvLncQ7JKPsBsBOYWgoaqmibqHe0L5Ea7w=";
+export const PLAYER_STYLE_CSP_HASH =
+  "sha256-aetr/H+X/jcve7wpQZsaT286AGa8x1rtwU8BFz6oMgY=";
+
+/**
+ * The Content Security Policy carried in the exported document's `<meta>` tag. `default-src
+ * 'none'` denies everything by default; only the two hashed inline assets are admitted, the
+ * data island is a non-executable `application/json` block, and the player builds its diagram
+ * from DOM APIs (never `innerHTML`, `fetch`, or remote assets). Nothing user-authored can widen
+ * this policy, satisfying the "exported content cannot expand the policy" requirement.
+ */
+export const EXPORT_CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  `script-src '${PLAYER_SCRIPT_CSP_HASH}'`,
+  `style-src '${PLAYER_STYLE_CSP_HASH}'`,
+  "img-src data:",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join("; ");
 
 /**
  * Escapes a string for safe interpolation into HTML text or a double-quoted attribute.
@@ -82,6 +106,7 @@ export function buildExportHtml(payload: ExportPayload): string {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="${EXPORT_CONTENT_SECURITY_POLICY}" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="generator" content="animation-mermaid-export ${escapeHtml(
     payload.meta.formatVersion,
@@ -97,8 +122,7 @@ ${staticFallback}
 ${staticFallback}
 </noscript>
 <script type="application/json" id="story-data">${embedded}</script>
-<script>${RENDER_FUNCTION_SOURCE}
-${PLAYER_APP_SOURCE}</script>
+<script>${PLAYER_SCRIPT_SOURCE}</script>
 </body>
 </html>
 `;

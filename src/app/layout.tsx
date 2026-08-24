@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   description: "Turn Mermaid diagrams into clear, shareable animations.",
 };
 
+/**
+ * Render every route dynamically so the per-request nonce that `proxy.ts` places in the
+ * Content Security Policy is stamped onto Next.js's scripts at render time. A statically
+ * generated shell would ship without that nonce and be blocked by the strict `script-src`.
+ */
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
