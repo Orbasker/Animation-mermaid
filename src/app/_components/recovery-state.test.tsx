@@ -71,9 +71,7 @@ describe("RecoveryState", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Download a backup" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Download a backup" }));
     expect(onExport).toHaveBeenCalledOnce();
     expect(
       screen.queryByRole("button", { name: "Copy diagnostics" }),

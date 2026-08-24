@@ -66,8 +66,7 @@ export function detectCapabilities(): BrowserCapabilities {
     indexedDB: hasWindow && typeof window.indexedDB !== "undefined",
     webWorker: typeof Worker !== "undefined",
     cryptoRandomUUID:
-      typeof crypto !== "undefined" &&
-      typeof crypto.randomUUID === "function",
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function",
     clipboard:
       hasWindow &&
       typeof navigator !== "undefined" &&
@@ -92,8 +91,7 @@ export function buildDiagnostics(input: DiagnosticsInput): Diagnostics {
     capturedAt: new Date().toISOString(),
     url: currentUrl(),
     online: isOnline(),
-    userAgent:
-      typeof navigator === "undefined" ? "" : navigator.userAgent,
+    userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
     capabilities: detectCapabilities(),
     ...(input.error ? { error: describeError(input.error) } : {}),
     ...(input.projectSummary ? { projectSummary: input.projectSummary } : {}),

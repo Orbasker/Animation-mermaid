@@ -87,7 +87,11 @@ function slugify(value: string): string {
  */
 export function downloadProjectBackup(): boolean {
   const record = readProjectBackup();
-  if (!record || typeof document === "undefined" || typeof URL === "undefined") {
+  if (
+    !record ||
+    typeof document === "undefined" ||
+    typeof URL === "undefined"
+  ) {
     return false;
   }
   const blob = new Blob([JSON.stringify(record.project, null, 2)], {

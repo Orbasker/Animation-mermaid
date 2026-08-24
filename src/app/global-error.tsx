@@ -99,7 +99,10 @@ export default function GlobalError({
               Copy diagnostics
             </button>
           </div>
-          <span aria-live="polite" style={{ minHeight: "1em", color: "#53665f" }}>
+          <span
+            aria-live="polite"
+            style={{ minHeight: "1em", color: "#53665f" }}
+          >
             {copied ? "Diagnostics copied to the clipboard." : ""}
           </span>
         </main>

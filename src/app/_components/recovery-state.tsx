@@ -87,7 +87,9 @@ export function RecoveryState({
         {actions?.map((action) => (
           <button
             className={
-              action.primary ? "recoveryPrimaryAction" : "recoverySecondaryAction"
+              action.primary
+                ? "recoveryPrimaryAction"
+                : "recoverySecondaryAction"
             }
             key={action.label}
             onClick={action.onClick}

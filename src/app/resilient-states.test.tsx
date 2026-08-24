@@ -24,7 +24,10 @@ describe("root error boundary", () => {
     const retry = vi.fn();
     vi.spyOn(console, "error").mockImplementation(() => {});
     render(
-      <AppError error={Object.assign(new Error("boom"), { digest: "d" })} retry={retry} />,
+      <AppError
+        error={Object.assign(new Error("boom"), { digest: "d" })}
+        retry={retry}
+      />,
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent("Something went wrong");
@@ -50,10 +53,9 @@ describe("not-found state", () => {
     expect(
       screen.getByRole("heading", { name: "This page doesn’t exist" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open the editor" })).toHaveAttribute(
-      "href",
-      "/editor",
-    );
+    expect(
+      screen.getByRole("link", { name: "Open the editor" }),
+    ).toHaveAttribute("href", "/editor");
   });
 });
 
