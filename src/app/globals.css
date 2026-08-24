@@ -1826,3 +1826,186 @@ h1 {
   color: #9a8f88;
   cursor: not-allowed;
 }
+
+/* Resilient app states: recovery surfaces, route loading, and editor notices. */
+
+.recoveryShell {
+  display: grid;
+  min-height: 100vh;
+  padding: clamp(24px, 6vw, 96px);
+  place-items: center;
+}
+
+.recoveryState {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+  padding: 32px;
+}
+
+.recoveryState-error {
+  background: #fff1eb;
+  border-color: #ff9776;
+  color: #6d250f;
+}
+
+.recoveryState-warning {
+  background: #fff8e6;
+  border-color: #e8c66a;
+  color: #5a4408;
+}
+
+.recoveryState-info {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.recoveryStateBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recoveryStateTitle {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.recoveryStateDescription {
+  color: inherit;
+  line-height: 1.55;
+}
+
+.recoveryStateDescription p {
+  margin: 0 0 8px;
+}
+
+.recoveryStateHint {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.recoveryStateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recoveryPrimaryAction {
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  color: var(--surface);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 12px 22px;
+  text-decoration: none;
+}
+
+.recoveryPrimaryAction:hover {
+  background: var(--accent-dark);
+}
+
+.recoverySecondaryAction {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 12px 22px;
+  text-decoration: none;
+}
+
+.recoveryFootNote {
+  color: var(--muted);
+  margin-top: 18px;
+  max-width: 560px;
+  text-align: center;
+}
+
+.editorRecovery {
+  padding: 28px;
+}
+
+.routeLoading {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.routeLoading span {
+  animation: editorPulse 900ms ease-in-out infinite alternate;
+  background: #8797a0;
+  border-radius: 50%;
+  height: 12px;
+  width: 12px;
+}
+
+.routeLoading span:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.routeLoading span:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+.editorNotice {
+  align-items: flex-start;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0;
+  padding: 12px 16px;
+}
+
+.editorNotice-error {
+  background: #fff1eb;
+  border: 1px solid #ff9776;
+  color: #6d250f;
+}
+
+.editorNotice-warning {
+  background: #fff8e6;
+  border: 1px solid #e8c66a;
+  color: #5a4408;
+}
+
+.editorNotice-info {
+  background: #eef4f1;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.editorNotice span {
+  font-size: 0.85rem;
+}
+
+.copilotDegraded {
+  background: #fff8e6;
+  border: 1px solid #e8c66a;
+  border-radius: 10px;
+  color: #5a4408;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.copilotDegraded p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routeLoading span {
+    animation: none;
+  }
+}
