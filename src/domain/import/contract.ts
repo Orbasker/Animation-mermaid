@@ -89,7 +89,7 @@ export interface DiagramImportResult {
  * The plugin contract every diagram grammar implements. An importer recognizes its own source
  * ({@link detect}), normalizes it into a {@link GraphSnapshot} through the shared graph
  * boundary ({@link import}), and lays that snapshot out deterministically ({@link layout}).
- * Everything downstream — stories, comparison, the agent context — consumes only the resulting
+ * Everything downstream — stories, the agent context — consumes only the resulting
  * snapshot, so adding an importer never touches the story engine.
  */
 export interface DiagramImporter {

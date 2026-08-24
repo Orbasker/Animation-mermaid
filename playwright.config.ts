@@ -2,8 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Playwright drives the editor journey in a real browser against the local Next.js app:
- * import, edit, IndexedDB persistence across reload, timeline seek, and comparison all run
- * against the app untouched.
+ * import, edit, IndexedDB persistence across reload, and timeline seek all run against the
+ * app untouched.
  */
 
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);

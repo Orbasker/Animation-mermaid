@@ -83,18 +83,6 @@ export {
 } from "@/domain/story-engine";
 
 export {
-  type ComparisonId,
-  type EntityChange,
-  type Comparison,
-  type ComparisonValidationCode,
-  type ComparisonValidationError,
-  comparisonId,
-  compareSnapshots,
-  validateComparison,
-  withIdentityMap,
-} from "@/domain/comparison";
-
-export {
   type IdentityPair,
   type IdentityMap,
   EMPTY_IDENTITY_MAP,
@@ -153,7 +141,6 @@ export {
   decodeGraphSnapshot,
   decodeAction,
   decodeStory,
-  decodeComparison,
   decodeProjectDocument,
 } from "@/domain/runtime-decoder";
 

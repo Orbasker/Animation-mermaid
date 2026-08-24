@@ -328,7 +328,7 @@ export class ProjectRepository {
 
   /**
    * Duplicates a project into a new one with a fresh project id and a "Copy of …" name. The
-   * document's internal ids (snapshots, stories, comparisons) are preserved because they are
+   * document's internal ids (snapshots, stories) are preserved because they are
    * internal references within the copy; only the top-level project identity is new.
    */
   async duplicate(id: ProjectId): Promise<StoredProject> {

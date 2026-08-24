@@ -166,8 +166,6 @@ describe("EditorWorkspace", () => {
     expect(screen.getByText(/flowchart TD/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "Story" }));
     expect(screen.getByText("Request walkthrough")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Compare" }));
-    expect(screen.getByText(/current vs proposed/i)).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Load 200-node stress fixture" }),

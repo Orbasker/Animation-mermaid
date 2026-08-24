@@ -11,7 +11,7 @@ import { sequenceImporter } from "@/domain/mermaid/sequence";
 /**
  * Every registered importer, in detection priority order. Adding a diagram grammar is a matter
  * of implementing {@link DiagramImporter} and adding it here — nothing downstream of the graph
- * boundary (stories, comparison, the agent context) changes.
+ * boundary (stories, the agent context) changes.
  */
 export const IMPORTERS: readonly DiagramImporter[] = [
   flowchartImporter,

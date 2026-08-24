@@ -85,14 +85,7 @@ import { runMermaidImport, type RunMermaidImport } from "./import/run-import";
 import { recordProjectBackup } from "./project-backup";
 import { useConnectivity } from "./use-connectivity";
 
-const SURFACES = [
-  "Source",
-  "Story",
-  "Explore",
-  "Compare",
-  "Layers",
-  "Inspector",
-] as const;
+const SURFACES = ["Source", "Story", "Explore", "Layers", "Inspector"] as const;
 type Surface = (typeof SURFACES)[number];
 
 interface Point {
@@ -317,7 +310,6 @@ export function EditorWorkspace({
             ...document,
             snapshots: seed.snapshots,
             stories: seed.stories,
-            comparisons: seed.comparisons,
           };
         }
         setProject(document);
@@ -1409,7 +1401,6 @@ export function EditorWorkspace({
                   `Shown ${id}.`,
                 )
               }
-              project={project}
               selectedEntity={selectedEntity}
               selectedIds={selectedIds}
               snapshot={snapshot}
@@ -1800,7 +1791,6 @@ interface TimelineViewModel {
 
 interface SurfacePanelProps {
   readonly surface: Surface;
-  readonly project: ProjectDocument;
   readonly snapshot: GraphSnapshot;
   readonly selectedEntity?: NodeEntity;
   readonly selectedIds: readonly EntityId[];
@@ -1820,7 +1810,6 @@ interface SurfacePanelProps {
 
 function SurfacePanel({
   surface,
-  project,
   snapshot,
   selectedEntity,
   selectedIds,
@@ -1859,23 +1848,6 @@ function SurfacePanel({
 
   if (surface === "Story") {
     return <TimelineSurface {...timeline} />;
-  }
-
-  if (surface === "Compare") {
-    return (
-      <div>
-        <PanelHeading
-          eyebrow={`${project.comparisons.length} comparison`}
-          title="Current vs proposed"
-        />
-        {project.comparisons.map((comparison) => (
-          <article className="surfaceCard" key={comparison.id}>
-            <strong>{comparison.changes.length} semantic changes</strong>
-            <span>Identity-based diff</span>
-          </article>
-        ))}
-      </div>
-    );
   }
 
   if (surface === "Inspector") {

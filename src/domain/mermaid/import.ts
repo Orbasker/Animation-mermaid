@@ -40,8 +40,8 @@ function edgeKey(edge: ParsedEdge, seen: Map<string, number>): string {
 /**
  * Imports a Mermaid flowchart into a normalized {@link GraphSnapshot}. Source identities
  * become stable semantic {@link EntityId}s (node/group ids verbatim, edges as
- * `source->target`), so a re-import of unchanged source reconnects every entity by key and a
- * downstream {@link compareSnapshots} reports no change. The original source is stored
+ * `source->target`), so a re-import of unchanged source reconnects every entity by key. The
+ * original source is stored
  * unchanged, layout is left to a separate deterministic pass, and every unsupported or
  * unsafe construct surfaces as a diagnostic rather than a thrown error. A fatal diagnostic
  * (bad header / empty source) yields `snapshot: null`.

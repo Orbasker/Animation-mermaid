@@ -21,10 +21,6 @@ describe("schema version", () => {
     ...sampleProjectDocument().stories[0],
     schemaVersion: 1,
   });
-  const legacyComparison = () => ({
-    ...sampleProjectDocument().comparisons[0],
-    schemaVersion: 1,
-  });
   const legacyDocument = () => ({
     ...sampleProjectDocument(),
     schemaVersion: 1,
@@ -33,7 +29,6 @@ describe("schema version", () => {
       schemaVersion: 1,
     })),
     stories: [legacyStory()],
-    comparisons: [legacyComparison()],
   });
 
   it("recognizes the current version", () => {
@@ -73,7 +68,6 @@ describe("schema version", () => {
   it.each([
     ["GraphSnapshot", currentArchitectureSnapshot()],
     ["Story", sampleProjectDocument().stories[0]],
-    ["Comparison", sampleProjectDocument().comparisons[0]],
     ["ProjectDocument", sampleProjectDocument()],
   ])("passes a current %s through migration untouched", (_, artifact) => {
     expect(migrateDocument(artifact)).toEqual(artifact);
@@ -92,11 +86,6 @@ describe("schema version", () => {
         (story) => story.schemaVersion === 2,
       ),
     ).toBe(true);
-    expect(
-      (migrated.comparisons as { schemaVersion: number }[]).every(
-        (comparison) => comparison.schemaVersion === 2,
-      ),
-    ).toBe(true);
   });
 
   it.each([
@@ -104,15 +93,12 @@ describe("schema version", () => {
     ["empty GraphSnapshot", { ...legacySnapshot(), entities: [], layout: [] }],
     ["populated Story", legacyStory()],
     ["empty Story", { ...legacyStory(), scenes: [] }],
-    ["populated Comparison", legacyComparison()],
-    ["empty Comparison", { ...legacyComparison(), changes: [] }],
     [
       "empty ProjectDocument",
       {
         ...legacyDocument(),
         snapshots: [],
         stories: [],
-        comparisons: [],
       },
     ],
   ])("migrates a standalone or empty v1 %s", (_, artifact) => {
@@ -175,7 +161,6 @@ describe("schema version", () => {
   it.each([
     ["GraphSnapshot", { ...legacySnapshot(), entities: undefined }],
     ["Story", { ...legacyStory(), scenes: undefined }],
-    ["Comparison", { ...legacyComparison(), changes: undefined }],
   ])("rejects a malformed v1 %s before relabeling", (_, artifact) => {
     expect(() => migrateDocument(artifact)).toThrow(/cannot migrate.*array/i);
   });
